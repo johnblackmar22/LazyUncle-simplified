@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Box, 
@@ -14,18 +14,34 @@ import {
   StatLabel, 
   StatNumber, 
   StatHelpText,
-  useColorModeValue
+  useColorModeValue,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
+  VStack
 } from '@chakra-ui/react';
 import { AddIcon } from '@chakra-ui/icons';
 import { useRecipients } from '../hooks/useRecipients';
+import { useGifts } from '../hooks/useGifts';
 import { GiftReminders } from '../components/GiftReminders';
 import { UpcomingDates } from '../components/UpcomingDates';
+import { isDemoMode } from '../services/demoData';
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { recipients } = useRecipients();
+  const { recipients, loadDemoData: loadDemoRecipients } = useRecipients();
+  const { gifts, loadDemoData: loadDemoGifts } = useGifts();
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
+
+  const hasData = recipients.length > 0 || gifts.length > 0;
+  const isDemo = isDemoMode();
+
+  const loadDemoData = () => {
+    loadDemoRecipients();
+    loadDemoGifts();
+  };
 
   return (
     <Container maxW="container.xl" py={6}>
@@ -39,6 +55,47 @@ export const Dashboard: React.FC = () => {
           Add Recipient
         </Button>
       </Flex>
+
+      {!hasData && (
+        <Alert 
+          status="info" 
+          variant="subtle" 
+          flexDirection="column" 
+          alignItems="center" 
+          justifyContent="center" 
+          textAlign="center" 
+          borderRadius="lg"
+          py={6}
+          mb={6}
+        >
+          <AlertIcon boxSize="40px" mr={0} />
+          <AlertTitle mt={4} mb={1} fontSize="lg">
+            Welcome to LazyUncle!
+          </AlertTitle>
+          <AlertDescription maxWidth="sm">
+            <Text mb={4}>
+              You don't have any recipients or gifts yet. Get started by adding a recipient or loading our sample data.
+            </Text>
+            <VStack spacing={3}>
+              <Button colorScheme="blue" onClick={() => navigate('/recipients/new')}>
+                Add Your First Recipient
+              </Button>
+              <Button colorScheme="green" onClick={loadDemoData}>
+                Load Sample Data
+              </Button>
+            </VStack>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {isDemo && (
+        <Alert status="success" mb={6} borderRadius="lg">
+          <AlertIcon />
+          <AlertDescription>
+            You're using demo mode with sample data. Feel free to explore all features!
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={6}>
         <GridItem>
@@ -77,14 +134,18 @@ export const Dashboard: React.FC = () => {
         </GridItem>
       </Grid>
 
-      <Box mt={8}>
-        <GiftReminders />
-      </Box>
+      {hasData && (
+        <>
+          <Box mt={8}>
+            <GiftReminders />
+          </Box>
 
-      <Box mt={8}>
-        <Heading size="md" mb={4}>Upcoming Special Dates</Heading>
-        <UpcomingDates />
-      </Box>
+          <Box mt={8}>
+            <Heading size="md" mb={4}>Upcoming Special Dates</Heading>
+            <UpcomingDates />
+          </Box>
+        </>
+      )}
     </Container>
   );
 }; 

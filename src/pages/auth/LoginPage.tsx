@@ -13,9 +13,12 @@ import {
   Alert,
   AlertIcon,
   InputGroup,
-  InputRightElement
+  InputRightElement,
+  Divider,
+  HStack
 } from '@chakra-ui/react';
 import { useAuthStore } from '../../store/authStore';
+import { initializeDemoData } from '../../services/demoData';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -23,6 +26,7 @@ const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('demo@example.com');
   const [password, setPassword] = useState('password');
   const [showPassword, setShowPassword] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +38,19 @@ const LoginPage: React.FC = () => {
     } catch (err) {
       console.error('Login error:', err);
     }
+  };
+
+  const handleDemoMode = () => {
+    setDemoLoading(true);
+    
+    // Initialize demo data
+    initializeDemoData();
+    
+    // Simulate loading for better UX
+    setTimeout(() => {
+      setDemoLoading(false);
+      navigate('/dashboard');
+    }, 1000);
   };
 
   return (
@@ -83,10 +100,6 @@ const LoginPage: React.FC = () => {
                 </Alert>
               )}
 
-              <Text fontSize="sm" color="blue.600">
-                Demo Mode: Use email "demo@example.com" and password "password"
-              </Text>
-
               <Button
                 mt={4}
                 colorScheme="blue"
@@ -98,6 +111,27 @@ const LoginPage: React.FC = () => {
               </Button>
             </VStack>
           </form>
+
+          <Divider my={4} />
+          
+          <VStack spacing={3}>
+            <Text textAlign="center" fontSize="sm">
+              Want to try LazyUncle without creating an account?
+            </Text>
+            <Button 
+              colorScheme="green" 
+              variant="solid"
+              w="full"
+              onClick={handleDemoMode}
+              isLoading={demoLoading}
+              loadingText="Loading Demo Data"
+            >
+              Try Demo Mode
+            </Button>
+            <Text fontSize="xs" color="gray.500" textAlign="center">
+              Demo mode provides sample data to explore the application features
+            </Text>
+          </VStack>
         </VStack>
       </Container>
     </Box>
