@@ -1,68 +1,101 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRecipients } from '../hooks/useRecipients';
-import { format, isAfter, isBefore, addDays, parseISO } from 'date-fns';
+import { format, addDays, parseISO, isBefore, differenceInDays } from 'date-fns';
+import { Box, Heading, Text, Badge, VStack, HStack, Divider, useColorModeValue } from '@chakra-ui/react';
 
+// Define the type for special dates with description field
 interface SpecialDate {
   id: string;
-  date: string;
+  name: string;
+  date: number | Date;
+  recurring: boolean;
+  type: 'birthday' | 'anniversary' | 'holiday' | 'other';
   description: string;
-  type: 'birthday' | 'anniversary' | 'other';
 }
 
 export const UpcomingDates: React.FC = () => {
   const { recipients } = useRecipients();
+  const [upcomingDates, setUpcomingDates] = useState<Array<SpecialDate & { recipientName: string }>>([]);
   
-  const getUpcomingDates = () => {
+  const bgColor = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
+
+  useEffect(() => {
     const today = new Date();
-    const next30Days = addDays(today, 30);
-    
+    const lookAheadDate = addDays(today, 30); // Look ahead 30 days
     const allDates: Array<SpecialDate & { recipientName: string }> = [];
-    
+
     recipients.forEach(recipient => {
-      recipient.specialDates?.forEach(date => {
-        const dateObj = parseISO(date.date);
-        const thisYear = new Date(today.getFullYear(), dateObj.getMonth(), dateObj.getDate());
-        
-        if (isAfter(thisYear, today) && isBefore(thisYear, next30Days)) {
-          allDates.push({
-            ...date,
-            recipientName: recipient.name
-          });
-        }
-      });
+      if (recipient.specialDates && recipient.specialDates.length > 0) {
+        recipient.specialDates.forEach(date => {
+          let dateObj;
+          try {
+            if (typeof date.date === 'string') {
+              dateObj = parseISO(date.date);
+            } else {
+              dateObj = new Date(date.date);
+            }
+
+            // Check if date is within our look-ahead period
+            if (isBefore(dateObj, lookAheadDate) && !isBefore(dateObj, today)) {
+              allDates.push({
+                ...date,
+                recipientName: recipient.name,
+                // Ensure description exists (for compatibility)
+                description: date.description || date.name || ''
+              });
+            }
+          } catch (error) {
+            console.error('Error processing date:', date, error);
+          }
+        });
+      }
     });
-    
-    return allDates.sort((a, b) => 
-      parseISO(a.date).getTime() - parseISO(b.date).getTime()
-    );
+
+    // Sort by date (soonest first)
+    allDates.sort((a, b) => {
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      return dateA.getTime() - dateB.getTime();
+    });
+
+    setUpcomingDates(allDates);
+  }, [recipients]);
+
+  const getBadgeColor = (date: Date | number) => {
+    const daysUntil = differenceInDays(new Date(date), new Date());
+    if (daysUntil <= 7) return 'red';
+    if (daysUntil <= 14) return 'orange';
+    return 'blue';
   };
 
-  const upcomingDates = getUpcomingDates();
-
-  if (upcomingDates.length === 0) {
-    return (
-      <div className="p-4 bg-white rounded-lg shadow">
-        <h2 className="text-xl font-semibold mb-4">Upcoming Special Dates</h2>
-        <p className="text-gray-500">No upcoming special dates in the next 30 days.</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="p-4 bg-white rounded-lg shadow">
-      <h2 className="text-xl font-semibold mb-4">Upcoming Special Dates</h2>
-      <div className="space-y-3">
-        {upcomingDates.map((date) => (
-          <div key={date.id} className="flex items-center justify-between bg-gray-50 p-3 rounded">
-            <div>
-              <span className="font-medium">{format(parseISO(date.date), 'MMMM d')}</span>
-              <span className="ml-2 text-gray-600">({date.description})</span>
-              <span className="ml-2 text-sm text-gray-500 capitalize">({date.type})</span>
-            </div>
-            <span className="text-blue-600">{date.recipientName}</span>
-          </div>
-        ))}
-      </div>
-    </div>
+    <Box p={4} borderWidth="1px" borderRadius="lg" borderColor={borderColor} bg={bgColor}>
+      {upcomingDates.length === 0 ? (
+        <Text>No upcoming dates in the next 30 days.</Text>
+      ) : (
+        <VStack spacing={3} align="stretch">
+          {upcomingDates.map((date) => {
+            const dateObj = new Date(date.date);
+            const daysUntil = differenceInDays(dateObj, new Date());
+            
+            return (
+              <Box key={date.id} p={3} borderWidth="1px" borderRadius="md">
+                <Heading size="sm">{date.recipientName}'s {date.type}</Heading>
+                <HStack mt={1}>
+                  <Text fontSize="sm">{format(dateObj, 'MMMM d, yyyy')}</Text>
+                  <Badge colorScheme={getBadgeColor(date.date)}>
+                    {daysUntil === 0 ? 'Today!' : `${daysUntil} days`}
+                  </Badge>
+                </HStack>
+                {date.description && (
+                  <Text fontSize="sm" color="gray.600" mt={1}>{date.description}</Text>
+                )}
+              </Box>
+            );
+          })}
+        </VStack>
+      )}
+    </Box>
   );
 }; 
