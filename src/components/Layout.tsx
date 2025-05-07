@@ -1,17 +1,17 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { Box, Container, Flex } from '@chakra-ui/react';
-import Navbar from './Navbar';
-import Sidebar from './Sidebar';
+import { Box, Flex, Container } from '@chakra-ui/react';
+import { Navbar } from './Navbar';
+import { Sidebar } from './Sidebar';
 
-const Layout = () => {
+const Layout: React.FC = () => {
   return (
     <Box minH="100vh" bg="gray.50">
       <Navbar />
       <Flex>
         <Sidebar />
-        <Box w="full" p={4} ml={{ base: 0, md: "220px" }} mt="60px">
-          <Container maxW="container.xl" py={6}>
+        <Box as="main" flex="1" p={4}>
+          <Container maxW="container.xl">
             <Outlet />
           </Container>
         </Box>

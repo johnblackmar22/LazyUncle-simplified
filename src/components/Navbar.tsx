@@ -1,119 +1,70 @@
 import React from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import {
-  Box,
-  Flex,
-  Text,
-  Button,
-  Stack,
-  Link,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
+import { 
+  Box, 
+  Flex, 
+  Heading, 
+  HStack, 
+  Button, 
+  Container,
   useColorModeValue,
-  HStack,
-  Avatar,
+  Link
 } from '@chakra-ui/react';
+import { useAuthStore } from '../store/authStore';
 
-const Navbar = () => {
-  // In a real app, this would come from an auth context or store
-  const isLoggedIn = false;
+export const Navbar: React.FC = () => {
+  const { user, signOut } = useAuthStore();
+  const bgColor = useColorModeValue('white', 'gray.800');
   
-  const bg = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
-
   return (
-    <Box
-      position="fixed"
-      w="100%"
-      zIndex={999}
-      bg={bg}
-      borderBottom={1}
-      borderStyle={'solid'}
-      borderColor={borderColor}
-      boxShadow="sm"
-    >
-      <Flex
-        h={14}
-        alignItems={'center'}
-        justifyContent={'space-between'}
-        maxW={'container.xl'}
-        mx="auto"
-        px={4}
-      >
-        <Box fontWeight="bold" fontSize="xl">
+    <Box as="nav" bg={bgColor} py={4} boxShadow="sm">
+      <Container maxW="container.xl">
+        <Flex justify="space-between" align="center">
           <Link as={RouterLink} to="/" _hover={{ textDecoration: 'none' }}>
-            LazyUncle
+            <Heading size="lg" color="brand.500">LazyUncle</Heading>
           </Link>
-        </Box>
-        
-        {isLoggedIn && (
-          <HStack spacing={4} display={{ base: 'none', md: 'flex' }}>
-            <Link as={RouterLink} to="/dashboard">Dashboard</Link>
-            <Link as={RouterLink} to="/recipients">Recipients</Link>
-            <Link as={RouterLink} to="/gifts">Gifts</Link>
+          
+          <HStack spacing={4}>
+            {user ? (
+              <>
+                <Button 
+                  as={RouterLink} 
+                  to="/dashboard" 
+                  variant="ghost" 
+                  colorScheme="blue"
+                >
+                  Dashboard
+                </Button>
+                <Button 
+                  onClick={() => signOut()} 
+                  variant="outline" 
+                  colorScheme="blue"
+                >
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button 
+                  as={RouterLink} 
+                  to="/login" 
+                  variant="ghost" 
+                  colorScheme="blue"
+                >
+                  Sign In
+                </Button>
+                <Button 
+                  as={RouterLink} 
+                  to="/register" 
+                  colorScheme="blue"
+                >
+                  Register
+                </Button>
+              </>
+            )}
           </HStack>
-        )}
-
-        <Flex alignItems={'center'}>
-          {isLoggedIn ? (
-            <Menu>
-              <MenuButton
-                as={Button}
-                variant={'link'}
-                cursor={'pointer'}
-                minW={0}
-              >
-                <HStack>
-                  <Avatar size="sm" src="" name="User" />
-                  <Text display={{ base: 'none', md: 'flex' }}>
-                    User
-                  </Text>
-                </HStack>
-              </MenuButton>
-              <MenuList>
-                <MenuItem as={RouterLink} to="/profile">Profile</MenuItem>
-                <MenuItem as={RouterLink} to="/settings">Settings</MenuItem>
-                <MenuItem as={RouterLink} to="/logout">Sign Out</MenuItem>
-              </MenuList>
-            </Menu>
-          ) : (
-            <Stack
-              flex={{ base: 1, md: 0 }}
-              justify={'flex-end'}
-              direction={'row'}
-              spacing={6}
-            >
-              <Button
-                as={RouterLink}
-                fontSize={'sm'}
-                fontWeight={400}
-                variant={'link'}
-                to={'/login'}
-              >
-                Sign In
-              </Button>
-              <Button
-                as={RouterLink}
-                display={{ base: 'none', md: 'inline-flex' }}
-                fontSize={'sm'}
-                fontWeight={600}
-                color={'white'}
-                bg={'brand.500'}
-                to={'/register'}
-                _hover={{
-                  bg: 'brand.600',
-                }}
-              >
-                Sign Up
-              </Button>
-            </Stack>
-          )}
         </Flex>
-      </Flex>
+      </Container>
     </Box>
   );
-};
-
-export default Navbar; 
+}; 

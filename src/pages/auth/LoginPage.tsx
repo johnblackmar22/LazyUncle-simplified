@@ -1,121 +1,107 @@
 import React, { useState } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import {
-  Box,
-  Button,
-  FormControl,
-  FormLabel,
-  Input,
-  Link,
-  Stack,
-  Heading,
-  Text,
-  useColorModeValue,
-  FormErrorMessage,
+import { useNavigate, Link } from 'react-router-dom';
+import { 
+  Box, 
+  Button, 
+  FormControl, 
+  FormLabel, 
+  Input, 
+  VStack, 
+  Heading, 
+  Text, 
+  Container,
   Alert,
   AlertIcon,
-  Container,
+  InputGroup,
+  InputRightElement
 } from '@chakra-ui/react';
+import { useAuthStore } from '../../store/authStore';
 
-export default function LoginPage() {
+const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  
+  const { signIn, loading, error, resetError } = useAuthStore();
+  const [email, setEmail] = useState('demo@example.com');
+  const [password, setPassword] = useState('password');
+  const [showPassword, setShowPassword] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Basic validation
-    if (!email || !password) {
-      setError('Please enter both email and password');
-      return;
-    }
-    
-    setLoading(true);
+    resetError();
     
     try {
-      // Simulate authentication delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // In a real app, this would communicate with your auth service
-      console.log('Login attempt with:', { email, password });
-      
-      // For demo purposes, let's just navigate to the dashboard
+      await signIn(email, password);
       navigate('/dashboard');
     } catch (err) {
-      setError('Failed to sign in. Please check your credentials.');
-    } finally {
-      setLoading(false);
+      console.error('Login error:', err);
     }
   };
 
   return (
-    <Container maxW="lg" py={{ base: 12, md: 24 }}>
-      <Stack spacing={8}>
-        <Stack align="center">
-          <Heading fontSize="4xl">Sign in to your account</Heading>
-          <Text fontSize="lg" color="gray.600">
-            to enjoy all the features of LazyUncle ✌️
-          </Text>
-        </Stack>
-        <Box
-          rounded="lg"
-          bg={useColorModeValue('white', 'gray.700')}
-          boxShadow="lg"
-          p={8}
-        >
-          {error && (
-            <Alert status="error" mb={4} borderRadius="md">
-              <AlertIcon />
-              {error}
-            </Alert>
-          )}
+    <Box pt={10} pb={20} px={4} bg="gray.50" minH="100vh">
+      <Container maxW="md" bg="white" p={8} borderRadius="lg" boxShadow="md">
+        <VStack spacing={6} align="stretch">
+          <VStack spacing={2}>
+            <Heading size="lg">Sign In</Heading>
+            <Text color="gray.500">
+              Don't have an account? <Link to="/register" style={{ color: 'blue' }}>Register</Link>
+            </Text>
+          </VStack>
+
           <form onSubmit={handleSubmit}>
-            <Stack spacing={4}>
-              <FormControl id="email" isRequired>
-                <FormLabel>Email address</FormLabel>
+            <VStack spacing={4}>
+              <FormControl id="email">
+                <FormLabel>Email</FormLabel>
                 <Input 
                   type="email" 
-                  value={email}
+                  value={email} 
                   onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
                 />
               </FormControl>
-              <FormControl id="password" isRequired>
+
+              <FormControl id="password">
                 <FormLabel>Password</FormLabel>
-                <Input 
-                  type="password" 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+                <InputGroup>
+                  <Input 
+                    type={showPassword ? "text" : "password"} 
+                    value={password} 
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                  />
+                  <InputRightElement width="4.5rem">
+                    <Button h="1.75rem" size="sm" onClick={() => setShowPassword(!showPassword)}>
+                      {showPassword ? "Hide" : "Show"}
+                    </Button>
+                  </InputRightElement>
+                </InputGroup>
               </FormControl>
-              <Stack spacing={5}>
-                <Button
-                  bg="brand.500"
-                  color="white"
-                  _hover={{
-                    bg: 'brand.600',
-                  }}
-                  type="submit"
-                  isLoading={loading}
-                >
-                  Sign in
-                </Button>
-                <Stack
-                  direction={{ base: 'column', sm: 'row' }}
-                  align="start"
-                  justify="space-between"
-                >
-                  <Link color="brand.500" as={RouterLink} to="/register">
-                    Don't have an account? Sign up
-                  </Link>
-                </Stack>
-              </Stack>
-            </Stack>
+
+              {error && (
+                <Alert status="error">
+                  <AlertIcon />
+                  {error}
+                </Alert>
+              )}
+
+              <Text fontSize="sm" color="blue.600">
+                Demo Mode: Use email "demo@example.com" and password "password"
+              </Text>
+
+              <Button
+                mt={4}
+                colorScheme="blue"
+                isLoading={loading}
+                type="submit"
+                w="full"
+              >
+                Sign In
+              </Button>
+            </VStack>
           </form>
-        </Box>
-      </Stack>
-    </Container>
+        </VStack>
+      </Container>
+    </Box>
   );
-} 
+};
+
+export default LoginPage; 

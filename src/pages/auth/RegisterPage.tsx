@@ -1,144 +1,118 @@
 import React, { useState } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import {
-  Box,
-  Button,
-  FormControl,
-  FormLabel,
-  Input,
-  Link,
-  Stack,
-  Heading,
-  Text,
-  useColorModeValue,
-  FormErrorMessage,
+import { useNavigate, Link } from 'react-router-dom';
+import { 
+  Box, 
+  Button, 
+  FormControl, 
+  FormLabel, 
+  Input, 
+  VStack, 
+  Heading, 
+  Text, 
+  Container,
   Alert,
   AlertIcon,
-  Container,
+  InputGroup,
+  InputRightElement
 } from '@chakra-ui/react';
+import { useAuthStore } from '../../store/authStore';
 
-export default function RegisterPage() {
+const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
-  const [name, setName] = useState('');
+  const { signUp, loading, error, resetError } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  
+  const [displayName, setDisplayName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Basic validation
-    if (!name || !email || !password) {
-      setError('Please fill in all required fields');
-      return;
-    }
-    
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-    
-    setLoading(true);
+    resetError();
     
     try {
-      // Simulate registration delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // In a real app, this would communicate with your auth service
-      console.log('Registration attempt with:', { name, email, password });
-      
-      // For demo purposes, let's just navigate to the login
-      navigate('/login');
+      await signUp(email, password, displayName);
+      navigate('/dashboard');
     } catch (err) {
-      setError('Failed to create account. Please try again later.');
-    } finally {
-      setLoading(false);
+      console.error('Registration error:', err);
     }
   };
 
   return (
-    <Container maxW="lg" py={{ base: 12, md: 24 }}>
-      <Stack spacing={8}>
-        <Stack align="center">
-          <Heading fontSize="4xl">Create your account</Heading>
-          <Text fontSize="lg" color="gray.600">
-            to start using LazyUncle ✌️
-          </Text>
-        </Stack>
-        <Box
-          rounded="lg"
-          bg={useColorModeValue('white', 'gray.700')}
-          boxShadow="lg"
-          p={8}
-        >
-          {error && (
-            <Alert status="error" mb={4} borderRadius="md">
-              <AlertIcon />
-              {error}
-            </Alert>
-          )}
+    <Box pt={10} pb={20} px={4} bg="gray.50" minH="100vh">
+      <Container maxW="md" bg="white" p={8} borderRadius="lg" boxShadow="md">
+        <VStack spacing={6} align="stretch">
+          <VStack spacing={2}>
+            <Heading size="lg">Create an Account</Heading>
+            <Text color="gray.500">
+              Already have an account? <Link to="/login" style={{ color: 'blue' }}>Sign In</Link>
+            </Text>
+          </VStack>
+
           <form onSubmit={handleSubmit}>
-            <Stack spacing={4}>
-              <FormControl id="name" isRequired>
+            <VStack spacing={4}>
+              <FormControl id="displayName">
                 <FormLabel>Name</FormLabel>
                 <Input 
                   type="text" 
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  value={displayName} 
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Enter your name"
                 />
               </FormControl>
-              <FormControl id="email" isRequired>
-                <FormLabel>Email address</FormLabel>
+              
+              <FormControl id="email">
+                <FormLabel>Email</FormLabel>
                 <Input 
                   type="email" 
-                  value={email}
+                  value={email} 
                   onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
                 />
               </FormControl>
-              <FormControl id="password" isRequired>
+
+              <FormControl id="password">
                 <FormLabel>Password</FormLabel>
-                <Input 
-                  type="password" 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+                <InputGroup>
+                  <Input 
+                    type={showPassword ? "text" : "password"} 
+                    value={password} 
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                  />
+                  <InputRightElement width="4.5rem">
+                    <Button h="1.75rem" size="sm" onClick={() => setShowPassword(!showPassword)}>
+                      {showPassword ? "Hide" : "Show"}
+                    </Button>
+                  </InputRightElement>
+                </InputGroup>
               </FormControl>
-              <FormControl id="confirmPassword" isRequired>
-                <FormLabel>Confirm Password</FormLabel>
-                <Input 
-                  type="password" 
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                />
-              </FormControl>
-              <Stack spacing={5} pt={2}>
-                <Button
-                  bg="brand.500"
-                  color="white"
-                  _hover={{
-                    bg: 'brand.600',
-                  }}
-                  type="submit"
-                  isLoading={loading}
-                >
-                  Sign up
-                </Button>
-                <Stack
-                  direction={{ base: 'column', sm: 'row' }}
-                  align="start"
-                  justify="space-between"
-                >
-                  <Link color="brand.500" as={RouterLink} to="/login">
-                    Already have an account? Sign in
-                  </Link>
-                </Stack>
-              </Stack>
-            </Stack>
+
+              {error && (
+                <Alert status="error">
+                  <AlertIcon />
+                  {error}
+                </Alert>
+              )}
+
+              <Text fontSize="sm" color="blue.600">
+                Demo Mode: Any email and password will work
+              </Text>
+
+              <Button
+                mt={4}
+                colorScheme="blue"
+                isLoading={loading}
+                type="submit"
+                w="full"
+              >
+                Create Account
+              </Button>
+            </VStack>
           </form>
-        </Box>
-      </Stack>
-    </Container>
+        </VStack>
+      </Container>
+    </Box>
   );
-} 
+};
+
+export default RegisterPage; 
