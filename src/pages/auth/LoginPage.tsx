@@ -40,17 +40,26 @@ const LoginPage: React.FC = () => {
     }
   };
 
-  const handleDemoMode = () => {
+  const handleDemoMode = async () => {
     setDemoLoading(true);
+    resetError();
     
-    // Initialize demo data
-    initializeDemoData();
-    
-    // Simulate loading for better UX
-    setTimeout(() => {
+    try {
+      // Initialize demo data
+      initializeDemoData();
+      
+      // Simulate login with demo credentials
+      await signIn('demo@example.com', 'password');
+      
+      // Simulate loading for better UX
+      setTimeout(() => {
+        setDemoLoading(false);
+        navigate('/dashboard');
+      }, 1000);
+    } catch (err) {
+      console.error('Demo mode error:', err);
       setDemoLoading(false);
-      navigate('/dashboard');
-    }, 1000);
+    }
   };
 
   return (
