@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { addDays, subDays, addMonths, addYears } from 'date-fns';
+import { addDays, subDays, addMonths, addYears, format } from 'date-fns';
 
 // Generate dates relative to today for more realistic demo data
 const today = new Date();
@@ -7,46 +7,86 @@ const yesterday = subDays(today, 1);
 const nextWeek = addDays(today, 7);
 const nextMonth = addMonths(today, 1);
 const twoMonthsLater = addMonths(today, 2);
-const christmas = new Date(today.getFullYear(), 11, 25); // December 25th
-const valentinesDay = new Date(today.getFullYear(), 1, 14); // February 14th
+const thisMonth = today.getMonth();
+const thisYear = today.getFullYear();
 
-// Demo Special Dates
+// Next upcoming holiday dates
+const christmas = new Date(thisYear, 11, 25); // December 25th
+const valentinesDay = new Date(
+  thisMonth > 1 || (thisMonth === 1 && today.getDate() > 14) 
+    ? thisYear + 1 
+    : thisYear, 
+  1, 14
+); // February 14th
+const thanksgiving = new Date(thisYear, 10, 
+  // 4th Thursday in November
+  new Date(thisYear, 10, 1).getDay() === 4 ? 22 : 
+  new Date(thisYear, 10, 1).getDay() === 5 ? 21 : 
+  new Date(thisYear, 10, 1).getDay() === 6 ? 27 : 
+  new Date(thisYear, 10, 1).getDay() === 0 ? 26 : 
+  new Date(thisYear, 10, 1).getDay() === 1 ? 25 : 
+  new Date(thisYear, 10, 1).getDay() === 2 ? 24 : 23
+);
+
+// Demo Special Dates - ensure they're all within next 30 days
 export const demoSpecialDates = [
   {
     id: uuidv4(),
-    name: "Birthday",
-    date: addDays(today, 15), // 15 days from now
+    name: "Birthday Party",
+    date: addDays(today, 5), // 5 days from now
     recurring: true,
     type: "birthday",
-    description: "Annual celebration"
+    description: "Annual birthday celebration"
   },
   {
     id: uuidv4(),
-    name: "Anniversary",
-    date: addDays(today, 45), // 45 days from now
+    name: "Wedding Anniversary",
+    date: addDays(today, 12), // 12 days from now
     recurring: true,
     type: "anniversary",
-    description: "Wedding anniversary"
+    description: "Wedding anniversary dinner"
   },
   {
     id: uuidv4(),
-    name: "Graduation",
-    date: addMonths(today, 2), // 2 months from now
+    name: "Graduation Ceremony",
+    date: addDays(today, 18), // 18 days from now
     recurring: false,
     type: "other",
-    description: "College graduation"
+    description: "College graduation ceremony"
+  },
+  {
+    id: uuidv4(),
+    name: "Housewarming Party",
+    date: addDays(today, 8), // 8 days from now
+    recurring: false,
+    type: "other",
+    description: "Moving into new house"
+  },
+  {
+    id: uuidv4(),
+    name: "Baby Shower",
+    date: addDays(today, 25), // 25 days from now
+    recurring: false,
+    type: "other",
+    description: "Baby shower for first child"
   }
 ];
+
+// Create unique IDs for recipients to ensure consistent references
+const emmaId = uuidv4();
+const liamId = uuidv4();
+const robertId = uuidv4();
+const sophiaId = uuidv4();
 
 // Demo Recipients
 export const demoRecipients = [
   {
-    id: uuidv4(),
+    id: emmaId,
     userId: "demo-user",
     name: "Emma Johnson",
     relationship: "Wife",
-    birthdate: subDays(today, 40),
-    anniversary: addDays(today, 10),
+    birthdate: addDays(today, 10), // Birthday in 10 days
+    anniversary: addDays(today, 15), // Anniversary in 15 days
     interests: ["Books", "Hiking", "Yoga", "Cooking"],
     giftPreferences: {
       priceRange: {
@@ -59,7 +99,7 @@ export const demoRecipients = [
       {
         id: uuidv4(),
         name: "First Date Anniversary",
-        date: addDays(today, 30),
+        date: addDays(today, 20), // 20 days from now
         recurring: true,
         type: "anniversary",
         description: "Our first date"
@@ -69,11 +109,11 @@ export const demoRecipients = [
     updatedAt: yesterday
   },
   {
-    id: uuidv4(),
+    id: liamId,
     userId: "demo-user",
     name: "Liam Smith",
     relationship: "Son",
-    birthdate: addDays(today, 7), // Birthday coming up soon
+    birthdate: addDays(today, 7), // Birthday coming up soon in 7 days
     interests: ["Video Games", "Soccer", "Science", "Drawing"],
     giftPreferences: {
       priceRange: {
@@ -86,7 +126,7 @@ export const demoRecipients = [
       {
         id: uuidv4(),
         name: "Soccer Tournament",
-        date: addDays(today, 14),
+        date: addDays(today, 14), // 14 days from now
         recurring: false,
         type: "other",
         description: "Annual school tournament"
@@ -96,11 +136,11 @@ export const demoRecipients = [
     updatedAt: yesterday
   },
   {
-    id: uuidv4(),
+    id: robertId,
     userId: "demo-user",
     name: "Robert Chen",
     relationship: "Friend",
-    birthdate: addDays(today, 60),
+    birthdate: addDays(today, 22), // Birthday in 22 days
     interests: ["Technology", "Coffee", "Travel", "Photography"],
     giftPreferences: {
       priceRange: {
@@ -109,16 +149,26 @@ export const demoRecipients = [
       },
       categories: ["Gadgets", "Coffee Accessories", "Photography Equipment"]
     },
+    specialDates: [
+      {
+        id: uuidv4(),
+        name: "Promotion Celebration",
+        date: addDays(today, 3), // 3 days from now
+        recurring: false,
+        type: "other",
+        description: "Celebrating promotion at work"
+      }
+    ],
     createdAt: subDays(today, 180),
     updatedAt: yesterday
   },
   {
-    id: uuidv4(),
+    id: sophiaId,
     userId: "demo-user",
     name: "Sophia Rodriguez",
     relationship: "Mother",
-    birthdate: addDays(today, 3), // Birthday very soon
-    anniversary: addMonths(today, 3),
+    birthdate: addDays(today, 3), // Birthday very soon - 3 days
+    anniversary: addDays(today, 28), // 28 days from now
     interests: ["Gardening", "Cooking", "Classical Music", "Painting"],
     giftPreferences: {
       priceRange: {
@@ -131,7 +181,7 @@ export const demoRecipients = [
       {
         id: uuidv4(),
         name: "Retirement Anniversary",
-        date: addDays(today, 45),
+        date: addDays(today, 25), // 25 days from now
         recurring: true,
         type: "anniversary",
         description: "Celebrates 5 years of retirement"
@@ -142,19 +192,19 @@ export const demoRecipients = [
   }
 ];
 
-// Demo Gifts
+// Demo Gifts - ensure they all have proper status values
 export const demoGifts = [
   {
     id: uuidv4(),
-    recipientId: demoRecipients[0].id, // For Emma
+    recipientId: emmaId, // For Emma
     userId: "demo-user",
     name: "Diamond Necklace",
     description: "14k white gold with small diamond pendant",
     price: 249.99,
     category: "Jewelry",
     occasion: "Anniversary",
-    date: addDays(today, 10), // For upcoming anniversary
-    status: "planned",
+    date: addDays(today, 15), // For upcoming anniversary
+    status: "planned", // Valid status
     imageUrl: "https://images.unsplash.com/photo-1599643477877-530eb83abc8e?ixlib=rb-4.0.3",
     notes: "She mentioned liking this style at the mall last month",
     createdAt: yesterday,
@@ -162,7 +212,7 @@ export const demoGifts = [
   },
   {
     id: uuidv4(),
-    recipientId: demoRecipients[1].id, // For Liam
+    recipientId: liamId, // For Liam
     userId: "demo-user",
     name: "LEGO Space Station",
     description: "Advanced building set with 1,200 pieces",
@@ -170,7 +220,7 @@ export const demoGifts = [
     category: "Toys",
     occasion: "Birthday",
     date: addDays(today, 7), // For upcoming birthday
-    status: "ordered",
+    status: "ordered", // Valid status
     imageUrl: "https://images.unsplash.com/photo-1619158404527-a21de95ade6e?ixlib=rb-4.0.3",
     notes: "Already ordered from Amazon, should arrive in 2 days",
     createdAt: subDays(today, 10),
@@ -178,30 +228,31 @@ export const demoGifts = [
   },
   {
     id: uuidv4(),
-    recipientId: demoRecipients[2].id, // For Robert
+    recipientId: robertId, // For Robert
     userId: "demo-user",
-    name: "Espresso Machine",
-    description: "Semi-automatic espresso maker with milk frother",
-    price: 129.99,
+    name: "Premium Coffee Subscription",
+    description: "3-month subscription of premium single-origin coffees",
+    price: 75.99,
     category: "Coffee Accessories",
-    occasion: "Christmas",
-    date: christmas,
-    status: "planned",
-    imageUrl: "https://images.unsplash.com/photo-1585135497273-b5594efca9cd?ixlib=rb-4.0.3",
-    createdAt: subDays(today, 30),
-    updatedAt: subDays(today, 30)
+    occasion: "Promotion",
+    date: addDays(today, 3), // For promotion celebration
+    status: "ordered", // Valid status
+    imageUrl: "https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?ixlib=rb-4.0.3",
+    notes: "Include a personal note about the promotion",
+    createdAt: subDays(today, 5),
+    updatedAt: subDays(today, 1)
   },
   {
     id: uuidv4(),
-    recipientId: demoRecipients[3].id, // For Sophia
+    recipientId: sophiaId, // For Sophia
     userId: "demo-user",
     name: "Indoor Herb Garden Kit",
     description: "Self-watering indoor garden with LED grow lights",
     price: 64.99,
     category: "Gardening",
     occasion: "Birthday",
-    date: addDays(today, 3),
-    status: "ordered",
+    date: addDays(today, 3), // Very soon
+    status: "ordered", // Valid status
     imageUrl: "https://images.unsplash.com/photo-1585502892072-450ab2f2e2f7?ixlib=rb-4.0.3",
     notes: "Arrives tomorrow, remember to hide it!",
     createdAt: subDays(today, 7),
@@ -209,18 +260,49 @@ export const demoGifts = [
   },
   {
     id: uuidv4(),
-    recipientId: demoRecipients[0].id, // For Emma
+    recipientId: emmaId, // For Emma
     userId: "demo-user",
     name: "Weekend Spa Retreat",
     description: "Two-night stay with full spa package",
     price: 399.99,
     category: "Experiences",
-    occasion: "Valentine's Day",
-    date: valentinesDay,
-    status: "planned",
-    notes: "Need to book at least 30 days in advance",
+    occasion: "Birthday",
+    date: addDays(today, 10), // For birthday
+    status: "planned", // Valid status
+    notes: "Need to book at least 7 days in advance",
     createdAt: subDays(today, 15),
     updatedAt: subDays(today, 15)
+  },
+  {
+    id: uuidv4(),
+    recipientId: liamId, // For Liam
+    userId: "demo-user",
+    name: "Science Museum Annual Pass",
+    description: "Yearly membership to the science museum with special exhibits access",
+    price: 129.99,
+    category: "Experiences",
+    occasion: "Soccer Tournament",
+    date: addDays(today, 14), // For upcoming tournament
+    status: "planned", // Valid status
+    notes: "He's been asking for this for months",
+    createdAt: subDays(today, 20),
+    updatedAt: subDays(today, 5)
+  },
+  {
+    id: uuidv4(),
+    recipientId: robertId, // For Robert
+    userId: "demo-user",
+    name: "Wireless Noise-Cancelling Headphones",
+    description: "Premium over-ear headphones with 30-hour battery life",
+    price: 249.99,
+    category: "Electronics",
+    occasion: "Birthday",
+    date: addDays(today, 22), // For birthday
+    status: "planned", // Valid status
+    imageUrl: "https://images.unsplash.com/photo-1546435770-a3e426bf472b?ixlib=rb-4.0.3",
+    notes: "Black color, the latest model",
+    createdAt: subDays(today, 10),
+    updatedAt: yesterday
   }
 ];
 
