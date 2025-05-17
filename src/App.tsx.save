@@ -13,7 +13,7 @@ import GiftsListPage from './pages/GiftsListPage';
 import GiftDetailPage from './pages/GiftDetailPage';
 import AddGiftPage from './pages/AddGiftPage';
 import EditGiftPage from './pages/EditGiftPage';
-import SettingsPage from './pages/SettingsPage';
+import AutoSendApprovalsPage from './pages/AutoSendApprovalsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import { useAuthStore } from './store/authStore';
@@ -50,8 +50,8 @@ function App() {
             <Route path="/gifts/add/:recipientId" element={<AddGiftPage />} />
             <Route path="/gifts/:id/edit" element={<EditGiftPage />} />
             
-            {/* Settings route */}
-            <Route path="/settings" element={<SettingsPage />} />
+            {/* Auto-send routes */}
+            <Route path="/auto-send/approvals" element={<AutoSendApprovalsPage />} />
           </Route>
         </Route>
 

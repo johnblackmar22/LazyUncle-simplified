@@ -7,16 +7,13 @@ import {
   Link, 
   Text, 
   Icon,
-  useColorModeValue,
-  Badge
+  useColorModeValue
 } from '@chakra-ui/react';
 import { 
   MdDashboard, 
   MdPeople, 
   MdCardGiftcard, 
-  MdEvent,
-  MdSettings,
-  MdAutorenew
+  MdSettings
 } from 'react-icons/md';
 
 export const Sidebar: React.FC = () => {
@@ -32,8 +29,6 @@ export const Sidebar: React.FC = () => {
     { path: '/dashboard', label: 'Dashboard', icon: MdDashboard },
     { path: '/recipients', label: 'Recipients', icon: MdPeople },
     { path: '/gifts', label: 'Gifts', icon: MdCardGiftcard },
-    { path: '/auto-send/approvals', label: 'Auto-Send Approvals', icon: MdAutorenew, badge: 'New' },
-    { path: '/special-dates', label: 'Special Dates', icon: MdEvent },
     { path: '/settings', label: 'Settings', icon: MdSettings },
   ];
 
@@ -72,11 +67,6 @@ export const Sidebar: React.FC = () => {
               <Text fontWeight={isActive(item.path) ? "medium" : "normal"}>
                 {item.label}
               </Text>
-              {item.badge && (
-                <Badge ml={2} colorScheme="red" variant="solid" fontSize="xs">
-                  {item.badge}
-                </Badge>
-              )}
             </Flex>
           </Link>
         ))}

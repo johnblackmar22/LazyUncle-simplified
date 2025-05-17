@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { addDays, subDays, addMonths, addYears, format } from 'date-fns';
+import { useAuthStore } from '../store/authStore';
 
 // Generate dates relative to today for more realistic demo data
 const today = new Date();
@@ -306,22 +307,84 @@ export const demoGifts = [
   }
 ];
 
+// A function to safely get data from localStorage with error handling
+const safeGetItem = (key: string, defaultValue: any = null) => {
+  try {
+    const item = localStorage.getItem(key);
+    return item ? JSON.parse(item) : defaultValue;
+  } catch (error) {
+    console.error(`Error reading ${key} from localStorage:`, error);
+    return defaultValue;
+  }
+};
+
+// A function to safely set data in localStorage with error handling
+const safeSetItem = (key: string, value: any) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+    return true;
+  } catch (error) {
+    console.error(`Error saving ${key} to localStorage:`, error);
+    return false;
+  }
+};
+
 // A function to initialize all demo data
 export const initializeDemoData = () => {
-  localStorage.setItem('demo-mode', 'true');
-  localStorage.setItem('recipients', JSON.stringify(demoRecipients));
-  localStorage.setItem('gifts', JSON.stringify(demoGifts));
-  return { recipients: demoRecipients, gifts: demoGifts };
+  console.log('Initializing demo data');
+  
+  try {
+    // Set demo mode in localStorage
+    localStorage.setItem('demo-mode', 'true');
+    safeSetItem('recipients', demoRecipients);
+    safeSetItem('gifts', demoGifts);
+    
+    // Set demo mode in the auth store
+    const authStore = useAuthStore.getState();
+    authStore.setDemoMode(true);
+    
+    console.log('Demo data set in localStorage:', {
+      recipients: demoRecipients.length,
+      gifts: demoGifts.length
+    });
+    
+    return { recipients: demoRecipients, gifts: demoGifts };
+  } catch (error) {
+    console.error('Failed to initialize demo data:', error);
+    return { recipients: [], gifts: [] };
+  }
 };
 
 // A function to check if demo mode is active
 export const isDemoMode = () => {
-  return localStorage.getItem('demo-mode') === 'true';
+  try {
+    // Check for explicit env setting first
+    if (import.meta.env.VITE_DEMO_MODE === 'true') {
+      return true;
+    }
+    
+    // Then check for persisted demo mode in localStorage
+    return localStorage.getItem('demo-mode') === 'true';
+  } catch (error) {
+    console.error('Error checking demo mode:', error);
+    return false;
+  }
 };
 
 // A function to clear demo data
 export const clearDemoData = () => {
-  localStorage.removeItem('demo-mode');
-  localStorage.removeItem('recipients');
-  localStorage.removeItem('gifts');
+  try {
+    // Clear localStorage
+    localStorage.removeItem('demo-mode');
+    localStorage.removeItem('recipients');
+    localStorage.removeItem('gifts');
+    
+    // Clear demo mode in the auth store
+    const authStore = useAuthStore.getState();
+    authStore.setDemoMode(false);
+    
+    console.log('Demo data cleared');
+  } catch (error) {
+    console.error('Error clearing demo data:', error);
+  }
 }; 

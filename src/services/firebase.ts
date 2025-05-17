@@ -2,17 +2,24 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-// Set demo mode
-export const DEMO_MODE = true;
+// Check if we have valid Firebase configuration in environment variables
+const hasValidConfig = !!import.meta.env.VITE_FIREBASE_API_KEY && 
+  import.meta.env.VITE_FIREBASE_API_KEY !== 'replace-with-your-api-key' &&
+  import.meta.env.VITE_FIREBASE_API_KEY !== 'demo-mode';
 
-// Firebase configuration with demo mode defaults
+// Demo mode should be true if no valid Firebase config
+export const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true' || !hasValidConfig;
+
+console.log('Running in demo mode:', DEMO_MODE);
+
+// Firebase configuration using environment variables or demo mode values
 const firebaseConfig = {
-  apiKey: "demo-mode",
-  authDomain: "demo-mode",
-  projectId: "demo-mode",
-  storageBucket: "demo-mode",
-  messagingSenderId: "demo-mode",
-  appId: "demo-mode"
+  apiKey: hasValidConfig ? import.meta.env.VITE_FIREBASE_API_KEY : "demo-mode",
+  authDomain: hasValidConfig ? import.meta.env.VITE_FIREBASE_AUTH_DOMAIN : "demo-mode",
+  projectId: hasValidConfig ? import.meta.env.VITE_FIREBASE_PROJECT_ID : "demo-mode",
+  storageBucket: hasValidConfig ? import.meta.env.VITE_FIREBASE_STORAGE_BUCKET : "demo-mode",
+  messagingSenderId: hasValidConfig ? import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID : "demo-mode",
+  appId: hasValidConfig ? import.meta.env.VITE_FIREBASE_APP_ID : "demo-mode"
 };
 
 // Initialize Firebase

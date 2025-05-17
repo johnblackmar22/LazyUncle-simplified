@@ -11,6 +11,7 @@ import {
   useColorModeValue,
   SimpleGrid,
   Icon,
+  Badge,
 } from '@chakra-ui/react';
 
 export default function HomePage() {
@@ -43,14 +44,17 @@ export default function HomePage() {
               </Text>
               <br />
               <Text as="span" fontSize={{ base: '2xl', sm: '3xl', lg: '4xl' }}>
-                Never Forget a Gift Again
+                Never Forget Another Birthday
               </Text>
             </Heading>
             <Text color="gray.500" fontSize="lg">
-              LazyUncle helps you manage gifts for all your important people.
-              Keep track of recipients, important dates, and gift ideas. No more
-              last-minute shopping or forgotten birthdays!
+              LazyUncle is for busy professionals who can barely remember their own schedules, let alone their nephew's birthday. We'll handle the remembering, gift recommendations, and shipping - all you have to do is take the credit. Set it up once, and never hear "Did you forget my birthday, Uncle?" again.
             </Text>
+            <Box>
+              <Badge colorScheme="green" fontSize="md" px={2} py={1} borderRadius="md">
+                Starting at $9.99/month
+              </Badge>
+            </Box>
             <Stack
               spacing={{ base: 4, sm: 6 }}
               direction={{ base: 'column', sm: 'row' }}
@@ -66,7 +70,18 @@ export default function HomePage() {
                 bg="brand.500"
                 _hover={{ bg: 'brand.600' }}
               >
-                Get Started
+                Start Your Free Trial
+              </Button>
+              <Button
+                as={RouterLink}
+                to="/subscription-plans"
+                rounded="full"
+                size="lg"
+                fontWeight="normal"
+                px={6}
+                colorScheme="green"
+              >
+                View Plans
               </Button>
               <Button
                 as={RouterLink}
@@ -107,24 +122,24 @@ export default function HomePage() {
 
         <Stack spacing={12} mb={20}>
           <Heading as="h2" textAlign="center" size="xl">
-            Features
+            How It Works
           </Heading>
           
           <SimpleGrid columns={{ base: 1, md: 3 }} spacing={10}>
             <Feature
               icon="👥"
-              title="Manage Recipients"
-              text="Keep track of all your gift recipients in one place with important details like interests and relationships."
+              title="Add Your Nephews & Nieces"
+              text="Enter their details, preferences, and birthdays just once - we'll handle the rest."
             />
             <Feature
               icon="🎁"
-              title="Track Gifts"
-              text="Record gifts you've given or plan to give, including price, occasion, and delivery status."
+              title="Smart Gift Recommendations"
+              text="We'll suggest age-appropriate gifts they'll actually love, based on their interests."
             />
             <Feature
-              icon="📅"
-              title="Important Dates"
-              text="Never miss an important occasion with reminders for birthdays, anniversaries, and holidays."
+              icon="📦"
+              title="Automatic Delivery"
+              text="Perfect gifts arrive right on time, every time. Be the cool uncle without even trying."
             />
           </SimpleGrid>
         </Stack>

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
 import {
   Box,
@@ -23,10 +23,10 @@ import {
   useToast,
   useColorModeValue
 } from '@chakra-ui/react';
-import { EditIcon, DeleteIcon, ArrowBackIcon } from '@chakra-ui/icons';
+import { EditIcon, DeleteIcon, ArrowBackIcon, AddIcon } from '@chakra-ui/icons';
 import { useRecipientStore } from '../store/recipientStore';
-import { formatDate, getDaysUntil } from '../utils/dateUtils';
-import AutoSendPreferences from '../components/AutoSendPreferences';
+import { format } from 'date-fns';
+import type { Recipient } from '../types';
 
 export const RecipientDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -34,27 +34,35 @@ export const RecipientDetailPage: React.FC = () => {
   const toast = useToast();
   const { 
     recipients, 
-    selectedRecipient, 
     loading, 
     error, 
     fetchRecipients, 
-    fetchRecipient,
-    removeRecipient
+    deleteRecipient 
   } = useRecipientStore();
+  
+  const [currentRecipient, setCurrentRecipient] = useState<Recipient | null>(null);
   
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
   useEffect(() => {
-    if (id) {
-      fetchRecipient(id);
+    fetchRecipients();
+  }, [fetchRecipients]);
+  
+  // Find the current recipient when recipients change or ID changes
+  useEffect(() => {
+    if (id && recipients.length > 0) {
+      const recipient = recipients.find(r => r.id === id);
+      setCurrentRecipient(recipient || null);
     }
-  }, [id, fetchRecipient]);
+  }, [id, recipients]);
 
   const handleDelete = async () => {
+    if (!id) return;
+    
     if (window.confirm('Are you sure you want to delete this recipient?')) {
       try {
-        await removeRecipient(id!);
+        await deleteRecipient(id);
         toast({
           title: 'Recipient deleted',
           status: 'success',
@@ -73,8 +81,52 @@ export const RecipientDetailPage: React.FC = () => {
       }
     }
   };
+  
+  // Format birthdate to readable format
+  const formatBirthdate = (date: Date | string | number | undefined) => {
+    if (!date) return 'Not set';
+    
+    try {
+      const dateObj = date instanceof Date ? date : new Date(date);
+      return format(dateObj, 'MMMM d, yyyy');
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Invalid date';
+    }
+  };
+  
+  // Calculate days until birthdate
+  const getDaysUntilBirthday = (birthdate: Date | string | number | undefined) => {
+    if (!birthdate) return null;
+    
+    try {
+      const birthdateObj = birthdate instanceof Date ? birthdate : new Date(birthdate);
+      const today = new Date();
+      
+      // Create this year's birthday
+      const thisYearBirthday = new Date(
+        today.getFullYear(),
+        birthdateObj.getMonth(),
+        birthdateObj.getDate()
+      );
+      
+      // If this year's birthday has passed, use next year's
+      if (today > thisYearBirthday) {
+        thisYearBirthday.setFullYear(today.getFullYear() + 1);
+      }
+      
+      // Calculate days difference
+      const diffTime = Math.abs(thisYearBirthday.getTime() - today.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      return diffDays;
+    } catch (error) {
+      console.error('Error calculating days until birthday:', error);
+      return null;
+    }
+  };
 
-  if (loading) {
+  if (loading && !currentRecipient) {
     return (
       <Flex justify="center" align="center" h="200px">
         <Spinner size="xl" color="blue.500" />
@@ -90,7 +142,7 @@ export const RecipientDetailPage: React.FC = () => {
     );
   }
 
-  if (!selectedRecipient) {
+  if (!currentRecipient) {
     return (
       <Box textAlign="center" p={8}>
         <Text fontSize="lg" mb={4}>Recipient not found</Text>
@@ -106,11 +158,6 @@ export const RecipientDetailPage: React.FC = () => {
     );
   }
 
-  // Sort important dates by days until
-  const sortedDates = [...selectedRecipient.importantDates].sort((a, b) => {
-    return getDaysUntil(a.date) - getDaysUntil(b.date);
-  });
-
   return (
     <Container maxW="container.md" py={8}>
       <VStack spacing={8} align="stretch">
@@ -125,11 +172,11 @@ export const RecipientDetailPage: React.FC = () => {
           </Button>
           
           <Flex justify="space-between" align="center">
-            <Heading size="xl" mb={2}>{selectedRecipient.name}</Heading>
+            <Heading size="xl" mb={2}>{currentRecipient.name}</Heading>
             <HStack spacing={2}>
               <IconButton
                 as={RouterLink}
-                to={`/recipients/${selectedRecipient.id}/edit`}
+                to={`/recipients/${currentRecipient.id}/edit`}
                 aria-label="Edit"
                 icon={<EditIcon />}
                 colorScheme="blue"
@@ -142,41 +189,46 @@ export const RecipientDetailPage: React.FC = () => {
                 variant="outline"
                 onClick={handleDelete}
               />
+              <Button
+                as={RouterLink}
+                to={`/gifts/add/${currentRecipient.id}`}
+                colorScheme="purple"
+                leftIcon={<AddIcon />}
+              >
+                Add Gift
+              </Button>
             </HStack>
           </Flex>
           
           <Badge colorScheme="blue" fontSize="md" mt={1}>
-            {selectedRecipient.relationship}
+            {currentRecipient.relationship}
           </Badge>
         </Box>
 
         <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
           <CardHeader pb={0}>
-            <Heading size="md">Contact Information</Heading>
+            <Heading size="md">Birthday</Heading>
           </CardHeader>
           <CardBody>
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-              {selectedRecipient.email && (
-                <Box>
-                  <Text fontWeight="bold">Email</Text>
-                  <Text>{selectedRecipient.email}</Text>
-                </Box>
-              )}
-              
-              {selectedRecipient.phone && (
-                <Box>
-                  <Text fontWeight="bold">Phone</Text>
-                  <Text>{selectedRecipient.phone}</Text>
-                </Box>
-              )}
-              
-              {selectedRecipient.address && (
-                <Box gridColumn={{ md: 'span 2' }}>
-                  <Text fontWeight="bold">Address</Text>
-                  <Text>{selectedRecipient.address}</Text>
-                </Box>
-              )}
-            </SimpleGrid>
+            {currentRecipient.birthdate ? (
+              <Flex justify="space-between" align="center">
+                <Text>{formatBirthdate(currentRecipient.birthdate)}</Text>
+                {getDaysUntilBirthday(currentRecipient.birthdate) !== null && (
+                  <Badge 
+                    colorScheme={getDaysUntilBirthday(currentRecipient.birthdate)! <= 7 ? "red" : 
+                              getDaysUntilBirthday(currentRecipient.birthdate)! <= 30 ? "orange" : "blue"}
+                  >
+                    {getDaysUntilBirthday(currentRecipient.birthdate) === 0 
+                      ? "Today!" 
+                      : getDaysUntilBirthday(currentRecipient.birthdate) === 1 
+                        ? "Tomorrow!" 
+                        : `${getDaysUntilBirthday(currentRecipient.birthdate)} days`}
+                  </Badge>
+                )}
+              </Flex>
+            ) : (
+              <Text color="gray.500">No birthdate set.</Text>
+            )}
           </CardBody>
         </Card>
 
@@ -185,9 +237,9 @@ export const RecipientDetailPage: React.FC = () => {
             <Heading size="md">Interests</Heading>
           </CardHeader>
           <CardBody>
-            {selectedRecipient.interests.length > 0 ? (
+            {currentRecipient.interests && currentRecipient.interests.length > 0 ? (
               <Flex gap={2} flexWrap="wrap">
-                {selectedRecipient.interests.map((interest, index) => (
+                {currentRecipient.interests.map((interest, index) => (
                   <Badge key={index} colorScheme="green" variant="solid" px={2} py={1}>
                     {interest}
                   </Badge>
@@ -199,65 +251,36 @@ export const RecipientDetailPage: React.FC = () => {
           </CardBody>
         </Card>
 
-        <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
-          <CardHeader pb={0}>
-            <Heading size="md">Important Dates</Heading>
-          </CardHeader>
-          <CardBody>
-            {sortedDates.length > 0 ? (
-              <VStack align="stretch" spacing={3}>
-                {sortedDates.map((date) => {
-                  const daysUntil = getDaysUntil(date.date);
-                  let colorScheme = "blue";
-                  if (daysUntil <= 7) colorScheme = "red";
-                  else if (daysUntil <= 30) colorScheme = "orange";
-                  
-                  return (
-                    <Box key={date.id} p={3} borderWidth="1px" borderRadius="md" borderColor={borderColor}>
-                      <Flex justify="space-between" align="center">
-                        <Box>
-                          <Text fontWeight="bold">
-                            {date.type === 'birthday' ? 'Birthday' : 
-                             date.type === 'anniversary' ? 'Anniversary' : 
-                             date.name || 'Custom Date'}
-                          </Text>
-                          <Text>{formatDate(date.date)}</Text>
-                        </Box>
-                        <Badge colorScheme={colorScheme} fontSize="sm">
-                          {daysUntil === 0 ? 'Today!' : 
-                           daysUntil === 1 ? 'Tomorrow!' : 
-                           `${daysUntil} days`}
-                        </Badge>
-                      </Flex>
-                    </Box>
-                  );
-                })}
-              </VStack>
-            ) : (
-              <Text color="gray.500">No important dates added yet.</Text>
-            )}
-          </CardBody>
-        </Card>
-
-        {selectedRecipient.notes && (
+        {currentRecipient.giftPreferences && (
           <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
             <CardHeader pb={0}>
-              <Heading size="md">Notes</Heading>
+              <Heading size="md">Gift Preferences</Heading>
             </CardHeader>
             <CardBody>
-              <Text whiteSpace="pre-wrap">{selectedRecipient.notes}</Text>
+              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                {currentRecipient.giftPreferences.priceRange && (
+                  <Box>
+                    <Text fontWeight="bold">Price Range</Text>
+                    <Text>${currentRecipient.giftPreferences.priceRange.min} - ${currentRecipient.giftPreferences.priceRange.max}</Text>
+                  </Box>
+                )}
+                
+                {currentRecipient.giftPreferences.categories && currentRecipient.giftPreferences.categories.length > 0 && (
+                  <Box>
+                    <Text fontWeight="bold">Preferred Categories</Text>
+                    <Flex gap={1} flexWrap="wrap" mt={1}>
+                      {currentRecipient.giftPreferences.categories.map((category, index) => (
+                        <Badge key={index} colorScheme="blue" variant="subtle">
+                          {category}
+                        </Badge>
+                      ))}
+                    </Flex>
+                  </Box>
+                )}
+              </SimpleGrid>
             </CardBody>
           </Card>
         )}
-        
-        <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
-          <CardHeader pb={0}>
-            <Heading size="md">Auto-Send Preferences</Heading>
-          </CardHeader>
-          <CardBody>
-            <AutoSendPreferences recipient={selectedRecipient} />
-          </CardBody>
-        </Card>
       </VStack>
     </Container>
   );

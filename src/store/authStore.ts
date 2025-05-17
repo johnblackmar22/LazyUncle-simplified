@@ -4,6 +4,7 @@ import {
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   type User as FirebaseUser
 } from 'firebase/auth';
 import { auth } from '../services/firebase';
@@ -19,6 +20,7 @@ interface AuthState {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, displayName: string) => Promise<void>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
   resetError: () => void;
   setDemoMode: (isDemo: boolean) => void;
 }
@@ -118,6 +120,28 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Otherwise, sign out from Firebase
       await firebaseSignOut(auth);
       set({ user: null, loading: false });
+    } catch (error) {
+      set({ 
+        error: (error as Error).message,
+        loading: false 
+      });
+    }
+  },
+
+  resetPassword: async (email) => {
+    set({ loading: true, error: null });
+    try {
+      // Don't try to reset password for demo account
+      if (email === 'demo@example.com') {
+        set({ 
+          error: "Cannot reset password for demo account", 
+          loading: false 
+        });
+        return;
+      }
+      
+      await sendPasswordResetEmail(auth, email);
+      set({ loading: false });
     } catch (error) {
       set({ 
         error: (error as Error).message,

@@ -8,28 +8,30 @@ import {
   FormLabel,
   FormErrorMessage,
   Input,
-  Textarea,
   VStack,
-  HStack,
   Heading,
   Text,
   Select,
   Checkbox,
   Divider,
   SimpleGrid,
-  Image,
-  IconButton,
-  Badge,
   Flex,
   useColorModeValue,
   useToast,
-  Spinner
+  Spinner,
+  Tag,
+  TagLabel,
+  TagCloseButton,
+  InputGroup,
+  InputRightElement,
+  IconButton
 } from '@chakra-ui/react';
-import { ArrowBackIcon, AddIcon, CheckIcon } from '@chakra-ui/icons';
+import { ArrowBackIcon, AddIcon } from '@chakra-ui/icons';
 import { useGiftStore } from '../store/giftStore';
 import { useRecipientStore } from '../store/recipientStore';
-import { getCurrentDateISO } from '../utils/dateUtils';
-import type { GiftStatus } from '../types';
+
+// Define gift status type based on our schema
+type GiftStatus = 'planned' | 'ordered' | 'shipped' | 'delivered';
 
 const AddGiftPage: React.FC = () => {
   const { recipientId } = useParams<{ recipientId?: string }>();
@@ -41,23 +43,14 @@ const AddGiftPage: React.FC = () => {
   
   // Form values
   const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
-  const [currency, setCurrency] = useState('USD');
   const [selectedRecipientId, setSelectedRecipientId] = useState(recipientId || '');
-  const [status, setStatus] = useState<GiftStatus>('idea');
-  const [occasion, setOccasion] = useState('');
-  const [date, setDate] = useState('');
-  const [imageURL, setImageURL] = useState('');
-  const [url, setUrl] = useState('');
-  const [retailer, setRetailer] = useState('');
-  const [category, setCategory] = useState('');
-  
-  // Auto-send options
+  const [reminderDate, setReminderDate] = useState('');
   const [autoSend, setAutoSend] = useState(false);
-  const [autoSendDate, setAutoSendDate] = useState(
-    new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-  );
+  
+  // Interest management
+  const [interest, setInterest] = useState('');
+  const [interests, setInterests] = useState<string[]>([]);
   
   // Validation
   const [touched, setTouched] = useState({
@@ -77,6 +70,69 @@ const AddGiftPage: React.FC = () => {
     fetchRecipients();
   }, [fetchRecipients]);
   
+  // Set up default values when recipient is selected or changed
+  useEffect(() => {
+    if (selectedRecipientId && recipients.length > 0) {
+      const selectedRecipient = recipients.find(r => r.id === selectedRecipientId);
+      
+      if (selectedRecipient) {
+        // If recipient has birthdate, set up birthday gift
+        if (selectedRecipient.birthdate && !name) {
+          // Format the birthdate to get month and day
+          const birthdateObj = selectedRecipient.birthdate instanceof Date 
+            ? selectedRecipient.birthdate 
+            : new Date(selectedRecipient.birthdate);
+          
+          // Set default values for a birthday gift
+          setName(`Gift for ${selectedRecipient.name}`);
+          
+          // Pre-populate interests from recipient's interests
+          if (selectedRecipient.interests && selectedRecipient.interests.length > 0) {
+            setInterests([...selectedRecipient.interests]);
+          }
+          
+          // Set price range based on recipient preferences if available
+          if (selectedRecipient.giftPreferences?.priceRange) {
+            const avgPrice = (
+              selectedRecipient.giftPreferences.priceRange.min + 
+              selectedRecipient.giftPreferences.priceRange.max
+            ) / 2;
+            setPrice(avgPrice.toString());
+          }
+          
+          // Set the reminder date to 1 week before next birthday
+          const today = new Date();
+          const thisYearBirthday = new Date(
+            today.getFullYear(),
+            birthdateObj.getMonth(),
+            birthdateObj.getDate()
+          );
+          
+          // If this year's birthday has passed, use next year's
+          if (today > thisYearBirthday) {
+            thisYearBirthday.setFullYear(today.getFullYear() + 1);
+          }
+          
+          // Set reminder date 1 week earlier
+          const reminderDay = new Date(thisYearBirthday);
+          reminderDay.setDate(reminderDay.getDate() - 7);
+          setReminderDate(reminderDay.toISOString().split('T')[0]);
+        }
+      }
+    }
+  }, [selectedRecipientId, recipients, name]);
+  
+  const handleAddInterest = () => {
+    if (interest.trim() !== '' && !interests.includes(interest.trim())) {
+      setInterests([...interests, interest.trim()]);
+      setInterest('');
+    }
+  };
+
+  const handleRemoveInterest = (interestToRemove: string) => {
+    setInterests(interests.filter(i => i !== interestToRemove));
+  };
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
@@ -95,19 +151,14 @@ const AddGiftPage: React.FC = () => {
       const newGift = await createGift({
         recipientId: selectedRecipientId,
         name,
-        description: description || undefined,
-        price: price ? parseFloat(price) : undefined,
-        currency: currency || undefined,
-        status,
-        occasion: occasion || undefined,
-        date: date || undefined,
-        imageURL: imageURL || undefined,
-        url: url || undefined,
-        retailer: retailer || undefined,
-        category: category || undefined,
-        autoSend,
-        autoSendDate: autoSend ? autoSendDate : undefined,
-        autoSendStatus: autoSend ? 'scheduled' : undefined
+        description: `Interests: ${interests.join(', ')}`,
+        price: price ? parseFloat(price) : 0,
+        status: 'planned',
+        occasion: 'Birthday',
+        date: reminderDate ? new Date(reminderDate) : new Date(),
+        imageUrl: '',
+        notes: autoSend ? 'Auto-send enabled' : '',
+        category: interests[0] || 'Other'
       });
       
       toast({
@@ -151,30 +202,15 @@ const AddGiftPage: React.FC = () => {
             Back to Gifts
           </Button>
           
-          <Heading size="xl" mb={2}>Add New Gift</Heading>
+          <Heading size="xl" mb={2}>Add Gift</Heading>
           <Text color="gray.600">
-            Add a gift idea or purchase for your recipient. Enable auto-send to have it delivered automatically.
+            Add a gift for your recipient with a simple reminder system.
           </Text>
         </Box>
         
         <Box bg={bgColor} p={6} borderRadius="lg" borderWidth="1px" borderColor={borderColor}>
           <form onSubmit={handleSubmit}>
             <VStack spacing={6} align="start">
-              <Heading size="md">Gift Information</Heading>
-              
-              <FormControl isRequired isInvalid={isNameInvalid}>
-                <FormLabel>Gift Name</FormLabel>
-                <Input 
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  onBlur={() => setTouched({ ...touched, name: true })}
-                  placeholder="Enter gift name"
-                />
-                {isNameInvalid && (
-                  <FormErrorMessage>Gift name is required</FormErrorMessage>
-                )}
-              </FormControl>
-              
               <FormControl isRequired isInvalid={isRecipientInvalid}>
                 <FormLabel>For Recipient</FormLabel>
                 <Select 
@@ -199,124 +235,78 @@ const AddGiftPage: React.FC = () => {
                 )}
               </FormControl>
               
-              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} width="100%">
-                <FormControl>
-                  <FormLabel>Price</FormLabel>
-                  <Input 
-                    type="number"
-                    step="0.01"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    placeholder="Enter price"
-                  />
-                </FormControl>
-                
-                <FormControl>
-                  <FormLabel>Currency</FormLabel>
-                  <Select 
-                    value={currency}
-                    onChange={(e) => setCurrency(e.target.value)}
-                  >
-                    <option value="USD">USD ($)</option>
-                    <option value="EUR">EUR (€)</option>
-                    <option value="GBP">GBP (£)</option>
-                    <option value="CAD">CAD (C$)</option>
-                    <option value="AUD">AUD (A$)</option>
-                    <option value="JPY">JPY (¥)</option>
-                  </Select>
-                </FormControl>
-              </SimpleGrid>
-              
-              <FormControl>
-                <FormLabel>Description</FormLabel>
-                <Textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Add a description of the gift"
-                  rows={3}
-                />
-              </FormControl>
-              
-              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} width="100%">
-                <FormControl>
-                  <FormLabel>Status</FormLabel>
-                  <Select 
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value as GiftStatus)}
-                  >
-                    <option value="idea">Idea</option>
-                    <option value="planning">Planning</option>
-                    <option value="purchased">Purchased</option>
-                    <option value="wrapped">Wrapped</option>
-                    <option value="shipped">Shipped</option>
-                    <option value="given">Given</option>
-                  </Select>
-                </FormControl>
-                
-                <FormControl>
-                  <FormLabel>Category</FormLabel>
-                  <Input 
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    placeholder="e.g., Electronics, Books"
-                  />
-                </FormControl>
-              </SimpleGrid>
-              
-              <Divider />
-              
-              <Heading size="md">Purchase Information</Heading>
-              
-              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} width="100%">
-                <FormControl>
-                  <FormLabel>Where to Buy</FormLabel>
-                  <Input 
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    placeholder="Enter store URL"
-                  />
-                </FormControl>
-                
-                <FormControl>
-                  <FormLabel>Retailer</FormLabel>
-                  <Input 
-                    value={retailer}
-                    onChange={(e) => setRetailer(e.target.value)}
-                    placeholder="e.g., Amazon, Best Buy"
-                  />
-                </FormControl>
-                
-                <FormControl>
-                  <FormLabel>Occasion</FormLabel>
-                  <Input 
-                    value={occasion}
-                    onChange={(e) => setOccasion(e.target.value)}
-                    placeholder="e.g., Birthday, Christmas"
-                  />
-                </FormControl>
-                
-                <FormControl>
-                  <FormLabel>Date</FormLabel>
-                  <Input 
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                  />
-                </FormControl>
-              </SimpleGrid>
-              
-              <FormControl>
-                <FormLabel>Image URL</FormLabel>
+              <FormControl isRequired isInvalid={isNameInvalid}>
+                <FormLabel>Gift Name</FormLabel>
                 <Input 
-                  value={imageURL}
-                  onChange={(e) => setImageURL(e.target.value)}
-                  placeholder="Enter image URL"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  onBlur={() => setTouched({ ...touched, name: true })}
+                  placeholder="Enter gift name"
+                />
+                {isNameInvalid && (
+                  <FormErrorMessage>Gift name is required</FormErrorMessage>
+                )}
+              </FormControl>
+              
+              <FormControl>
+                <FormLabel>Interests</FormLabel>
+                <InputGroup>
+                  <Input
+                    value={interest}
+                    onChange={(e) => setInterest(e.target.value)}
+                    placeholder="Add interests for this gift"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddInterest();
+                      }
+                    }}
+                  />
+                  <InputRightElement>
+                    <IconButton
+                      icon={<AddIcon />}
+                      size="sm"
+                      aria-label="Add interest"
+                      onClick={handleAddInterest}
+                    />
+                  </InputRightElement>
+                </InputGroup>
+                
+                {/* Display added interests */}
+                {interests.length > 0 && (
+                  <Box mt={2}>
+                    {interests.map((i, index) => (
+                      <Tag key={index} m={1} colorScheme="blue">
+                        <TagLabel>{i}</TagLabel>
+                        <TagCloseButton onClick={() => handleRemoveInterest(i)} />
+                      </Tag>
+                    ))}
+                  </Box>
+                )}
+              </FormControl>
+              
+              <FormControl>
+                <FormLabel>Price</FormLabel>
+                <Input 
+                  type="number"
+                  step="0.01"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  placeholder="Enter price"
                 />
               </FormControl>
               
-              <Divider />
-              
-              <Heading size="md">Auto-Send Options</Heading>
+              <FormControl>
+                <FormLabel>Reminder Date</FormLabel>
+                <Input 
+                  type="date"
+                  value={reminderDate}
+                  onChange={(e) => setReminderDate(e.target.value)}
+                />
+                <Text fontSize="sm" color="gray.500" mt={1}>
+                  When should we remind you about this gift?
+                </Text>
+              </FormControl>
               
               <FormControl>
                 <Checkbox 
@@ -325,23 +315,12 @@ const AddGiftPage: React.FC = () => {
                   colorScheme="purple"
                   size="lg"
                 >
-                  Enable Auto-Send
+                  Auto-send gift
                 </Checkbox>
-                <Text fontSize="sm" color="gray.600" mt={1}>
-                  We'll automatically purchase this gift and send it to your recipient on the selected date.
+                <Text fontSize="sm" color="gray.500" mt={1}>
+                  We'll handle sending this gift automatically at the right time.
                 </Text>
               </FormControl>
-              
-              {autoSend && (
-                <FormControl>
-                  <FormLabel>Send Date</FormLabel>
-                  <Input 
-                    type="date"
-                    value={autoSendDate}
-                    onChange={(e) => setAutoSendDate(e.target.value)}
-                  />
-                </FormControl>
-              )}
               
               {error && (
                 <Text color="red.500">{error}</Text>

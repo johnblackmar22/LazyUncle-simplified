@@ -1,0 +1,50 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Common helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      // Users can only read and write their own data
+      allow read, update, delete: if isAuthenticated() && isOwner(userId);
+      allow create: if isAuthenticated() && isOwner(userId);
+      
+      // Admin users can read all user data (you'd need to implement admin role)
+      // allow read: if isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+    
+    // Recipients collection
+    match /recipients/{recipientId} {
+      // Users can only access their own recipients
+      allow read, write: if isAuthenticated() && 
+                           resource.data.userId == request.auth.uid;
+      
+      // For new documents, ensure userId is set properly
+      allow create: if isAuthenticated() && 
+                      request.resource.data.userId == request.auth.uid;
+    }
+    
+    // Gifts collection
+    match /gifts/{giftId} {
+      // Users can only access their own gifts
+      allow read, write: if isAuthenticated() && 
+                           resource.data.userId == request.auth.uid;
+      
+      // For new documents, ensure userId is set properly
+      allow create: if isAuthenticated() && 
+                      request.resource.data.userId == request.auth.uid;
+    }
+    
+    // All other documents are not accessible
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+} 

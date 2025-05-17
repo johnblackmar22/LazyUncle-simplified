@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
   Box, 
@@ -15,22 +15,82 @@ import {
   InputGroup,
   InputRightElement,
   Divider,
-  HStack
+  HStack,
+  FormErrorMessage,
+  useToast,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+  useDisclosure
 } from '@chakra-ui/react';
 import { useAuthStore } from '../../store/authStore';
 import { initializeDemoData } from '../../services/demoData';
+import { DEMO_MODE } from '../../services/firebase';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { signIn, loading, error, resetError } = useAuthStore();
-  const [email, setEmail] = useState('demo@example.com');
-  const [password, setPassword] = useState('password');
+  const toast = useToast();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { signIn, resetPassword, loading, error, resetError } = useAuthStore();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetEmailError, setResetEmailError] = useState('');
+  const [validationErrors, setValidationErrors] = useState<{
+    email?: string;
+    password?: string;
+  }>({});
+
+  // Remove the auto-initialization for demo mode and just show a notification
+  useEffect(() => {
+    if (DEMO_MODE) {
+      console.log('Demo mode detected due to missing Firebase config');
+      toast({
+        title: "Demo Mode Available",
+        description: "Firebase credentials not found. You can use demo mode to explore the app.",
+        status: "info",
+        duration: 5000,
+        isClosable: true,
+      });
+      // Removing the automatic handleDemoMode() call
+    }
+  }, []);
+
+  const validateForm = () => {
+    const errors: {
+      email?: string;
+      password?: string;
+    } = {};
+    
+    // Email validation
+    if (!email) {
+      errors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      errors.email = 'Email address is invalid';
+    }
+    
+    // Password validation
+    if (!password) {
+      errors.password = 'Password is required';
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     resetError();
+    
+    if (!validateForm()) {
+      return;
+    }
     
     try {
       await signIn(email, password);
@@ -62,9 +122,55 @@ const LoginPage: React.FC = () => {
     }
   };
 
+  const handleResetPassword = async () => {
+    // Validate email
+    if (!resetEmail) {
+      setResetEmailError('Email is required');
+      return;
+    } else if (!/\S+@\S+\.\S+/.test(resetEmail)) {
+      setResetEmailError('Email address is invalid');
+      return;
+    }
+    
+    try {
+      await resetPassword(resetEmail);
+      onClose();
+      toast({
+        title: "Password reset email sent",
+        description: "Check your email for instructions to reset your password",
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      });
+    } catch (err) {
+      console.error('Password reset error:', err);
+    }
+  };
+
+  // If we're in forced demo mode, show a notification banner
+  const DemoModeBanner = () => {
+    if (DEMO_MODE) {
+      return (
+        <Alert status="info" mb={4}>
+          <AlertIcon />
+          <VStack align="start" spacing={1} w="100%">
+            <Text fontWeight="bold">No Firebase credentials detected</Text>
+            <Text>
+              You can either:
+            </Text>
+            <Text fontSize="sm">• Use the "Try Demo Mode" button below to explore with sample data</Text>
+            <Text fontSize="sm">• Set up Firebase credentials in a .env file for real authentication</Text>
+          </VStack>
+        </Alert>
+      );
+    }
+    return null;
+  };
+
   return (
     <Box pt={10} pb={20} px={4} bg="gray.50" minH="100vh">
       <Container maxW="md" bg="white" p={8} borderRadius="lg" boxShadow="md">
+        <DemoModeBanner />
         <VStack spacing={6} align="stretch">
           <VStack spacing={2}>
             <Heading size="lg">Sign In</Heading>
@@ -75,7 +181,7 @@ const LoginPage: React.FC = () => {
 
           <form onSubmit={handleSubmit}>
             <VStack spacing={4}>
-              <FormControl id="email">
+              <FormControl isInvalid={!!validationErrors.email} isRequired>
                 <FormLabel>Email</FormLabel>
                 <Input 
                   type="email" 
@@ -83,9 +189,12 @@ const LoginPage: React.FC = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
                 />
+                {validationErrors.email && (
+                  <FormErrorMessage>{validationErrors.email}</FormErrorMessage>
+                )}
               </FormControl>
 
-              <FormControl id="password">
+              <FormControl isInvalid={!!validationErrors.password} isRequired>
                 <FormLabel>Password</FormLabel>
                 <InputGroup>
                   <Input 
@@ -100,7 +209,14 @@ const LoginPage: React.FC = () => {
                     </Button>
                   </InputRightElement>
                 </InputGroup>
+                {validationErrors.password && (
+                  <FormErrorMessage>{validationErrors.password}</FormErrorMessage>
+                )}
               </FormControl>
+
+              <Text alignSelf="flex-end" color="blue.500" fontSize="sm" cursor="pointer" onClick={onOpen}>
+                Forgot Password?
+              </Text>
 
               {error && (
                 <Alert status="error">
@@ -143,6 +259,46 @@ const LoginPage: React.FC = () => {
           </VStack>
         </VStack>
       </Container>
+
+      {/* Forgot Password Modal */}
+      <Modal isOpen={isOpen} onClose={onClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Reset Your Password</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Text mb={4}>
+              Enter your email address and we'll send you instructions to reset your password.
+            </Text>
+            <FormControl isInvalid={!!resetEmailError}>
+              <FormLabel>Email Address</FormLabel>
+              <Input 
+                type="email" 
+                value={resetEmail} 
+                onChange={(e) => {
+                  setResetEmail(e.target.value);
+                  setResetEmailError('');
+                }}
+                placeholder="Enter your email"
+              />
+              {resetEmailError && <FormErrorMessage>{resetEmailError}</FormErrorMessage>}
+            </FormControl>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onClose}>
+              Cancel
+            </Button>
+            <Button 
+              colorScheme="blue" 
+              onClick={handleResetPassword}
+              isLoading={loading}
+            >
+              Send Reset Link
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 };
