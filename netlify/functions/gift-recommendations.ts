@@ -5,11 +5,9 @@
 
 // @ts-ignore: Netlify Functions types
 import { Handler } from '@netlify/functions';
-// @ts-ignore: OpenAI types
-import { Configuration, OpenAIApi } from 'openai';
+import OpenAI from 'openai';
 
-const configuration = new Configuration({ apiKey: process.env.OPENAI_API_KEY });
-const openai = new OpenAIApi(configuration);
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const handler: Handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
@@ -23,44 +21,36 @@ const handler: Handler = async (event, context) => {
   try {
     const { recipient, budget, pastGifts, trendingGifts } = JSON.parse(event.body || '{}');
 
-    const prompt = `
-Suggest 5 unique gift ideas for the following recipient:
-- Name: ${recipient.name}
-- Age: ${recipient.age}
-- Gender: ${recipient.gender}
-- Interests: ${recipient.interests?.join(", ")}
-- Relationship: ${recipient.relationship}
-- Price range: $${budget.min}-$${budget.max}
-- Past gifts: ${pastGifts?.join(", ") || "None"}
-- Trending gifts: ${trendingGifts?.join(", ") || "None"}
+    const prompt = `You are a gifting assistant. Based on the following recipient info, budget, past gifts, and trending gifts, recommend 5 unique gift ideas.\n\nRecipient: ${JSON.stringify(recipient)}\nBudget: $${budget}\nPast Gifts: ${JSON.stringify(pastGifts)}\nTrending Gifts: ${JSON.stringify(trendingGifts)}\n\nRespond with a JSON array of 5 gift ideas, each with a name, short description, and estimated price.`;
 
-Return the result as a JSON array of objects with keys: name, description, price, and why.
-`;
-
-    const response = await openai.createChatCompletion({
-      model: 'gpt-4',
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: 600,
-      temperature: 0.7,
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        { role: 'system', content: 'You are a helpful gifting assistant.' },
+        { role: 'user', content: prompt },
+      ],
+      max_tokens: 500,
+      temperature: 0.8,
     });
 
-    let suggestions = [];
+    const text = completion.choices[0]?.message?.content || '[]';
+    let giftIdeas;
     try {
-      suggestions = JSON.parse(response.data.choices[0].message?.content || '[]');
-    } catch {
-      suggestions = response.data.choices[0].message?.content;
+      giftIdeas = JSON.parse(text);
+    } catch (e) {
+      giftIdeas = [{ name: 'Gift parsing error', description: text, estimatedPrice: 0 }];
     }
 
     return {
       statusCode: 200,
       headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ suggestions }),
+      body: JSON.stringify(giftIdeas),
     };
-  } catch (error: any) {
+  } catch (err) {
     return {
       statusCode: 500,
       headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: error.message || 'Internal Server Error' }),
+      body: JSON.stringify({ error: err.message || 'Unknown error' }),
     };
   }
 };

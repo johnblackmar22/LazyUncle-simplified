@@ -35,7 +35,7 @@ export default function SubscriptionPlansPage() {
   };
 
   return (
-    <Box bg="gray.50" minH="100vh">
+    <Box bg="gray.100" minH="100vh">
       <Navbar />
       <Box py={12}>
         <Container maxW="container.xl">

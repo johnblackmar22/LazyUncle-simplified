@@ -6,7 +6,7 @@ import { Sidebar } from './Sidebar';
 
 const Layout: React.FC = () => {
   return (
-    <Box minH="100vh" bg="gray.50">
+    <Box minH="100vh" bg="gray.100">
       <Navbar />
       <Flex>
         <Sidebar />

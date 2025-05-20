@@ -151,7 +151,7 @@ const OnboardingWizard: React.FC = () => {
 
   // Step UIs
   return (
-    <Box bg="gray.50" minH="100vh">
+    <Box bg="gray.100" minH="100vh">
       <Navbar />
       <Box maxW="lg" mx="auto" mt={10} p={8} bg="white" borderRadius="lg" boxShadow="md">
         <Progress value={((step + 1) / steps.length) * 100} mb={6} />

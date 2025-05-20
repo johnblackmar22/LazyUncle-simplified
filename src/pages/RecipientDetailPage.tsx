@@ -155,7 +155,7 @@ export const RecipientDetailPage: React.FC = () => {
   }
 
   return (
-    <Box bg="gray.50" minH="100vh">
+    <Box bg="gray.100" minH="100vh">
       <Navbar />
       <Container maxW="container.lg" py={12}>
         <VStack spacing={8} align="stretch">

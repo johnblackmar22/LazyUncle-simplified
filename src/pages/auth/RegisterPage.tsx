@@ -120,7 +120,7 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <Box pt={10} pb={20} px={4} bg="gray.50" minH="100vh">
+    <Box pt={10} pb={20} px={4} bg="gray.100" minH="100vh">
       <Container maxW="md" bg="white" p={8} borderRadius="lg" boxShadow="md">
         <VStack spacing={6} align="stretch">
           <VStack spacing={2}>
