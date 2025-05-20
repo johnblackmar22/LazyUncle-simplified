@@ -48,45 +48,9 @@ function BrandLogo({ size = 36 }: { size?: number }) {
   );
 }
 
-function NavBar() {
-  return (
-    <Flex as="nav" w="full" align="center" justify="space-between" px={6} py={3} bg="white" boxShadow="xs" position="sticky" top={0} zIndex={10}>
-      <RouterLink to="/">
-        <BrandLogo size={36} />
-      </RouterLink>
-      <HStack spacing={6}>
-        <RouterLink to="/about">
-          <Text color={ACCENT_BLUE} fontWeight={600}>About</Text>
-        </RouterLink>
-        <RouterLink to="/subscription/plans">
-          <Text color={ACCENT_BLUE} fontWeight={600}>Pricing</Text>
-        </RouterLink>
-        <RouterLink to="/faq">
-          <Text color={ACCENT_BLUE} fontWeight={600}>FAQ</Text>
-        </RouterLink>
-        <Button
-          as={RouterLink}
-          to="/login"
-          size="md"
-          colorScheme="orange"
-          bg={ACCENT_ORANGE}
-          color="white"
-          _hover={{ bg: '#ea580c', boxShadow: 'md', transform: 'scale(1.04)' }}
-          fontWeight="bold"
-          rounded="full"
-          px={6}
-        >
-          Sign In
-        </Button>
-      </HStack>
-    </Flex>
-  );
-}
-
 export default function HomePage() {
   return (
     <Box bgGradient={BG_GRADIENT} minH="100vh">
-      <NavBar />
       <Container maxW="container.lg" centerContent>
         {/* Hero Section */}
         <Flex direction={{ base: 'column', md: 'row' }} align="center" justify="center" py={{ base: 12, md: 24 }} gap={16} w="full">
