@@ -157,21 +157,21 @@ export const RecipientDetailPage: React.FC = () => {
   return (
     <Box bg="gray.100" minH="100vh">
       <Navbar />
-      <Container maxW="container.lg" py={12}>
-        <VStack spacing={8} align="stretch">
+      <Container maxW="container.lg" py={{ base: 4, md: 12 }} px={{ base: 2, md: 0 }}>
+        <VStack spacing={{ base: 4, md: 8 }} align="stretch">
           <Box>
             <Button 
               leftIcon={<ArrowBackIcon />} 
               variant="ghost" 
               onClick={() => navigate('/recipients')}
               mb={4}
+              w={{ base: 'full', md: 'auto' }}
             >
               Back to Recipients
             </Button>
-            
-            <Flex justify="space-between" align="center">
-              <Heading size="xl" mb={2}>{currentRecipient.name}</Heading>
-              <HStack spacing={2}>
+            <Flex direction={{ base: 'column', md: 'row' }} justify="space-between" align={{ base: 'stretch', md: 'center' }}>
+              <Heading size={{ base: 'lg', md: 'xl' }} mb={2}>{currentRecipient.name}</Heading>
+              <HStack spacing={2} mt={{ base: 2, md: 0 }}>
                 <IconButton
                   as={RouterLink}
                   to={`/recipients/${currentRecipient.id}/edit`}
@@ -192,12 +192,12 @@ export const RecipientDetailPage: React.FC = () => {
                   to={`/gifts/add/${currentRecipient.id}`}
                   colorScheme="purple"
                   leftIcon={<AddIcon />}
+                  w={{ base: 'full', md: 'auto' }}
                 >
                   Add Gift
                 </Button>
               </HStack>
             </Flex>
-            
             <Badge colorScheme="blue" fontSize="md" mt={1}>
               {currentRecipient.relationship}
             </Badge>

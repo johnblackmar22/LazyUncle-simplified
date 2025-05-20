@@ -37,19 +37,17 @@ export default function SubscriptionPlansPage() {
   return (
     <Box bg="gray.100" minH="100vh">
       <Navbar />
-      <Box py={12}>
-        <Container maxW="container.xl">
-          <VStack spacing={8}>
-            <Heading as="h1" size="2xl">
+      <Box py={{ base: 4, md: 12 }}>
+        <Container maxW="container.xl" px={{ base: 2, md: 0 }}>
+          <VStack spacing={{ base: 4, md: 8 }}>
+            <Heading as="h1" size={{ base: 'lg', md: '2xl' }}>
               Subscription Plans
             </Heading>
-            
-            <Text fontSize="xl" textAlign="center" color={textColor} maxW="800px">
+            <Text fontSize={{ base: 'md', md: 'xl' }} textAlign="center" color={textColor} maxW="800px">
               Automate your gifting with Lazy Uncle. Our AI-powered engine recommends the perfect gifts for your loved ones, and we handle the rest.<br />
               <strong>Your subscription covers access to the service and smart gift recommendations. Each gift is charged separately at the time of purchase or approval.</strong>
             </Text>
-            
-            <HStack mb={8} spacing={4}>
+            <HStack mb={8} spacing={4} flexWrap="wrap">
               <Text fontWeight="bold">Monthly</Text>
               <Switch
                 size="lg"
@@ -62,7 +60,6 @@ export default function SubscriptionPlansPage() {
                 Save 20%
               </Badge>
             </HStack>
-
             <Stack
               direction={{ base: 'column', lg: 'row' }}
               textAlign="center"
@@ -74,9 +71,7 @@ export default function SubscriptionPlansPage() {
                 const price = isYearly 
                   ? getYearlyPrice(plan.id) 
                   : plan.price;
-                  
                 const isBestValue = plan.id === 'pro';
-                
                 return (
                   <Box
                     key={plan.id}
@@ -88,6 +83,7 @@ export default function SubscriptionPlansPage() {
                     borderRadius={'xl'}
                     position="relative"
                     width={{ base: '100%', md: '350px' }}
+                    px={{ base: 2, md: 12 }}
                   >
                     {isBestValue && (
                       <Box
@@ -152,7 +148,7 @@ export default function SubscriptionPlansPage() {
               })}
             </Stack>
           </VStack>
-          <Text fontSize="sm" color="gray.500" mt={8} textAlign="center">
+          <Text fontSize={{ base: 'xs', md: 'sm' }} color="gray.500" mt={8} textAlign="center">
             <em>Note: Your subscription covers access to Lazy Uncle's gifting engine and automation. When a gift is selected and approved, you will be charged the exact price of that gift (plus any applicable fees or shipping). You can always review and approve gifts before purchase.</em>
           </Text>
         </Container>

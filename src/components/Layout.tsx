@@ -8,10 +8,13 @@ const Layout: React.FC = () => {
   return (
     <Box minH="100vh" bg="gray.100">
       <Navbar />
-      <Flex>
-        <Sidebar />
-        <Box as="main" flex="1" p={4}>
-          <Container maxW="container.xl">
+      <Flex direction={{ base: 'column', md: 'row' }}>
+        {/* Sidebar hidden on mobile */}
+        <Box display={{ base: 'none', md: 'block' }}>
+          <Sidebar />
+        </Box>
+        <Box as="main" flex="1" p={{ base: 2, md: 4 }} w="full">
+          <Container maxW="container.xl" px={{ base: 2, md: 8 }}>
             <Outlet />
           </Container>
         </Box>

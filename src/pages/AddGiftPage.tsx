@@ -227,25 +227,25 @@ const AddGiftPage: React.FC = () => {
   return (
     <Box bg="gray.100" minH="100vh">
       <Navbar />
-      <Container maxW="container.md" py={12}>
-        <VStack spacing={8} align="stretch">
+      <Container maxW="container.md" py={{ base: 4, md: 12 }} px={{ base: 2, md: 0 }}>
+        <VStack spacing={{ base: 4, md: 8 }} align="stretch">
           <Box>
             <Button 
               leftIcon={<ArrowBackIcon />} 
               variant="ghost" 
               onClick={() => navigate('/gifts')}
               mb={4}
+              w={{ base: 'full', md: 'auto' }}
             >
               Back to Gifts
             </Button>
-            
-            <Heading size="xl" mb={2}>Add Gift</Heading>
+            <Heading size={{ base: 'lg', md: 'xl' }} mb={2}>Add Gift</Heading>
             <Text color="gray.600">
               Add a gift for your recipient with a simple reminder system.
             </Text>
           </Box>
           
-          <Box bg={bgColor} p={6} borderRadius="lg" borderWidth="1px" borderColor={borderColor}>
+          <Box bg={bgColor} p={{ base: 4, md: 6 }} borderRadius="lg" borderWidth="1px" borderColor={borderColor}>
             <form onSubmit={handleSubmit}>
               <VStack spacing={6} align="start">
                 <FormControl isRequired isInvalid={isRecipientInvalid}>

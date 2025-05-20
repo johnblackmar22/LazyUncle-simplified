@@ -153,7 +153,7 @@ const OnboardingWizard: React.FC = () => {
   return (
     <Box bg="gray.100" minH="100vh">
       <Navbar />
-      <Box maxW="lg" mx="auto" mt={10} p={8} bg="white" borderRadius="lg" boxShadow="md">
+      <Box maxW="lg" mx="auto" mt={{ base: 4, md: 10 }} p={{ base: 2, md: 8 }} bg="white" borderRadius="lg" boxShadow="md">
         <Progress value={((step + 1) / steps.length) * 100} mb={6} />
         <Flex mb={4} justify="center" gap={2}>
           {steps.map((s, idx) => (
