@@ -68,6 +68,49 @@ npm test
 npm run build
 ```
 
+## Deployment (For Non-Technical Users)
+
+LazyUncle can be easily deployed to the web using modern hosting services. Here are the simplest options:
+
+### One-Click Deploy (Recommended)
+
+- **Vercel** (https://vercel.com/import):
+  1. Click the link and import your GitHub repository.
+  2. Set the required environment variables (see below).
+  3. Click "Deploy". Your app will be live in minutes.
+
+- **Netlify** (https://app.netlify.com/drop):
+  1. Drag and drop your project folder, or connect your GitHub repository.
+  2. Set environment variables as prompted.
+  3. Click "Deploy".
+
+### Environment Variables
+
+Before deploying, make sure to set up your `.env` file with the following (example):
+
+```
+VITE_FIREBASE_API_KEY=your_firebase_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+VITE_STRIPE_PUBLIC_KEY=your_stripe_public_key
+```
+
+You can find these values in your Firebase and Stripe dashboards.
+
+### Manual Deploy (Advanced)
+
+1. Build the app:
+   ```bash
+   npm run build
+   ```
+2. Upload the `dist/` folder to your web host (e.g., Netlify, Vercel, Firebase Hosting).
+
+### Need Help?
+If you get stuck, reach out to a developer friend or contact support for your chosen hosting provider. Most platforms have excellent guides for React/Vite apps.
+
 ## Tech Stack
 
 - React + TypeScript

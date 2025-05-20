@@ -198,26 +198,43 @@ export default function GiftRecommendations({ recipients, onSendGift, settings }
     setRecommendations(prev => {
       const recipientGifts = [...prev[recipientId]];
       const giftIndex = recipientGifts.findIndex(g => g.id === giftId);
-      
       if (giftIndex >= 0) {
         recipientGifts[giftIndex] = {
           ...recipientGifts[giftIndex],
           autoSend: !recipientGifts[giftIndex].autoSend
         };
       }
-      
       return {
         ...prev,
         [recipientId]: recipientGifts
       };
     });
   };
-  
+
+  // Set all gifts to auto-send
+  const setAllAutoSend = () => {
+    setRecommendations(prev => {
+      const updated: { [key: string]: Gift[] } = {};
+      Object.keys(prev).forEach(recipientId => {
+        updated[recipientId] = prev[recipientId].map(gift => ({ ...gift, autoSend: true }));
+      });
+      return updated;
+    });
+  };
+
+  // Check if all gifts are already set to auto-send
+  const allAutoSend = Object.values(recommendations).every(gifts => gifts.every(gift => gift.autoSend));
+
   return (
     <Box>
-      <Heading size="lg" mb={6}>
-        Gift Recommendations
-      </Heading>
+      <Flex align="center" justify="space-between" mb={4}>
+        <Heading size="lg">Gift Recommendations</Heading>
+        <Tooltip label="Enable auto-send for all recommended gifts. Gifts will be sent automatically when the date approaches." aria-label="Set all to auto-send">
+          <Button colorScheme="green" onClick={setAllAutoSend} isDisabled={allAutoSend}>
+            Set all to auto-send
+          </Button>
+        </Tooltip>
+      </Flex>
       
       {loading ? (
         <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
