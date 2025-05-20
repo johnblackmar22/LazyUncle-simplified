@@ -1,18 +1,25 @@
-import React from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { 
-  Box, 
-  Flex, 
-  Heading, 
-  HStack, 
-  Button, 
+import React, { useState } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
+import {
+  Box,
   Container,
+  Flex,
+  HStack,
+  Button,
+  IconButton,
   useColorModeValue,
-  Link,
-  Text
+  Drawer,
+  DrawerOverlay,
+  DrawerContent,
+  DrawerCloseButton,
+  DrawerHeader,
+  DrawerBody,
+  VStack,
+  useDisclosure,
 } from '@chakra-ui/react';
-import { useAuthStore } from '../store/authStore';
+import { HamburgerIcon } from '@chakra-ui/icons';
 import SmallLogoJpeg from '../../Logos/Small logo.jpeg';
+import { useAuthStore } from '../store/authStore';
 
 // Theme colors from logo
 const ACCENT_BLUE = 'brand.700';
@@ -22,10 +29,10 @@ function BrandLogo({ size = 36 }: { size?: number }) {
   return (
     <HStack spacing={2}>
       <img src={SmallLogoJpeg} alt="Lazy Uncle Logo" style={{ width: size, height: size }} />
-      <Text fontWeight={900} fontSize="xl" letterSpacing={1}>
+      <Box as="span" fontWeight={900} fontSize="xl" letterSpacing={1}>
         <Box as="span" color={ACCENT_ORANGE}>Lazy</Box>
         <Box as="span" color={ACCENT_BLUE}>Uncle</Box>
-      </Text>
+      </Box>
     </HStack>
   );
 }
@@ -33,65 +40,69 @@ function BrandLogo({ size = 36 }: { size?: number }) {
 export const Navbar: React.FC = () => {
   const { user, signOut } = useAuthStore();
   const bgColor = useColorModeValue('white', 'gray.800');
-  const navigate = useNavigate();
-  
+  const { isOpen, onOpen, onClose } = useDisclosure();
+
+  // Nav links for reuse
+  const navLinks = user ? (
+    <>
+      <Button as={RouterLink} to="/dashboard" variant="ghost" colorScheme="blue" w={{ base: 'full', md: 'auto' }}>
+        Dashboard
+      </Button>
+      <Button as={RouterLink} to="/settings" variant="ghost" colorScheme="blue" w={{ base: 'full', md: 'auto' }}>
+        Settings
+      </Button>
+      <Button onClick={async () => { await signOut(); }} variant="outline" colorScheme="blue" w={{ base: 'full', md: 'auto' }}>
+        Sign Out
+      </Button>
+    </>
+  ) : (
+    <>
+      <Button as={RouterLink} to="/login" variant="ghost" colorScheme="blue" w={{ base: 'full', md: 'auto' }}>
+        Sign In
+      </Button>
+      <Button as={RouterLink} to="/register" colorScheme="blue" w={{ base: 'full', md: 'auto' }}>
+        Register
+      </Button>
+    </>
+  );
+
   return (
     <Box as="nav" bg={bgColor} py={4} boxShadow="sm">
       <Container maxW="container.xl">
         <Flex justify="space-between" align="center">
-          <Link as={RouterLink} to="/" _hover={{ textDecoration: 'none' }}>
-            <BrandLogo size={36} />
-          </Link>
-          
-          <HStack spacing={4}>
-            {user ? (
-              <>
-                <Button 
-                  as={RouterLink} 
-                  to="/dashboard" 
-                  variant="ghost" 
-                  colorScheme="blue"
-                >
-                  Dashboard
-                </Button>
-                <Button
-                  as={RouterLink}
-                  to="/settings"
-                  variant="ghost"
-                  colorScheme="blue"
-                >
-                  Settings
-                </Button>
-                <Button 
-                  onClick={async () => { await signOut(); navigate('/'); }} 
-                  variant="outline" 
-                  colorScheme="blue"
-                >
-                  Sign Out
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button 
-                  as={RouterLink} 
-                  to="/login" 
-                  variant="ghost" 
-                  colorScheme="blue"
-                >
-                  Sign In
-                </Button>
-                <Button 
-                  as={RouterLink} 
-                  to="/register" 
-                  colorScheme="blue"
-                >
-                  Register
-                </Button>
-              </>
-            )}
+          <Box>
+            <RouterLink to="/">
+              <BrandLogo size={36} />
+            </RouterLink>
+          </Box>
+          {/* Desktop Nav */}
+          <HStack spacing={4} display={{ base: 'none', md: 'flex' }}>
+            {navLinks}
           </HStack>
+          {/* Mobile Hamburger */}
+          <IconButton
+            aria-label="Open menu"
+            icon={<HamburgerIcon />}
+            display={{ base: 'flex', md: 'none' }}
+            onClick={onOpen}
+            variant="ghost"
+            size="lg"
+          />
         </Flex>
       </Container>
+      {/* Mobile Drawer */}
+      <Drawer placement="right" onClose={onClose} isOpen={isOpen}>
+        <DrawerOverlay />
+        <DrawerContent>
+          <DrawerCloseButton />
+          <DrawerHeader>Menu</DrawerHeader>
+          <DrawerBody>
+            <VStack spacing={4} align="stretch">
+              {navLinks}
+            </VStack>
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
     </Box>
   );
 }; 
