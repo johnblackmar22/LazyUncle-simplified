@@ -50,13 +50,13 @@ import { useGiftStore } from '../store/giftStore';
 import { useRecipientStore } from '../store/recipientStore';
 import { formatDate } from '../utils/dateUtils';
 import type { GiftStatus, AutoSendStatus } from '../types';
+import { showErrorToast } from '../utils/toastUtils';
 
 // Status color mappings
 const statusColors: Record<GiftStatus, string> = {
   idea: 'gray',
   planning: 'blue',
   purchased: 'green',
-  wrapped: 'purple',
   shipped: 'orange',
   given: 'pink',
   archived: 'red'
@@ -232,13 +232,7 @@ const GiftDetailPage: React.FC = () => {
           isClosable: true,
         });
       } catch (error) {
-        toast({
-          title: 'Error',
-          description: (error as Error).message,
-          status: 'error',
-          duration: 5000,
-          isClosable: true,
-        });
+        showErrorToast(toast, error, { title: 'Error cancelling auto-send' });
       } finally {
         setIsCancelling(false);
       }
@@ -531,7 +525,6 @@ const GiftDetailPage: React.FC = () => {
                 <option value="idea">Idea</option>
                 <option value="planning">Planning</option>
                 <option value="purchased">Purchased</option>
-                <option value="wrapped">Wrapped</option>
                 <option value="shipped">Shipped</option>
                 <option value="given">Given</option>
                 <option value="archived">Archived</option>

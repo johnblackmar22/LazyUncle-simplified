@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import {
   Box,
@@ -21,7 +21,8 @@ import {
   IconButton,
   useColorModeValue,
   Spinner,
-  useToast
+  useToast,
+  Tooltip
 } from '@chakra-ui/react';
 import { 
   AddIcon, 
@@ -32,6 +33,9 @@ import {
 import { useRecipientStore } from '../store/recipientStore';
 import { formatDate } from '../utils/dateUtils';
 import { format } from 'date-fns';
+import { showErrorToast } from '../utils/toastUtils';
+import { useAuthStore } from '../store/authStore';
+import { getPlanById } from '../services/subscription/plans';
 
 const RecipientsListPage: React.FC = () => {
   const toast = useToast();
@@ -42,16 +46,18 @@ const RecipientsListPage: React.FC = () => {
     fetchRecipients, 
     deleteRecipient 
   } = useRecipientStore();
-  
-  // Debug: Log recipients and store state
-  console.log('RecipientsListPage - Recipients:', recipients);
-  console.log('RecipientsListPage - Store state:', useRecipientStore.getState());
+  const { user, demoMode } = useAuthStore();
+  const planId = user?.planId || 'free';
+  const plan = getPlanById(planId);
+  const atRecipientLimit = !demoMode && plan && plan.recipientLimit !== Infinity && recipients.length >= plan.recipientLimit;
   
   const [searchQuery, setSearchQuery] = useState('');
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
+
+  const firstLoad = useRef(true);
 
   // Load recipients on mount
   useEffect(() => {
@@ -60,14 +66,14 @@ const RecipientsListPage: React.FC = () => {
 
   // Monitor recipients changes
   useEffect(() => {
-    console.log('Recipients array changed:', recipients);
-    if (recipients.length > 0) {
+    if (recipients.length > 0 && firstLoad.current) {
       toast({
         title: `Found ${recipients.length} recipients`,
         status: 'info',
         duration: 3000,
         isClosable: true,
       });
+      firstLoad.current = false;
     }
   }, [recipients, toast]);
 
@@ -90,13 +96,7 @@ const RecipientsListPage: React.FC = () => {
           isClosable: true,
         });
       } catch (error) {
-        toast({
-          title: 'Error',
-          description: (error as Error).message,
-          status: 'error',
-          duration: 5000,
-          isClosable: true,
-        });
+        showErrorToast(toast, error, { title: 'Error deleting recipient' });
       } finally {
         setIsDeleting(null);
       }
@@ -116,20 +116,24 @@ const RecipientsListPage: React.FC = () => {
     }
   };
 
-  console.log('Recipients:', recipients);
-
   return (
     <Box>
       <Flex justify="space-between" align="center" mb={8}>
         <Heading size="xl">Recipients</Heading>
-        <Button
-          as={RouterLink}
-          to="/recipients/add"
-          colorScheme="blue"
-          leftIcon={<AddIcon />}
+        <Tooltip
+          label={atRecipientLimit ? 'Upgrade to Pro for unlimited recipients' : ''}
+          isDisabled={!atRecipientLimit}
         >
-          Add Recipient
-        </Button>
+          <Button
+            as={RouterLink}
+            to="/recipients/add"
+            colorScheme="blue"
+            leftIcon={<AddIcon />}
+            isDisabled={atRecipientLimit}
+          >
+            Add Recipient
+          </Button>
+        </Tooltip>
       </Flex>
 
       <InputGroup mb={6}>

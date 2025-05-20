@@ -27,6 +27,8 @@ import { EditIcon, DeleteIcon, ArrowBackIcon, AddIcon } from '@chakra-ui/icons';
 import { useRecipientStore } from '../store/recipientStore';
 import { format } from 'date-fns';
 import type { Recipient } from '../types';
+import { showErrorToast } from '../utils/toastUtils';
+import { Navbar } from '../components/Navbar';
 
 export const RecipientDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -71,13 +73,7 @@ export const RecipientDetailPage: React.FC = () => {
         });
         navigate('/recipients');
       } catch (error) {
-        toast({
-          title: 'Error',
-          description: (error as Error).message,
-          status: 'error',
-          duration: 5000,
-          isClosable: true,
-        });
+        showErrorToast(toast, error, { title: 'Error deleting recipient' });
       }
     }
   };
@@ -159,129 +155,132 @@ export const RecipientDetailPage: React.FC = () => {
   }
 
   return (
-    <Container maxW="container.md" py={8}>
-      <VStack spacing={8} align="stretch">
-        <Box>
-          <Button 
-            leftIcon={<ArrowBackIcon />} 
-            variant="ghost" 
-            onClick={() => navigate('/recipients')}
-            mb={4}
-          >
-            Back to Recipients
-          </Button>
-          
-          <Flex justify="space-between" align="center">
-            <Heading size="xl" mb={2}>{currentRecipient.name}</Heading>
-            <HStack spacing={2}>
-              <IconButton
-                as={RouterLink}
-                to={`/recipients/${currentRecipient.id}/edit`}
-                aria-label="Edit"
-                icon={<EditIcon />}
-                colorScheme="blue"
-                variant="outline"
-              />
-              <IconButton
-                aria-label="Delete"
-                icon={<DeleteIcon />}
-                colorScheme="red"
-                variant="outline"
-                onClick={handleDelete}
-              />
-              <Button
-                as={RouterLink}
-                to={`/gifts/add/${currentRecipient.id}`}
-                colorScheme="purple"
-                leftIcon={<AddIcon />}
-              >
-                Add Gift
-              </Button>
-            </HStack>
-          </Flex>
-          
-          <Badge colorScheme="blue" fontSize="md" mt={1}>
-            {currentRecipient.relationship}
-          </Badge>
-        </Box>
+    <Box bg="gray.50" minH="100vh">
+      <Navbar />
+      <Container maxW="container.lg" py={12}>
+        <VStack spacing={8} align="stretch">
+          <Box>
+            <Button 
+              leftIcon={<ArrowBackIcon />} 
+              variant="ghost" 
+              onClick={() => navigate('/recipients')}
+              mb={4}
+            >
+              Back to Recipients
+            </Button>
+            
+            <Flex justify="space-between" align="center">
+              <Heading size="xl" mb={2}>{currentRecipient.name}</Heading>
+              <HStack spacing={2}>
+                <IconButton
+                  as={RouterLink}
+                  to={`/recipients/${currentRecipient.id}/edit`}
+                  aria-label="Edit"
+                  icon={<EditIcon />}
+                  colorScheme="blue"
+                  variant="outline"
+                />
+                <IconButton
+                  aria-label="Delete"
+                  icon={<DeleteIcon />}
+                  colorScheme="red"
+                  variant="outline"
+                  onClick={handleDelete}
+                />
+                <Button
+                  as={RouterLink}
+                  to={`/gifts/add/${currentRecipient.id}`}
+                  colorScheme="purple"
+                  leftIcon={<AddIcon />}
+                >
+                  Add Gift
+                </Button>
+              </HStack>
+            </Flex>
+            
+            <Badge colorScheme="blue" fontSize="md" mt={1}>
+              {currentRecipient.relationship}
+            </Badge>
+          </Box>
 
-        <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
-          <CardHeader pb={0}>
-            <Heading size="md">Birthday</Heading>
-          </CardHeader>
-          <CardBody>
-            {currentRecipient.birthdate ? (
-              <Flex justify="space-between" align="center">
-                <Text>{formatBirthdate(currentRecipient.birthdate)}</Text>
-                {getDaysUntilBirthday(currentRecipient.birthdate) !== null && (
-                  <Badge 
-                    colorScheme={getDaysUntilBirthday(currentRecipient.birthdate)! <= 7 ? "red" : 
-                              getDaysUntilBirthday(currentRecipient.birthdate)! <= 30 ? "orange" : "blue"}
-                  >
-                    {getDaysUntilBirthday(currentRecipient.birthdate) === 0 
-                      ? "Today!" 
-                      : getDaysUntilBirthday(currentRecipient.birthdate) === 1 
-                        ? "Tomorrow!" 
-                        : `${getDaysUntilBirthday(currentRecipient.birthdate)} days`}
-                  </Badge>
-                )}
-              </Flex>
-            ) : (
-              <Text color="gray.500">No birthdate set.</Text>
-            )}
-          </CardBody>
-        </Card>
-
-        <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
-          <CardHeader pb={0}>
-            <Heading size="md">Interests</Heading>
-          </CardHeader>
-          <CardBody>
-            {currentRecipient.interests && currentRecipient.interests.length > 0 ? (
-              <Flex gap={2} flexWrap="wrap">
-                {currentRecipient.interests.map((interest, index) => (
-                  <Badge key={index} colorScheme="green" variant="solid" px={2} py={1}>
-                    {interest}
-                  </Badge>
-                ))}
-              </Flex>
-            ) : (
-              <Text color="gray.500">No interests added yet.</Text>
-            )}
-          </CardBody>
-        </Card>
-
-        {currentRecipient.giftPreferences && (
           <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
             <CardHeader pb={0}>
-              <Heading size="md">Gift Preferences</Heading>
+              <Heading size="md">Birthday</Heading>
             </CardHeader>
             <CardBody>
-              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                {currentRecipient.giftPreferences.priceRange && (
-                  <Box>
-                    <Text fontWeight="bold">Price Range</Text>
-                    <Text>${currentRecipient.giftPreferences.priceRange.min} - ${currentRecipient.giftPreferences.priceRange.max}</Text>
-                  </Box>
-                )}
-                
-                {currentRecipient.giftPreferences.categories && currentRecipient.giftPreferences.categories.length > 0 && (
-                  <Box>
-                    <Text fontWeight="bold">Preferred Categories</Text>
-                    <Flex gap={1} flexWrap="wrap" mt={1}>
-                      {currentRecipient.giftPreferences.categories.map((category, index) => (
-                        <Badge key={index} colorScheme="blue" variant="subtle">
-                          {category}
-                        </Badge>
-                      ))}
-                    </Flex>
-                  </Box>
-                )}
-              </SimpleGrid>
+              {currentRecipient.birthdate ? (
+                <Flex justify="space-between" align="center">
+                  <Text>{formatBirthdate(currentRecipient.birthdate)}</Text>
+                  {getDaysUntilBirthday(currentRecipient.birthdate) !== null && (
+                    <Badge 
+                      colorScheme={getDaysUntilBirthday(currentRecipient.birthdate)! <= 7 ? "red" : 
+                                getDaysUntilBirthday(currentRecipient.birthdate)! <= 30 ? "orange" : "blue"}
+                    >
+                      {getDaysUntilBirthday(currentRecipient.birthdate) === 0 
+                        ? "Today!" 
+                        : getDaysUntilBirthday(currentRecipient.birthdate) === 1 
+                          ? "Tomorrow!" 
+                          : `${getDaysUntilBirthday(currentRecipient.birthdate)} days`}
+                    </Badge>
+                  )}
+                </Flex>
+              ) : (
+                <Text color="gray.500">No birthdate set.</Text>
+              )}
             </CardBody>
           </Card>
-        )}
-      </VStack>
-    </Container>
+
+          <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
+            <CardHeader pb={0}>
+              <Heading size="md">Interests</Heading>
+            </CardHeader>
+            <CardBody>
+              {currentRecipient.interests && currentRecipient.interests.length > 0 ? (
+                <Flex gap={2} flexWrap="wrap">
+                  {currentRecipient.interests.map((interest, index) => (
+                    <Badge key={index} colorScheme="green" variant="solid" px={2} py={1}>
+                      {interest}
+                    </Badge>
+                  ))}
+                </Flex>
+              ) : (
+                <Text color="gray.500">No interests added yet.</Text>
+              )}
+            </CardBody>
+          </Card>
+
+          {currentRecipient.giftPreferences && (
+            <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
+              <CardHeader pb={0}>
+                <Heading size="md">Gift Preferences</Heading>
+              </CardHeader>
+              <CardBody>
+                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                  {currentRecipient.giftPreferences.priceRange && (
+                    <Box>
+                      <Text fontWeight="bold">Price Range</Text>
+                      <Text>${currentRecipient.giftPreferences.priceRange.min} - ${currentRecipient.giftPreferences.priceRange.max}</Text>
+                    </Box>
+                  )}
+                  
+                  {currentRecipient.giftPreferences.categories && currentRecipient.giftPreferences.categories.length > 0 && (
+                    <Box>
+                      <Text fontWeight="bold">Preferred Categories</Text>
+                      <Flex gap={1} flexWrap="wrap" mt={1}>
+                        {currentRecipient.giftPreferences.categories.map((category, index) => (
+                          <Badge key={index} colorScheme="blue" variant="subtle">
+                            {category}
+                          </Badge>
+                        ))}
+                      </Flex>
+                    </Box>
+                  )}
+                </SimpleGrid>
+              </CardBody>
+            </Card>
+          )}
+        </VStack>
+      </Container>
+    </Box>
   );
 }; 

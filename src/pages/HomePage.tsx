@@ -8,168 +8,240 @@ import {
   Heading,
   Stack,
   Text,
-  useColorModeValue,
   SimpleGrid,
   Icon,
-  Badge,
+  useBreakpointValue,
+  Image,
+  HStack,
 } from '@chakra-ui/react';
+import { FaRegCalendarCheck, FaRegSmile, FaRegCheckCircle, FaTruck, FaGift } from 'react-icons/fa';
+import SmallLogo from '../../Logos/Small-logo.svg';
+import SmallLogoJpeg from '../../Logos/Small logo.jpeg';
+import ConvertedHero from '../../Logos/converted_1747771169_5314 (1).svg';
+import { keyframes } from '@emotion/react';
+
+// Theme colors from logo
+const ACCENT_BLUE = 'brand.700';
+const ACCENT_YELLOW = 'yellow.400';
+const ACCENT_ORANGE = 'orange.400';
+const BG_GRADIENT = 'linear(to-b, #f8fafc 0%, #e0f2fe 100%)';
+const CARD_BG = 'white';
+const CARD_BORDER = 'gray.200';
+
+// Animation for fade-in
+const fadeIn = keyframes`
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: none; }
+`;
+const fadeInSync = `${fadeIn} 1s ease`;
+
+// Brand logo for universal use
+function BrandLogo({ size = 36 }: { size?: number }) {
+  return (
+    <HStack spacing={2}>
+      <img src={SmallLogoJpeg} alt="Lazy Uncle Logo" style={{ width: size, height: size }} />
+      <Text fontWeight={900} fontSize="xl" letterSpacing={1}>
+        <Box as="span" color={ACCENT_ORANGE}>Lazy</Box>
+        <Box as="span" color={ACCENT_BLUE}>Uncle</Box>
+      </Text>
+    </HStack>
+  );
+}
+
+function NavBar() {
+  return (
+    <Flex as="nav" w="full" align="center" justify="space-between" px={6} py={3} bg="white" boxShadow="xs" position="sticky" top={0} zIndex={10}>
+      <RouterLink to="/">
+        <BrandLogo size={36} />
+      </RouterLink>
+      <HStack spacing={6}>
+        <RouterLink to="/about">
+          <Text color={ACCENT_BLUE} fontWeight={600}>About</Text>
+        </RouterLink>
+        <RouterLink to="/subscription/plans">
+          <Text color={ACCENT_BLUE} fontWeight={600}>Pricing</Text>
+        </RouterLink>
+        <RouterLink to="/faq">
+          <Text color={ACCENT_BLUE} fontWeight={600}>FAQ</Text>
+        </RouterLink>
+        <Button
+          as={RouterLink}
+          to="/login"
+          size="md"
+          colorScheme="orange"
+          bg={ACCENT_ORANGE}
+          color="white"
+          _hover={{ bg: '#ea580c', boxShadow: 'md', transform: 'scale(1.04)' }}
+          fontWeight="bold"
+          rounded="full"
+          px={6}
+        >
+          Sign In
+        </Button>
+      </HStack>
+    </Flex>
+  );
+}
 
 export default function HomePage() {
-  const bgGradient = useColorModeValue(
-    'linear(to-b, white, gray.50)',
-    'linear(to-b, gray.900, gray.800)'
-  );
-
   return (
-    <Box bgGradient={bgGradient} minH="100vh" pt={10}>
-      <Container maxW="container.xl">
-        <Stack
-          align="center"
-          spacing={{ base: 8, md: 10 }}
-          direction={{ base: 'column', md: 'row' }}
-          py={{ base: 10, md: 20 }}
-        >
-          <Stack flex={1} spacing={{ base: 5, md: 10 }}>
-            <Heading
-              lineHeight={1.1}
-              fontWeight={600}
-              fontSize={{ base: '3xl', sm: '4xl', lg: '6xl' }}
+    <Box bgGradient={BG_GRADIENT} minH="100vh">
+      <NavBar />
+      <Container maxW="container.lg" centerContent>
+        {/* Hero Section */}
+        <Flex direction={{ base: 'column', md: 'row' }} align="center" justify="center" py={{ base: 12, md: 24 }} gap={16} w="full">
+          <Box
+            flexShrink={0}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            position="relative"
+            mb={{ base: 10, md: 0 }}
+          >
+            {/* Soft blurred background glow */}
+            <Box
+              position="absolute"
+              top="50%"
+              left="50%"
+              transform="translate(-50%, -50%)"
+              w={useBreakpointValue({ base: '260px', md: '370px' })}
+              h={useBreakpointValue({ base: '260px', md: '370px' })}
+              bgGradient="radial(ellipse at center, #e0f2fe 60%, #fff0 100%)"
+              filter="blur(32px)"
+              zIndex={0}
+              borderRadius="full"
+            />
+            <Box
+              bg="whiteAlpha.800"
+              borderRadius="2xl"
+              boxShadow="lg"
+              p={{ base: 4, md: 8 }}
+              zIndex={1}
+              animation={fadeInSync}
             >
-              <Text
-                as="span"
-                position="relative"
-                color="brand.500"
-              >
-                LazyUncle
-              </Text>
-              <br />
-              <Text as="span" fontSize={{ base: '2xl', sm: '3xl', lg: '4xl' }}>
-                Never Forget Another Birthday
-              </Text>
-            </Heading>
-            <Text color="gray.500" fontSize="lg">
-              LazyUncle is for busy professionals who can barely remember their own schedules, let alone their nephew's birthday. We'll handle the remembering, gift recommendations, and shipping - all you have to do is take the credit. Set it up once, and never hear "Did you forget my birthday, Uncle?" again.
-            </Text>
-            <Box>
-              <Badge colorScheme="green" fontSize="md" px={2} py={1} borderRadius="md">
-                Starting at $9.99/month
-              </Badge>
+              <img
+                src={ConvertedHero}
+                alt="Lazy Uncle Hero"
+                style={{ width: useBreakpointValue({ base: '220px', md: '320px' }), height: useBreakpointValue({ base: '220px', md: '320px' }) }}
+              />
             </Box>
-            <Stack
-              spacing={{ base: 4, sm: 6 }}
-              direction={{ base: 'column', sm: 'row' }}
+          </Box>
+          <Stack spacing={8} flex={1} maxW="lg" align={{ base: 'center', md: 'flex-start' }} textAlign={{ base: 'center', md: 'left' }}>
+            <Heading
+              as="h1"
+              size={useBreakpointValue({ base: '2xl', md: '3xl' })}
+              fontWeight={900}
+              color={ACCENT_BLUE}
+              lineHeight={1.1}
+              letterSpacing={-1}
+              mb={2}
+              animation={fadeInSync}
             >
+              Gifting, on Autopilot.
+            </Heading>
+            <Text
+              color="gray.700"
+              fontSize="lg"
+              fontWeight={400}
+              mb={2}
+              animation={fadeInSync}
+            >
+              Never forget a birthday, anniversary, or special moment again.
+            </Text>
+            <Stack direction={{ base: 'column', sm: 'row' }} spacing={4} pt={2} justify={{ base: 'center', md: 'flex-start' }}>
               <Button
                 as={RouterLink}
                 to="/register"
-                rounded="full"
                 size="lg"
-                fontWeight="normal"
-                px={6}
-                colorScheme="blue"
-                bg="brand.500"
-                _hover={{ bg: 'brand.600' }}
-              >
-                Start Your Free Trial
-              </Button>
-              <Button
-                as={RouterLink}
-                to="/subscription-plans"
+                colorScheme="orange"
+                bg={ACCENT_ORANGE}
+                color="white"
+                _hover={{ bg: '#ea580c', boxShadow: 'lg', transform: 'scale(1.05)' }}
+                fontWeight="bold"
                 rounded="full"
-                size="lg"
-                fontWeight="normal"
-                px={6}
-                colorScheme="green"
+                px={8}
+                animation={fadeInSync}
               >
-                View Plans
-              </Button>
-              <Button
-                as={RouterLink}
-                to="/login"
-                rounded="full"
-                size="lg"
-                fontWeight="normal"
-                px={6}
-                variant="outline"
-              >
-                Sign In
+                Get Started
               </Button>
             </Stack>
           </Stack>
-          <Flex
-            flex={1}
-            justify="center"
-            align="center"
-            position="relative"
-            w="full"
-          >
-            <Box
-              position="relative"
-              height="300px"
-              rounded="2xl"
-              boxShadow="2xl"
-              width="full"
-              overflow="hidden"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              bg="gray.100"
-            >
-              <Text fontSize="8xl">🎁</Text>
-            </Box>
-          </Flex>
-        </Stack>
+        </Flex>
 
-        <Stack spacing={12} mb={20}>
-          <Heading as="h2" textAlign="center" size="xl">
-            How It Works
+        {/* Divider between hero and value props */}
+        <Box h={{ base: 2, md: 4 }} />
+
+        {/* Why Lazy Uncle Section */}
+        <Box w="full" py={16}>
+          <Heading as="h3" size="lg" color={ACCENT_BLUE} fontWeight={700} textAlign="center" mb={10} letterSpacing={-0.5}>
+            Why LazyUncle?
           </Heading>
-          
-          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={10}>
-            <Feature
-              icon="👥"
-              title="Add Your Nephews & Nieces"
-              text="Enter their details, preferences, and birthdays just once - we'll handle the rest."
+          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={10} maxW="900px" mx="auto">
+            <ValueProp
+              icon={FaRegCalendarCheck}
+              text="Never miss a date"
+              headline="We remember so you don't have to"
+              description="We track birthdays, anniversaries, and more—so you never forget an important moment."
             />
-            <Feature
-              icon="🎁"
-              title="Smart Gift Recommendations"
-              text="We'll suggest age-appropriate gifts they'll actually love, based on their interests."
+            <ValueProp
+              icon={FaGift}
+              text="Personalized gift recommendations"
+              headline="Gifts they'll actually love"
+              description="We learn about your recipients and suggest gifts they'll love, every time."
             />
-            <Feature
-              icon="📦"
-              title="Automatic Delivery"
-              text="Perfect gifts arrive right on time, every time. Be the cool uncle without even trying."
+            <ValueProp
+              icon={FaTruck}
+              text="Automatic delivery"
+              headline="We handle everything"
+              description="We handle the shopping, wrapping, and shipping. You get the credit."
             />
           </SimpleGrid>
-        </Stack>
+        </Box>
+
+        {/* Footer */}
+        <Box as="footer" w="full" py={8} mt={8} borderTop={`1px solid ${CARD_BORDER}`} textAlign="center" color="gray.400">
+          <Text fontSize="sm">&copy; {new Date().getFullYear()} LazyUncle. All rights reserved.</Text>
+          <Stack direction="row" spacing={6} justify="center" mt={2}>
+            <FooterLink to="/about">About</FooterLink>
+            <FooterLink to="/contact">Contact</FooterLink>
+            <FooterLink to="/faq">FAQ</FooterLink>
+            <FooterLink to="/privacy">Privacy</FooterLink>
+          </Stack>
+        </Box>
       </Container>
     </Box>
   );
 }
 
-interface FeatureProps {
-  title: string;
-  text: string;
-  icon: string;
+function ValueProp({ icon, text, headline, description }: { icon: any; text: string; headline: string; description: string }) {
+  return (
+    <Box
+      bg="white"
+      borderRadius="xl"
+      boxShadow="md"
+      p={8}
+      h="full"
+      display="flex"
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="flex-start"
+      transition="box-shadow 0.2s, transform 0.2s"
+      _hover={{ boxShadow: 'xl', transform: 'translateY(-4px) scale(1.03)' }}
+    >
+      <Icon as={icon} w={9} h={9} color="gray.400" mb={4} />
+      <Text fontWeight={700} color="gray.800" fontSize="lg" mb={1} textAlign="center">{text}</Text>
+      <Text fontWeight={500} color="gray.700" fontSize="md" mb={2} textAlign="center">{headline}</Text>
+      <Text color="gray.500" fontSize="sm" textAlign="center">{description}</Text>
+    </Box>
+  );
 }
 
-function Feature({ title, text, icon }: FeatureProps) {
+function FooterLink({ to, children }: { to: string; children: React.ReactNode }) {
   return (
-    <Stack align="center" textAlign="center">
-      <Flex
-        w={16}
-        h={16}
-        align="center"
-        justify="center"
-        rounded="full"
-        bg="brand.500"
-        mb={1}
-      >
-        <Text fontSize="2xl" color="white">{icon}</Text>
-      </Flex>
-      <Text fontWeight={600} fontSize="lg">{title}</Text>
-      <Text color="gray.600">{text}</Text>
-    </Stack>
+    <RouterLink to={to} style={{ textDecoration: 'none' }}>
+      <Text color="gray.400" fontSize="sm" _hover={{ color: ACCENT_BLUE, textDecoration: 'underline' }} transition="color 0.2s">
+        {children}
+      </Text>
+    </RouterLink>
   );
 } 

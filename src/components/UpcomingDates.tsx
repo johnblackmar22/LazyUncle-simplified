@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useRecipients } from '../hooks/useRecipients';
+import { useRecipientStore } from '../store/recipientStore';
 import { format, addDays, parseISO, isBefore, differenceInDays } from 'date-fns';
 import { Box, Heading, Text, Badge, VStack, HStack, Divider, useColorModeValue } from '@chakra-ui/react';
+import type { Recipient as BaseRecipient } from '../types';
 
-// Define the type for special dates with description field
+// Extend Recipient type locally to include specialDates for demo mode
 interface SpecialDate {
   id: string;
   name: string;
@@ -13,8 +14,12 @@ interface SpecialDate {
   description: string;
 }
 
+interface Recipient extends BaseRecipient {
+  specialDates?: SpecialDate[];
+}
+
 export const UpcomingDates: React.FC = () => {
-  const { recipients } = useRecipients();
+  const { recipients } = useRecipientStore();
   const [upcomingDates, setUpcomingDates] = useState<Array<SpecialDate & { recipientName: string }>>([]);
   
   const bgColor = useColorModeValue('white', 'gray.800');
@@ -25,13 +30,13 @@ export const UpcomingDates: React.FC = () => {
     const lookAheadDate = addDays(today, 30); // Look ahead 30 days
     const allDates: Array<SpecialDate & { recipientName: string }> = [];
 
-    recipients.forEach(recipient => {
+    (recipients as Recipient[]).forEach(recipient => {
       if (recipient.specialDates && recipient.specialDates.length > 0) {
-        recipient.specialDates.forEach(date => {
+        recipient.specialDates.forEach((date: SpecialDate) => {
           let dateObj;
           try {
             if (typeof date.date === 'string') {
-              dateObj = parseISO(date.date);
+              dateObj = parseISO(date.date as unknown as string);
             } else {
               dateObj = new Date(date.date);
             }

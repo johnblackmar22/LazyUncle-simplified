@@ -113,7 +113,7 @@ const RegisterPage: React.FC = () => {
     
     try {
       await signUp(email, password, displayName);
-      navigate('/dashboard');
+      navigate('/onboarding');
     } catch (err) {
       console.error('Registration error:', err);
     }

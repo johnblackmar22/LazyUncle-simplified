@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -45,20 +45,25 @@ import {
 } from '@chakra-ui/icons';
 import { useGiftStore } from '../store/giftStore';
 import { formatDate } from '../utils/dateUtils';
-import type { GiftStatus } from '../types';
+import { showErrorToast } from '../utils/toastUtils';
+
+// Define GiftStatus locally:
+type GiftStatus = 'planned' | 'ordered' | 'shipped' | 'delivered' | 'given' | 'archived' | 'idea' | 'purchased';
 
 const statusColors: Record<GiftStatus, string> = {
   idea: 'gray',
-  planning: 'blue',
+  planned: 'blue',
   purchased: 'green',
-  wrapped: 'purple',
+  ordered: 'yellow',
   shipped: 'orange',
+  delivered: 'green',
   given: 'pink',
   archived: 'red'
 };
 
 const GiftsListPage: React.FC = () => {
   const toast = useToast();
+  const navigate = useNavigate();
   const { 
     gifts, 
     autoSendGifts,
@@ -112,13 +117,7 @@ const GiftsListPage: React.FC = () => {
           isClosable: true,
         });
       } catch (error) {
-        toast({
-          title: 'Error',
-          description: (error as Error).message,
-          status: 'error',
-          duration: 5000,
-          isClosable: true,
-        });
+        showErrorToast(toast, error, { title: 'Error deleting gift' });
       } finally {
         setIsDeleting(null);
       }
@@ -144,13 +143,7 @@ const GiftsListPage: React.FC = () => {
         isClosable: true,
       });
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: (error as Error).message,
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
+      showErrorToast(toast, error, { title: 'Error scheduling auto-send' });
     } finally {
       setIsScheduling(null);
     }
@@ -309,141 +302,13 @@ const GiftsListPage: React.FC = () => {
     </Card>
   );
 
-  return (
-    <Container maxW="container.xl" py={6}>
-      <Flex justify="space-between" align="center" mb={6}>
-        <Heading size="xl">Gifts</Heading>
-        <Button
-          as={RouterLink}
-          to="/gifts/add"
-          colorScheme="blue"
-          leftIcon={<AddIcon />}
-        >
-          Add Gift
-        </Button>
-      </Flex>
+  // Hide this page for regular users
+  useEffect(() => {
+    // In production, redirect to dashboard
+    navigate('/dashboard', { replace: true });
+  }, [navigate]);
 
-      <Tabs index={tabIndex} onChange={setTabIndex} colorScheme="blue" mb={6}>
-        <TabList>
-          <Tab>All Gifts</Tab>
-          <Tab>Auto-Send Gifts</Tab>
-        </TabList>
-        
-        <TabPanels>
-          <TabPanel p={0} pt={4}>
-            <Flex mb={4} direction={{ base: 'column', md: 'row' }} gap={4}>
-              <InputGroup flex={1}>
-                <InputLeftElement pointerEvents="none">
-                  <SearchIcon color="gray.400" />
-                </InputLeftElement>
-                <Input
-                  placeholder="Search gifts..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  bg={bgColor}
-                  borderColor={borderColor}
-                />
-              </InputGroup>
-              
-              <Menu>
-                <MenuButton 
-                  as={Button} 
-                  rightIcon={<ChevronDownIcon />}
-                  width={{ base: '100%', md: 'auto' }}
-                >
-                  Status: {statusFilter === 'all' ? 'All' : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}
-                </MenuButton>
-                <MenuList>
-                  <MenuItem onClick={() => setStatusFilter('all')}>
-                    All
-                  </MenuItem>
-                  <MenuItem onClick={() => setStatusFilter('idea')}>
-                    Idea
-                  </MenuItem>
-                  <MenuItem onClick={() => setStatusFilter('planning')}>
-                    Planning
-                  </MenuItem>
-                  <MenuItem onClick={() => setStatusFilter('purchased')}>
-                    Purchased
-                  </MenuItem>
-                  <MenuItem onClick={() => setStatusFilter('wrapped')}>
-                    Wrapped
-                  </MenuItem>
-                  <MenuItem onClick={() => setStatusFilter('shipped')}>
-                    Shipped
-                  </MenuItem>
-                  <MenuItem onClick={() => setStatusFilter('given')}>
-                    Given
-                  </MenuItem>
-                  <MenuItem onClick={() => setStatusFilter('archived')}>
-                    Archived
-                  </MenuItem>
-                </MenuList>
-              </Menu>
-            </Flex>
-
-            {loading && !gifts.length ? (
-              <Flex justify="center" align="center" h="200px">
-                <Spinner size="xl" color="blue.500" />
-              </Flex>
-            ) : error ? (
-              <Box p={4} bg="red.50" color="red.500" borderRadius="md">
-                <Text>Error: {error}</Text>
-              </Box>
-            ) : filteredGifts.length === 0 ? (
-              <Box textAlign="center" p={8} bg={bgColor} borderRadius="md" borderWidth="1px" borderColor={borderColor}>
-                <Text fontSize="lg" mb={4}>No gifts found</Text>
-                <Button
-                  as={RouterLink}
-                  to="/gifts/add"
-                  colorScheme="blue"
-                  leftIcon={<AddIcon />}
-                >
-                  Add Your First Gift
-                </Button>
-              </Box>
-            ) : (
-              <SimpleGrid columns={{ base: 1, sm: 2, md: 3, lg: 4 }} spacing={6}>
-                {filteredGifts.map(gift => renderGiftItem(gift))}
-              </SimpleGrid>
-            )}
-          </TabPanel>
-          
-          <TabPanel p={0} pt={4}>
-            <Box mb={4} p={4} bg="purple.50" borderRadius="md" borderWidth="1px" borderColor="purple.200">
-              <Heading size="sm" mb={2} color="purple.700">Auto-Send Gifts</Heading>
-              <Text color="purple.700" fontSize="sm">
-                These gifts are scheduled to be automatically sent to your recipients. We'll handle the purchase, wrapping, and delivery for you.
-              </Text>
-            </Box>
-            
-            {loading ? (
-              <Flex justify="center" align="center" h="200px">
-                <Spinner size="xl" color="purple.500" />
-              </Flex>
-            ) : autoSendGifts.length === 0 ? (
-              <Box textAlign="center" p={8} bg={bgColor} borderRadius="md" borderWidth="1px" borderColor={borderColor}>
-                <Text fontSize="lg" mb={4}>No auto-send gifts scheduled</Text>
-                <Text fontSize="md" mb={4} color="gray.600">
-                  Schedule gifts to be automatically sent to your recipients on special dates.
-                </Text>
-                <Button
-                  onClick={() => setTabIndex(0)}
-                  colorScheme="purple"
-                >
-                  View All Gifts
-                </Button>
-              </Box>
-            ) : (
-              <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={6}>
-                {autoSendGifts.map(gift => renderGiftItem(gift, true))}
-              </SimpleGrid>
-            )}
-          </TabPanel>
-        </TabPanels>
-      </Tabs>
-    </Container>
-  );
+  return null;
 };
 
 export default GiftsListPage; 

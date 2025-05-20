@@ -30,6 +30,7 @@ import { useGiftStore } from '../store/giftStore';
 import { useRecipientStore } from '../store/recipientStore';
 import { getCurrentDateISO } from '../utils/dateUtils';
 import type { GiftStatus } from '../types';
+import { showErrorToast } from '../utils/toastUtils';
 
 const EditGiftPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -148,13 +149,7 @@ const EditGiftPage: React.FC = () => {
       
       navigate(`/gifts/${id}`);
     } catch (err) {
-      toast({
-        title: 'Error updating gift',
-        description: (err as Error).message,
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
+      showErrorToast(toast, err, { title: 'Error updating gift' });
     }
   };
   
@@ -286,7 +281,6 @@ const EditGiftPage: React.FC = () => {
                     <option value="idea">Idea</option>
                     <option value="planning">Planning</option>
                     <option value="purchased">Purchased</option>
-                    <option value="wrapped">Wrapped</option>
                     <option value="shipped">Shipped</option>
                     <option value="given">Given</option>
                     <option value="archived">Archived</option>

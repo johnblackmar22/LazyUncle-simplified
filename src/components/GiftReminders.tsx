@@ -1,11 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { useRecipients } from '../hooks/useRecipients';
+import { useRecipientStore } from '../store/recipientStore';
 import { useNavigate } from 'react-router-dom';
 import { Box, Heading, Text, Badge, Button, VStack, HStack, Divider, useColorModeValue } from '@chakra-ui/react';
 import { format, isAfter, isBefore, addDays, parseISO, differenceInDays } from 'date-fns';
+import type { Recipient as BaseRecipient } from '../types';
+
+interface SpecialDate {
+  id: string;
+  date: string | number | Date;
+  description?: string;
+  name?: string;
+  type?: string;
+}
+
+interface Recipient extends BaseRecipient {
+  anniversary?: string | number | Date;
+  specialDates?: SpecialDate[];
+}
 
 export const GiftReminders = () => {
-  const { recipients } = useRecipients();
+  const { recipients } = useRecipientStore();
   const navigate = useNavigate();
   const [upcomingEvents, setUpcomingEvents] = useState<Array<{
     recipientId: string;
@@ -33,7 +47,7 @@ export const GiftReminders = () => {
     const lookAheadDate = addDays(new Date(), 60);
     const today = new Date();
 
-    recipients.forEach(recipient => {
+    (recipients as Recipient[]).forEach(recipient => {
       // Check birthdate
       if (recipient.birthdate) {
         const birthdate = new Date(recipient.birthdate);
@@ -78,7 +92,7 @@ export const GiftReminders = () => {
 
       // Check special dates
       if (recipient.specialDates && recipient.specialDates.length > 0) {
-        recipient.specialDates.forEach(specialDate => {
+        recipient.specialDates.forEach((specialDate: SpecialDate) => {
           try {
             let dateObj: Date;
             

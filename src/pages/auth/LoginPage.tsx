@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
   Box, 
@@ -46,11 +46,11 @@ const LoginPage: React.FC = () => {
     email?: string;
     password?: string;
   }>({});
+  const demoToastShown = useRef(false);
 
-  // Remove the auto-initialization for demo mode and just show a notification
   useEffect(() => {
-    if (DEMO_MODE) {
-      console.log('Demo mode detected due to missing Firebase config');
+    if (DEMO_MODE && !demoToastShown.current) {
+      demoToastShown.current = true;
       toast({
         title: "Demo Mode Available",
         description: "Firebase credentials not found. You can use demo mode to explore the app.",
@@ -58,9 +58,8 @@ const LoginPage: React.FC = () => {
         duration: 5000,
         isClosable: true,
       });
-      // Removing the automatic handleDemoMode() call
     }
-  }, []);
+  }, [toast]);
 
   const validateForm = () => {
     const errors: {

@@ -28,38 +28,22 @@ import {
 import { AddIcon, ArrowBackIcon } from '@chakra-ui/icons';
 import { useRecipientStore } from '../store/recipientStore';
 import { getCurrentDateISO } from '../utils/dateUtils';
-import type { ImportantDate } from '../types';
+import { showErrorToast } from '../utils/toastUtils';
 
 const EditRecipientPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const toast = useToast();
-  const { 
-    selectedRecipient, 
-    loading, 
-    error, 
-    clearError, 
-    fetchRecipient,
-    updateRecipient 
-  } = useRecipientStore();
+  const { recipients, loading, error, resetError, fetchRecipients, updateRecipient } = useRecipientStore();
   
   // Form values
   const [name, setName] = useState('');
   const [relationship, setRelationship] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
-  const [notes, setNotes] = useState('');
+  const [birthdate, setBirthdate] = useState(getCurrentDateISO());
   
   // Interest management
   const [interest, setInterest] = useState('');
   const [interests, setInterests] = useState<string[]>([]);
-  
-  // Date management
-  const [dates, setDates] = useState<ImportantDate[]>([]);
-  const [dateType, setDateType] = useState<'birthday' | 'anniversary' | 'custom'>('birthday');
-  const [dateValue, setDateValue] = useState(getCurrentDateISO());
-  const [dateName, setDateName] = useState('');
   
   // Validation
   const [touched, setTouched] = useState({
@@ -73,24 +57,23 @@ const EditRecipientPage: React.FC = () => {
 
   // Fetch recipient data
   useEffect(() => {
-    if (id) {
-      fetchRecipient(id);
+    if (id && recipients.length > 0) {
+      const recipient = recipients.find(r => r.id === id);
+      if (recipient) {
+        setName(recipient.name);
+        setRelationship(recipient.relationship);
+        setBirthdate(recipient.birthdate ? new Date(recipient.birthdate).toISOString().split('T')[0] : getCurrentDateISO());
+        setInterests([...recipient.interests]);
+      }
     }
-  }, [id, fetchRecipient]);
-
-  // Populate form when recipient data is available
+  }, [id, recipients]);
+  
+  // In useEffect, fetch recipients if not already loaded
   useEffect(() => {
-    if (selectedRecipient) {
-      setName(selectedRecipient.name);
-      setRelationship(selectedRecipient.relationship);
-      setEmail(selectedRecipient.email || '');
-      setPhone(selectedRecipient.phone || '');
-      setAddress(selectedRecipient.address || '');
-      setNotes(selectedRecipient.notes || '');
-      setInterests([...selectedRecipient.interests]);
-      setDates([...selectedRecipient.importantDates]);
+    if (recipients.length === 0) {
+      fetchRecipients();
     }
-  }, [selectedRecipient]);
+  }, [recipients, fetchRecipients]);
   
   const isNameInvalid = touched.name && name.trim() === '';
   const isRelationshipInvalid = touched.relationship && relationship.trim() === '';
@@ -106,29 +89,9 @@ const EditRecipientPage: React.FC = () => {
     setInterests(interests.filter(i => i !== interestToRemove));
   };
 
-  const handleAddDate = () => {
-    if (dateValue) {
-      const newDate: ImportantDate = {
-        id: `date-${Date.now()}`,
-        type: dateType,
-        date: dateValue,
-        ...(dateType === 'custom' && dateName ? { name: dateName } : {})
-      };
-      
-      setDates([...dates, newDate]);
-      setDateValue(getCurrentDateISO());
-      setDateName('');
-      setDateType('birthday');
-    }
-  };
-
-  const handleRemoveDate = (dateId: string) => {
-    setDates(dates.filter(d => d.id !== dateId));
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    clearError();
+    resetError();
     
     // Mark fields as touched for validation
     setTouched({
@@ -144,12 +107,8 @@ const EditRecipientPage: React.FC = () => {
       await updateRecipient(id, {
         name,
         relationship,
-        email: email || undefined,
-        phone: phone || undefined,
-        address: address || undefined,
-        notes: notes || undefined,
-        interests,
-        importantDates: dates
+        birthdate: birthdate ? new Date(birthdate) : undefined,
+        interests
       });
       
       toast({
@@ -162,17 +121,11 @@ const EditRecipientPage: React.FC = () => {
       
       navigate(`/recipients/${id}`);
     } catch (err) {
-      toast({
-        title: 'Error updating recipient',
-        description: (err as Error).message,
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
+      showErrorToast(toast, err, { title: 'Error updating recipient' });
     }
   };
 
-  if (loading && !selectedRecipient) {
+  if (loading && !recipients.length) {
     return (
       <Flex justify="center" align="center" h="200px">
         <Spinner size="xl" color="blue.500" />
@@ -227,30 +180,11 @@ const EditRecipientPage: React.FC = () => {
               </FormControl>
               
               <FormControl>
-                <FormLabel>Email</FormLabel>
-                <Input 
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email address (optional)"
-                />
-              </FormControl>
-              
-              <FormControl>
-                <FormLabel>Phone</FormLabel>
-                <Input 
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Phone number (optional)"
-                />
-              </FormControl>
-              
-              <FormControl>
-                <FormLabel>Address</FormLabel>
-                <Input 
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Home address (optional)"
+                <FormLabel>Birthdate</FormLabel>
+                <Input
+                  type="date"
+                  value={birthdate}
+                  onChange={(e) => setBirthdate(e.target.value)}
                 />
               </FormControl>
               
@@ -299,95 +233,6 @@ const EditRecipientPage: React.FC = () => {
                     ))}
                   </HStack>
                 </Box>
-              </FormControl>
-              
-              <Divider my={2} />
-              
-              <Heading size="md">Important Dates</Heading>
-              
-              <HStack width="100%">
-                <FormControl flex="1">
-                  <FormLabel>Date Type</FormLabel>
-                  <select
-                    value={dateType}
-                    onChange={(e) => setDateType(e.target.value as any)}
-                    style={{
-                      padding: '8px',
-                      borderRadius: '0.375rem',
-                      width: '100%',
-                      borderColor: borderColor
-                    }}
-                  >
-                    <option value="birthday">Birthday</option>
-                    <option value="anniversary">Anniversary</option>
-                    <option value="custom">Custom</option>
-                  </select>
-                </FormControl>
-                
-                <FormControl flex="1">
-                  <FormLabel>Date</FormLabel>
-                  <Input
-                    type="date"
-                    value={dateValue}
-                    onChange={(e) => setDateValue(e.target.value)}
-                  />
-                </FormControl>
-                
-                {dateType === 'custom' && (
-                  <FormControl flex="1">
-                    <FormLabel>Name</FormLabel>
-                    <Input
-                      value={dateName}
-                      onChange={(e) => setDateName(e.target.value)}
-                      placeholder="e.g., Graduation"
-                    />
-                  </FormControl>
-                )}
-                
-                <IconButton
-                  aria-label="Add date"
-                  icon={<AddIcon />}
-                  onClick={handleAddDate}
-                  alignSelf="flex-end"
-                  mb="2px"
-                />
-              </HStack>
-              
-              <Box width="100%">
-                {dates.length > 0 ? (
-                  <VStack align="stretch" spacing={2} mt={2}>
-                    {dates.map((date) => (
-                      <HStack key={date.id} p={2} borderWidth="1px" borderRadius="md">
-                        <Text flex="1">
-                          <strong>
-                            {date.type === 'custom' ? date.name : date.type.charAt(0).toUpperCase() + date.type.slice(1)}:
-                          </strong> {new Date(date.date).toLocaleDateString()}
-                        </Text>
-                        <IconButton
-                          aria-label="Remove date"
-                          icon={<TagCloseButton />}
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleRemoveDate(date.id)}
-                        />
-                      </HStack>
-                    ))}
-                  </VStack>
-                ) : (
-                  <Text color="gray.500" mt={2}>No important dates added yet.</Text>
-                )}
-              </Box>
-              
-              <Divider my={2} />
-              
-              <FormControl>
-                <FormLabel>Notes</FormLabel>
-                <Textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Add any additional notes about this recipient"
-                  minHeight="100px"
-                />
               </FormControl>
               
               {error && (

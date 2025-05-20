@@ -17,6 +17,10 @@ import SettingsPage from './pages/SettingsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import { useAuthStore } from './store/authStore';
+import OnboardingWizard from './components/OnboardingWizard';
+import SubscriptionPlansPage from './pages/subscription/SubscriptionPlansPage';
+import HowItWorksPage from './pages/HowItWorksPage';
+import CheckoutPage from './pages/CheckoutPage';
 
 function App() {
   const { initialized } = useAuthStore();
@@ -31,6 +35,9 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/subscription/plans" element={<SubscriptionPlansPage />} />
+        <Route path="/how-it-works" element={<HowItWorksPage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
 
         {/* Protected routes */}
         <Route element={<ProtectedRoute />}>
@@ -44,16 +51,19 @@ function App() {
             <Route path="/recipients/:id/edit" element={<EditRecipientPage />} />
             
             {/* Gift routes */}
-            <Route path="/gifts" element={<GiftsListPage />} />
+            {/* <Route path="/gifts" element={<GiftsListPage />} />
             <Route path="/gifts/:id" element={<GiftDetailPage />} />
             <Route path="/gifts/add" element={<AddGiftPage />} />
             <Route path="/gifts/add/:recipientId" element={<AddGiftPage />} />
-            <Route path="/gifts/:id/edit" element={<EditGiftPage />} />
+            <Route path="/gifts/:id/edit" element={<EditGiftPage />} /> */}
             
             {/* Settings route */}
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
         </Route>
+
+        {/* Onboarding route */}
+        <Route path="/onboarding" element={<OnboardingWizard />} />
 
         {/* Fallback route */}
         <Route path="*" element={<Navigate to="/" />} />

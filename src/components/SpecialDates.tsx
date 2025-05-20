@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { useRecipients } from '../hooks/useRecipients';
+import { useRecipientStore } from '../store/recipientStore';
 import { format } from 'date-fns';
+import type { Recipient as BaseRecipient } from '../types';
 
 interface SpecialDate {
   id: string;
@@ -9,9 +10,14 @@ interface SpecialDate {
   type: 'birthday' | 'anniversary' | 'other';
 }
 
+interface Recipient extends BaseRecipient {
+  specialDates?: SpecialDate[];
+}
+
 export const SpecialDates: React.FC<{ recipientId: string }> = ({ recipientId }) => {
-  const { recipients, updateRecipient } = useRecipients();
-  const recipient = recipients.find(r => r.id === recipientId);
+  const { recipients, updateRecipient } = useRecipientStore();
+  const extendedRecipients = recipients as Recipient[];
+  const recipient = extendedRecipients.find(r => r.id === recipientId);
   const [newDate, setNewDate] = useState<Omit<SpecialDate, 'id'>>({
     date: '',
     description: '',
@@ -22,19 +28,19 @@ export const SpecialDates: React.FC<{ recipientId: string }> = ({ recipientId })
     if (!recipient) return;
     
     const updatedDates = [
-      ...(recipient.specialDates || []),
+      ...((recipient.specialDates as SpecialDate[]) || []),
       { ...newDate, id: Date.now().toString() }
     ];
     
-    updateRecipient(recipientId, { specialDates: updatedDates });
+    updateRecipient(recipientId, { specialDates: updatedDates } as Partial<Recipient>);
     setNewDate({ date: '', description: '', type: 'birthday' });
   };
 
   const handleDeleteDate = (dateId: string) => {
     if (!recipient) return;
     
-    const updatedDates = recipient.specialDates?.filter(date => date.id !== dateId) || [];
-    updateRecipient(recipientId, { specialDates: updatedDates });
+    const updatedDates = (recipient.specialDates as SpecialDate[] | undefined)?.filter((date: SpecialDate) => date.id !== dateId) || [];
+    updateRecipient(recipientId, { specialDates: updatedDates } as Partial<Recipient>);
   };
 
   if (!recipient) return null;
@@ -80,7 +86,7 @@ export const SpecialDates: React.FC<{ recipientId: string }> = ({ recipientId })
       <div>
         <h3 className="text-lg font-medium mb-2">Existing Dates</h3>
         <div className="space-y-2">
-          {recipient.specialDates?.map((date) => (
+          {(recipient.specialDates as SpecialDate[] | undefined)?.map((date: SpecialDate) => (
             <div key={date.id} className="flex items-center justify-between bg-gray-50 p-3 rounded">
               <div>
                 <span className="font-medium">{format(new Date(date.date), 'MMMM d, yyyy')}</span>

@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Recipient, OccasionPreference, Address } from '../types';
+import React, { useState } from 'react';
+import type { Recipient, Address, AutoSendPreferences, OccasionPreference } from '../types';
 import { useRecipientStore } from '../store/recipientStore';
+import {
+  Box, Heading, Switch, FormControl, FormLabel, Input, NumberInput, NumberInputField, NumberInputStepper, NumberIncrementStepper, NumberDecrementStepper, Button, Stack, Text, Tooltip, Divider, Select, useToast
+} from '@chakra-ui/react';
 
 interface AutoSendPreferencesProps {
   recipient: Recipient;
@@ -8,6 +11,7 @@ interface AutoSendPreferencesProps {
 
 export const AutoSendPreferences: React.FC<AutoSendPreferencesProps> = ({ recipient }) => {
   const { updateAutoSendPreferences, toggleAutoSend, toggleOccasionAutoSend, setDefaultBudget, updateOccasionPreference, updateShippingAddress, toggleApprovalRequirement } = useRecipientStore();
+  const toast = useToast();
   
   const [isEnabled, setIsEnabled] = useState(recipient.autoSendPreferences?.enabled || false);
   const [defaultBudget, setDefaultBudgetState] = useState(recipient.autoSendPreferences?.defaultBudget || 50);
@@ -104,336 +108,175 @@ export const AutoSendPreferences: React.FC<AutoSendPreferencesProps> = ({ recipi
   };
 
   return (
-    <div className="auto-send-preferences">
-      <h2>Auto-Send Preferences</h2>
-      
-      <div className="form-group">
-        <label className="switch-label">
-          <span>Enable Auto-Send for {recipient.name}</span>
-          <div className="switch">
-            <input 
-              type="checkbox" 
-              checked={isEnabled}
-              onChange={handleToggleAutoSend}
-            />
-            <span className="slider round"></span>
-          </div>
-        </label>
-      </div>
-      
+    <Box p={6} borderWidth="1px" borderRadius="lg" boxShadow="md" bg="white" maxW="lg" mx="auto">
+      <Heading size="md" mb={4}>Auto-Send Preferences</Heading>
+      <FormControl display="flex" alignItems="center" mb={4}>
+        <FormLabel htmlFor="auto-send-switch" mb="0">Enable Auto-Send for {recipient.name}</FormLabel>
+        <Tooltip label="Automatically send gifts for this recipient on special occasions" aria-label="Auto-send help">
+          <Switch id="auto-send-switch" isChecked={isEnabled} onChange={handleToggleAutoSend} colorScheme="blue" />
+        </Tooltip>
+      </FormControl>
       {isEnabled && (
         <>
-          <div className="form-group">
-            <label>
-              Default Budget: $
-              <input 
-                type="number" 
-                min="1"
-                value={defaultBudget}
-                onChange={handleDefaultBudgetChange}
-              />
-            </label>
-          </div>
-          
-          <div className="form-group">
-            <label className="switch-label">
-              <span>Require Approval Before Sending</span>
-              <div className="switch">
-                <input 
-                  type="checkbox" 
-                  checked={requireApproval}
-                  onChange={handleToggleApproval}
-                />
-                <span className="slider round"></span>
-              </div>
-            </label>
-            <p className="help-text">
-              {requireApproval 
-                ? "You'll be notified to review and approve all auto-send gifts before they're ordered." 
-                : "Gifts will be automatically ordered without approval."}
-            </p>
-          </div>
-          
-          <h3>Occasions</h3>
-          
+          <FormControl mb={4}>
+            <FormLabel>Default Budget ($)</FormLabel>
+            <NumberInput min={1} value={defaultBudget} onChange={(_, value) => setDefaultBudgetState(value)} onBlur={handleDefaultBudgetChange}>
+              <NumberInputField />
+              <NumberInputStepper>
+                <NumberIncrementStepper />
+                <NumberDecrementStepper />
+              </NumberInputStepper>
+            </NumberInput>
+          </FormControl>
+          <FormControl display="flex" alignItems="center" mb={4}>
+            <FormLabel htmlFor="approval-switch" mb="0">Require Approval Before Sending</FormLabel>
+            <Tooltip label="If enabled, you'll be notified to review and approve all auto-send gifts before they're ordered." aria-label="Approval help">
+              <Switch id="approval-switch" isChecked={requireApproval} onChange={handleToggleApproval} colorScheme="blue" />
+            </Tooltip>
+          </FormControl>
+          <Divider my={4} />
+          <Heading size="sm" mb={2}>Occasions</Heading>
           {recipient.birthdate && (
-            <div className="occasion-section">
-              <h4>Birthday</h4>
-              <div className="form-group">
-                <label className="switch-label">
-                  <span>Enable Birthday Auto-Send</span>
-                  <div className="switch">
-                    <input 
-                      type="checkbox" 
-                      checked={birthdayEnabled}
-                      onChange={() => handleToggleOccasion('birthday', birthdayEnabled)}
-                    />
-                    <span className="slider round"></span>
-                  </div>
-                </label>
-              </div>
-              
+            <Box mb={4}>
+              <FormControl display="flex" alignItems="center" mb={2}>
+                <FormLabel htmlFor="birthday-switch" mb="0">Enable Birthday Auto-Send</FormLabel>
+                <Switch id="birthday-switch" isChecked={birthdayEnabled} onChange={() => handleToggleOccasion('birthday', birthdayEnabled)} colorScheme="blue" />
+              </FormControl>
               {birthdayEnabled && (
-                <>
-                  <div className="form-group">
-                    <label>
-                      Budget: $
-                      <input 
-                        type="number" 
-                        min="1"
-                        value={birthdayBudget}
-                        onChange={(e) => {
-                          const value = parseFloat(e.target.value);
-                          if (!isNaN(value) && value > 0) {
-                            setBirthdayBudget(value);
-                            handleOccasionPreferenceChange('birthday', { budget: value });
-                          }
-                        }}
-                      />
-                    </label>
-                  </div>
-                  
-                  <div className="form-group">
-                    <label>
-                      Lead Time (days before):
-                      <input 
-                        type="number" 
-                        min="1"
-                        max="90"
-                        value={birthdayLeadTime}
-                        onChange={(e) => {
-                          const value = parseInt(e.target.value);
-                          if (!isNaN(value) && value > 0) {
-                            setBirthdayLeadTime(value);
-                            handleOccasionPreferenceChange('birthday', { leadTime: value });
-                          }
-                        }}
-                      />
-                    </label>
-                  </div>
-                </>
+                <Stack direction={{ base: 'column', md: 'row' }} spacing={4} mb={2}>
+                  <FormControl>
+                    <FormLabel>Budget ($)</FormLabel>
+                    <NumberInput min={1} value={birthdayBudget} onChange={(_, value) => setBirthdayBudget(value)} onBlur={e => handleOccasionPreferenceChange('birthday', { budget: birthdayBudget })}>
+                      <NumberInputField />
+                      <NumberInputStepper>
+                        <NumberIncrementStepper />
+                        <NumberDecrementStepper />
+                      </NumberInputStepper>
+                    </NumberInput>
+                  </FormControl>
+                  <FormControl>
+                    <FormLabel>Lead Time (days before)</FormLabel>
+                    <NumberInput min={1} max={90} value={birthdayLeadTime} onChange={(_, value) => setBirthdayLeadTime(value)} onBlur={e => handleOccasionPreferenceChange('birthday', { leadTime: birthdayLeadTime })}>
+                      <NumberInputField />
+                      <NumberInputStepper>
+                        <NumberIncrementStepper />
+                        <NumberDecrementStepper />
+                      </NumberInputStepper>
+                    </NumberInput>
+                  </FormControl>
+                </Stack>
               )}
-            </div>
+            </Box>
           )}
-          
-          <div className="occasion-section">
-            <h4>Christmas</h4>
-            <div className="form-group">
-              <label className="switch-label">
-                <span>Enable Christmas Auto-Send</span>
-                <div className="switch">
-                  <input 
-                    type="checkbox" 
-                    checked={christmasEnabled}
-                    onChange={() => handleToggleOccasion('christmas', christmasEnabled)}
-                  />
-                  <span className="slider round"></span>
-                </div>
-              </label>
-            </div>
-            
+          <Box mb={4}>
+            <FormControl display="flex" alignItems="center" mb={2}>
+              <FormLabel htmlFor="christmas-switch" mb="0">Enable Christmas Auto-Send</FormLabel>
+              <Switch id="christmas-switch" isChecked={christmasEnabled} onChange={() => handleToggleOccasion('christmas', christmasEnabled)} colorScheme="blue" />
+            </FormControl>
             {christmasEnabled && (
-              <>
-                <div className="form-group">
-                  <label>
-                    Budget: $
-                    <input 
-                      type="number" 
-                      min="1"
-                      value={christmasBudget}
-                      onChange={(e) => {
-                        const value = parseFloat(e.target.value);
-                        if (!isNaN(value) && value > 0) {
-                          setChristmasBudget(value);
-                          handleOccasionPreferenceChange('christmas', { budget: value });
-                        }
-                      }}
-                    />
-                  </label>
-                </div>
-                
-                <div className="form-group">
-                  <label>
-                    Lead Time (days before):
-                    <input 
-                      type="number" 
-                      min="1"
-                      max="90"
-                      value={christmasLeadTime}
-                      onChange={(e) => {
-                        const value = parseInt(e.target.value);
-                        if (!isNaN(value) && value > 0) {
-                          setChristmasLeadTime(value);
-                          handleOccasionPreferenceChange('christmas', { leadTime: value });
-                        }
-                      }}
-                    />
-                  </label>
-                </div>
-              </>
+              <Stack direction={{ base: 'column', md: 'row' }} spacing={4} mb={2}>
+                <FormControl>
+                  <FormLabel>Budget ($)</FormLabel>
+                  <NumberInput min={1} value={christmasBudget} onChange={(_, value) => setChristmasBudget(value)} onBlur={e => handleOccasionPreferenceChange('christmas', { budget: christmasBudget })}>
+                    <NumberInputField />
+                    <NumberInputStepper>
+                      <NumberIncrementStepper />
+                      <NumberDecrementStepper />
+                    </NumberInputStepper>
+                  </NumberInput>
+                </FormControl>
+                <FormControl>
+                  <FormLabel>Lead Time (days before)</FormLabel>
+                  <NumberInput min={1} max={90} value={christmasLeadTime} onChange={(_, value) => setChristmasLeadTime(value)} onBlur={e => handleOccasionPreferenceChange('christmas', { leadTime: christmasLeadTime })}>
+                    <NumberInputField />
+                    <NumberInputStepper>
+                      <NumberIncrementStepper />
+                      <NumberDecrementStepper />
+                    </NumberInputStepper>
+                  </NumberInput>
+                </FormControl>
+              </Stack>
             )}
-          </div>
-          
+          </Box>
           {recipient.anniversary && (
-            <div className="occasion-section">
-              <h4>Anniversary</h4>
-              <div className="form-group">
-                <label className="switch-label">
-                  <span>Enable Anniversary Auto-Send</span>
-                  <div className="switch">
-                    <input 
-                      type="checkbox" 
-                      checked={anniversaryEnabled}
-                      onChange={() => handleToggleOccasion('anniversary', anniversaryEnabled)}
-                    />
-                    <span className="slider round"></span>
-                  </div>
-                </label>
-              </div>
-              
+            <Box mb={4}>
+              <FormControl display="flex" alignItems="center" mb={2}>
+                <FormLabel htmlFor="anniversary-switch" mb="0">Enable Anniversary Auto-Send</FormLabel>
+                <Switch id="anniversary-switch" isChecked={anniversaryEnabled} onChange={() => handleToggleOccasion('anniversary', anniversaryEnabled)} colorScheme="blue" />
+              </FormControl>
               {anniversaryEnabled && (
-                <>
-                  <div className="form-group">
-                    <label>
-                      Budget: $
-                      <input 
-                        type="number" 
-                        min="1"
-                        value={anniversaryBudget}
-                        onChange={(e) => {
-                          const value = parseFloat(e.target.value);
-                          if (!isNaN(value) && value > 0) {
-                            setAnniversaryBudget(value);
-                            handleOccasionPreferenceChange('anniversary', { budget: value });
-                          }
-                        }}
-                      />
-                    </label>
-                  </div>
-                  
-                  <div className="form-group">
-                    <label>
-                      Lead Time (days before):
-                      <input 
-                        type="number" 
-                        min="1"
-                        max="90"
-                        value={anniversaryLeadTime}
-                        onChange={(e) => {
-                          const value = parseInt(e.target.value);
-                          if (!isNaN(value) && value > 0) {
-                            setAnniversaryLeadTime(value);
-                            handleOccasionPreferenceChange('anniversary', { leadTime: value });
-                          }
-                        }}
-                      />
-                    </label>
-                  </div>
-                </>
+                <Stack direction={{ base: 'column', md: 'row' }} spacing={4} mb={2}>
+                  <FormControl>
+                    <FormLabel>Budget ($)</FormLabel>
+                    <NumberInput min={1} value={anniversaryBudget} onChange={(_, value) => setAnniversaryBudget(value)} onBlur={e => handleOccasionPreferenceChange('anniversary', { budget: anniversaryBudget })}>
+                      <NumberInputField />
+                      <NumberInputStepper>
+                        <NumberIncrementStepper />
+                        <NumberDecrementStepper />
+                      </NumberInputStepper>
+                    </NumberInput>
+                  </FormControl>
+                  <FormControl>
+                    <FormLabel>Lead Time (days before)</FormLabel>
+                    <NumberInput min={1} max={90} value={anniversaryLeadTime} onChange={(_, value) => setAnniversaryLeadTime(value)} onBlur={e => handleOccasionPreferenceChange('anniversary', { leadTime: anniversaryLeadTime })}>
+                      <NumberInputField />
+                      <NumberInputStepper>
+                        <NumberIncrementStepper />
+                        <NumberDecrementStepper />
+                      </NumberInputStepper>
+                    </NumberInput>
+                  </FormControl>
+                </Stack>
               )}
-            </div>
+            </Box>
           )}
-          
-          <h3>Shipping Address</h3>
-          <div className="form-group">
-            <label>
-              Street Address:
-              <input 
-                type="text" 
-                value={address.line1}
-                onChange={(e) => handleAddressChange('line1', e.target.value)}
-              />
-            </label>
-          </div>
-          
-          <div className="form-group">
-            <label>
-              Apartment/Suite (optional):
-              <input 
-                type="text" 
-                value={address.line2 || ''}
-                onChange={(e) => handleAddressChange('line2', e.target.value)}
-              />
-            </label>
-          </div>
-          
-          <div className="form-row">
-            <div className="form-group">
-              <label>
-                City:
-                <input 
-                  type="text" 
-                  value={address.city}
-                  onChange={(e) => handleAddressChange('city', e.target.value)}
-                />
-              </label>
-            </div>
-            
-            <div className="form-group">
-              <label>
-                State:
-                <input 
-                  type="text" 
-                  value={address.state}
-                  onChange={(e) => handleAddressChange('state', e.target.value)}
-                />
-              </label>
-            </div>
-          </div>
-          
-          <div className="form-row">
-            <div className="form-group">
-              <label>
-                Postal Code:
-                <input 
-                  type="text" 
-                  value={address.postalCode}
-                  onChange={(e) => handleAddressChange('postalCode', e.target.value)}
-                />
-              </label>
-            </div>
-            
-            <div className="form-group">
-              <label>
-                Country:
-                <input 
-                  type="text" 
-                  value={address.country}
-                  onChange={(e) => handleAddressChange('country', e.target.value)}
-                />
-              </label>
-            </div>
-          </div>
-          
-          <button 
-            className="btn btn-primary" 
-            onClick={handleSaveAddress}
-            disabled={!address.line1 || !address.city || !address.state || !address.postalCode || !address.country}
-          >
+          <Divider my={4} />
+          <Heading size="sm" mb={2}>Shipping Address</Heading>
+          <Stack spacing={2} mb={4}>
+            <FormControl isRequired>
+              <FormLabel>Street Address</FormLabel>
+              <Input value={address.line1} onChange={e => handleAddressChange('line1', e.target.value)} />
+            </FormControl>
+            <FormControl>
+              <FormLabel>Apartment/Suite (optional)</FormLabel>
+              <Input value={address.line2 || ''} onChange={e => handleAddressChange('line2', e.target.value)} />
+            </FormControl>
+            <FormControl isRequired>
+              <FormLabel>City</FormLabel>
+              <Input value={address.city} onChange={e => handleAddressChange('city', e.target.value)} />
+            </FormControl>
+            <FormControl isRequired>
+              <FormLabel>State</FormLabel>
+              <Input value={address.state} onChange={e => handleAddressChange('state', e.target.value)} />
+            </FormControl>
+            <FormControl isRequired>
+              <FormLabel>Postal Code</FormLabel>
+              <Input value={address.postalCode} onChange={e => handleAddressChange('postalCode', e.target.value)} />
+            </FormControl>
+            <FormControl isRequired>
+              <FormLabel>Country</FormLabel>
+              <Input value={address.country} onChange={e => handleAddressChange('country', e.target.value)} />
+            </FormControl>
+          </Stack>
+          <Button colorScheme="blue" onClick={handleSaveAddress} isDisabled={!address.line1 || !address.city || !address.state || !address.postalCode || !address.country} mb={4}>
             Save Address
-          </button>
-          
-          <h3>Payment Method</h3>
-          <div className="form-group">
-            <label>
-              Payment Method:
-              <select 
-                value={paymentType}
-                onChange={(e) => setPaymentType(e.target.value as 'creditCard' | 'paypal' | 'other')}
-              >
-                <option value="creditCard">Credit Card</option>
-                <option value="paypal">PayPal</option>
-                <option value="other">Other</option>
-              </select>
-            </label>
-          </div>
-          
-          <p className="note">
+          </Button>
+          <Divider my={4} />
+          <Heading size="sm" mb={2}>Payment Method</Heading>
+          <FormControl mb={2}>
+            <FormLabel>Payment Method</FormLabel>
+            <Select value={paymentType} onChange={e => setPaymentType(e.target.value as 'creditCard' | 'paypal' | 'other')}>
+              <option value="creditCard">Credit Card</option>
+              <option value="paypal">PayPal</option>
+              <option value="other">Other</option>
+            </Select>
+          </FormControl>
+          <Text fontSize="sm" color="gray.500">
             For security, payment details are managed in the payment settings page.
-          </p>
+          </Text>
         </>
       )}
-    </div>
+    </Box>
   );
 };
 

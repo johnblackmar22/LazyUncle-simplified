@@ -24,11 +24,21 @@ import {
   TagCloseButton,
   InputGroup,
   InputRightElement,
-  IconButton
+  IconButton,
+  AlertDialog,
+  AlertDialogOverlay,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogBody,
+  AlertDialogFooter
 } from '@chakra-ui/react';
 import { ArrowBackIcon, AddIcon } from '@chakra-ui/icons';
 import { useGiftStore } from '../store/giftStore';
 import { useRecipientStore } from '../store/recipientStore';
+import { showErrorToast } from '../utils/toastUtils';
+import { useAuthStore } from '../store/authStore';
+import { getPlanById } from '../services/subscription/plans';
+import { Navbar } from '../components/Navbar';
 
 // Define gift status type based on our schema
 type GiftStatus = 'planned' | 'ordered' | 'shipped' | 'delivered';
@@ -40,6 +50,16 @@ const AddGiftPage: React.FC = () => {
   
   const { createGift, loading, error, clearError } = useGiftStore();
   const { recipients, fetchRecipients, loading: recipientsLoading } = useRecipientStore();
+  const { user, demoMode } = useAuthStore();
+  const planId = user?.planId || 'free';
+  const plan = getPlanById(planId);
+  
+  const { recipientGifts, fetchGiftsByRecipient } = useGiftStore();
+  const [isPaywallOpen, setPaywallOpen] = useState(false);
+  const cancelRef = React.useRef(null);
+  
+  // Track gifts for the selected recipient
+  const [currentYearGiftCount, setCurrentYearGiftCount] = useState(0);
   
   // Form values
   const [name, setName] = useState('');
@@ -122,6 +142,23 @@ const AddGiftPage: React.FC = () => {
     }
   }, [selectedRecipientId, recipients, name]);
   
+  useEffect(() => {
+    if (selectedRecipientId) {
+      fetchGiftsByRecipient(selectedRecipientId).then(() => {
+        const gifts = recipientGifts[selectedRecipientId] || [];
+        const currentYear = new Date().getFullYear();
+        const count = gifts.filter(gift => {
+          const date = new Date(gift.date);
+          return date.getFullYear() === currentYear;
+        }).length;
+        setCurrentYearGiftCount(count);
+      });
+    }
+  }, [selectedRecipientId, fetchGiftsByRecipient, recipientGifts]);
+  
+  // Check if at or above gift limit
+  const atGiftLimit = !demoMode && plan && plan.giftLimit !== Infinity && currentYearGiftCount >= plan.giftLimit;
+  
   const handleAddInterest = () => {
     if (interest.trim() !== '' && !interests.includes(interest.trim())) {
       setInterests([...interests, interest.trim()]);
@@ -144,6 +181,10 @@ const AddGiftPage: React.FC = () => {
     });
     
     if (isNameInvalid || isRecipientInvalid) {
+      return;
+    }
+    if (atGiftLimit) {
+      setPaywallOpen(true);
       return;
     }
     
@@ -171,13 +212,7 @@ const AddGiftPage: React.FC = () => {
       
       navigate(`/gifts/${newGift.id}`);
     } catch (err) {
-      toast({
-        title: 'Error adding gift',
-        description: (err as Error).message,
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
+      showErrorToast(toast, err, { title: 'Error adding gift' });
     }
   };
   
@@ -190,158 +225,189 @@ const AddGiftPage: React.FC = () => {
   }
   
   return (
-    <Container maxW="container.md" py={8}>
-      <VStack spacing={8} align="stretch">
-        <Box>
-          <Button 
-            leftIcon={<ArrowBackIcon />} 
-            variant="ghost" 
-            onClick={() => navigate('/gifts')}
-            mb={4}
-          >
-            Back to Gifts
-          </Button>
+    <Box bg="gray.50" minH="100vh">
+      <Navbar />
+      <Container maxW="container.md" py={12}>
+        <VStack spacing={8} align="stretch">
+          <Box>
+            <Button 
+              leftIcon={<ArrowBackIcon />} 
+              variant="ghost" 
+              onClick={() => navigate('/gifts')}
+              mb={4}
+            >
+              Back to Gifts
+            </Button>
+            
+            <Heading size="xl" mb={2}>Add Gift</Heading>
+            <Text color="gray.600">
+              Add a gift for your recipient with a simple reminder system.
+            </Text>
+          </Box>
           
-          <Heading size="xl" mb={2}>Add Gift</Heading>
-          <Text color="gray.600">
-            Add a gift for your recipient with a simple reminder system.
-          </Text>
-        </Box>
-        
-        <Box bg={bgColor} p={6} borderRadius="lg" borderWidth="1px" borderColor={borderColor}>
-          <form onSubmit={handleSubmit}>
-            <VStack spacing={6} align="start">
-              <FormControl isRequired isInvalid={isRecipientInvalid}>
-                <FormLabel>For Recipient</FormLabel>
-                <Select 
-                  value={selectedRecipientId}
-                  onChange={(e) => setSelectedRecipientId(e.target.value)}
-                  onBlur={() => setTouched({ ...touched, selectedRecipientId: true })}
-                  placeholder="Select a recipient"
-                >
-                  {recipients.map(recipient => (
-                    <option key={recipient.id} value={recipient.id}>
-                      {recipient.name} ({recipient.relationship})
-                    </option>
-                  ))}
-                </Select>
-                {isRecipientInvalid && (
-                  <FormErrorMessage>Recipient is required</FormErrorMessage>
-                )}
-                {recipients.length === 0 && (
-                  <Text color="red.500" fontSize="sm" mt={1}>
-                    You need to add a recipient first. <Button as={RouterLink} to="/recipients/add" variant="link" colorScheme="blue">Add Recipient</Button>
-                  </Text>
-                )}
-              </FormControl>
-              
-              <FormControl isRequired isInvalid={isNameInvalid}>
-                <FormLabel>Gift Name</FormLabel>
-                <Input 
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  onBlur={() => setTouched({ ...touched, name: true })}
-                  placeholder="Enter gift name"
-                />
-                {isNameInvalid && (
-                  <FormErrorMessage>Gift name is required</FormErrorMessage>
-                )}
-              </FormControl>
-              
-              <FormControl>
-                <FormLabel>Interests</FormLabel>
-                <InputGroup>
-                  <Input
-                    value={interest}
-                    onChange={(e) => setInterest(e.target.value)}
-                    placeholder="Add interests for this gift"
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAddInterest();
-                      }
-                    }}
-                  />
-                  <InputRightElement>
-                    <IconButton
-                      icon={<AddIcon />}
-                      size="sm"
-                      aria-label="Add interest"
-                      onClick={handleAddInterest}
-                    />
-                  </InputRightElement>
-                </InputGroup>
-                
-                {/* Display added interests */}
-                {interests.length > 0 && (
-                  <Box mt={2}>
-                    {interests.map((i, index) => (
-                      <Tag key={index} m={1} colorScheme="blue">
-                        <TagLabel>{i}</TagLabel>
-                        <TagCloseButton onClick={() => handleRemoveInterest(i)} />
-                      </Tag>
+          <Box bg={bgColor} p={6} borderRadius="lg" borderWidth="1px" borderColor={borderColor}>
+            <form onSubmit={handleSubmit}>
+              <VStack spacing={6} align="start">
+                <FormControl isRequired isInvalid={isRecipientInvalid}>
+                  <FormLabel>For Recipient</FormLabel>
+                  <Select 
+                    value={selectedRecipientId}
+                    onChange={(e) => setSelectedRecipientId(e.target.value)}
+                    onBlur={() => setTouched({ ...touched, selectedRecipientId: true })}
+                    placeholder="Select a recipient"
+                  >
+                    {recipients.map(recipient => (
+                      <option key={recipient.id} value={recipient.id}>
+                        {recipient.name} ({recipient.relationship})
+                      </option>
                     ))}
-                  </Box>
+                  </Select>
+                  {isRecipientInvalid && (
+                    <FormErrorMessage>Recipient is required</FormErrorMessage>
+                  )}
+                  {recipients.length === 0 && (
+                    <Text color="red.500" fontSize="sm" mt={1}>
+                      You need to add a recipient first. <Button as={RouterLink} to="/recipients/add" variant="link" colorScheme="blue">Add Recipient</Button>
+                    </Text>
+                  )}
+                </FormControl>
+                
+                <FormControl isRequired isInvalid={isNameInvalid}>
+                  <FormLabel>Gift Name</FormLabel>
+                  <Input 
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    onBlur={() => setTouched({ ...touched, name: true })}
+                    placeholder="Enter gift name"
+                  />
+                  {isNameInvalid && (
+                    <FormErrorMessage>Gift name is required</FormErrorMessage>
+                  )}
+                </FormControl>
+                
+                <FormControl>
+                  <FormLabel>Interests</FormLabel>
+                  <InputGroup>
+                    <Input
+                      value={interest}
+                      onChange={(e) => setInterest(e.target.value)}
+                      placeholder="Add interests for this gift"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddInterest();
+                        }
+                      }}
+                    />
+                    <InputRightElement>
+                      <IconButton
+                        icon={<AddIcon />}
+                        size="sm"
+                        aria-label="Add interest"
+                        onClick={handleAddInterest}
+                      />
+                    </InputRightElement>
+                  </InputGroup>
+                  
+                  {/* Display added interests */}
+                  {interests.length > 0 && (
+                    <Box mt={2}>
+                      {interests.map((i, index) => (
+                        <Tag key={index} m={1} colorScheme="blue">
+                          <TagLabel>{i}</TagLabel>
+                          <TagCloseButton onClick={() => handleRemoveInterest(i)} />
+                        </Tag>
+                      ))}
+                    </Box>
+                  )}
+                </FormControl>
+                
+                <FormControl>
+                  <FormLabel>Price</FormLabel>
+                  <Input 
+                    type="number"
+                    step="0.01"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    placeholder="Enter price"
+                  />
+                </FormControl>
+                
+                <FormControl>
+                  <FormLabel>Reminder Date</FormLabel>
+                  <Input 
+                    type="date"
+                    value={reminderDate}
+                    onChange={(e) => setReminderDate(e.target.value)}
+                  />
+                  <Text fontSize="sm" color="gray.500" mt={1}>
+                    When should we remind you about this gift?
+                  </Text>
+                </FormControl>
+                
+                <FormControl>
+                  <Checkbox 
+                    isChecked={autoSend}
+                    onChange={(e) => setAutoSend(e.target.checked)}
+                    colorScheme="purple"
+                    size="lg"
+                  >
+                    Auto-send gift
+                  </Checkbox>
+                  <Text fontSize="sm" color="gray.500" mt={1}>
+                    We'll handle sending this gift automatically at the right time.
+                  </Text>
+                </FormControl>
+                
+                {error && (
+                  <Text color="red.500">{error}</Text>
                 )}
-              </FormControl>
-              
-              <FormControl>
-                <FormLabel>Price</FormLabel>
-                <Input 
-                  type="number"
-                  step="0.01"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  placeholder="Enter price"
-                />
-              </FormControl>
-              
-              <FormControl>
-                <FormLabel>Reminder Date</FormLabel>
-                <Input 
-                  type="date"
-                  value={reminderDate}
-                  onChange={(e) => setReminderDate(e.target.value)}
-                />
-                <Text fontSize="sm" color="gray.500" mt={1}>
-                  When should we remind you about this gift?
-                </Text>
-              </FormControl>
-              
-              <FormControl>
-                <Checkbox 
-                  isChecked={autoSend}
-                  onChange={(e) => setAutoSend(e.target.checked)}
-                  colorScheme="purple"
+                
+                <Button
+                  colorScheme="blue"
+                  type="submit"
+                  isLoading={loading}
+                  loadingText="Adding..."
+                  width="full"
                   size="lg"
+                  mt={4}
+                  disabled={atGiftLimit}
+                  onClick={handleSubmit}
                 >
-                  Auto-send gift
-                </Checkbox>
-                <Text fontSize="sm" color="gray.500" mt={1}>
-                  We'll handle sending this gift automatically at the right time.
-                </Text>
-              </FormControl>
-              
-              {error && (
-                <Text color="red.500">{error}</Text>
-              )}
-              
-              <Button
-                colorScheme="blue"
-                type="submit"
-                isLoading={loading}
-                loadingText="Adding..."
-                width="full"
-                size="lg"
-                mt={4}
-              >
-                Add Gift
-              </Button>
-            </VStack>
-          </form>
-        </Box>
-      </VStack>
-    </Container>
+                  Add Gift
+                </Button>
+              </VStack>
+            </form>
+          </Box>
+          <AlertDialog
+            isOpen={isPaywallOpen}
+            leastDestructiveRef={cancelRef}
+            onClose={() => setPaywallOpen(false)}
+          >
+            <AlertDialogOverlay>
+              <AlertDialogContent>
+                <AlertDialogHeader fontSize="lg" fontWeight="bold">
+                  Upgrade Required
+                </AlertDialogHeader>
+                <AlertDialogBody>
+                  {plan && plan.giftLimit !== Infinity
+                    ? `The Free plan allows only ${plan.giftLimit} gifts per recipient per year. Upgrade to Pro for unlimited gifts and more features!`
+                    : 'Upgrade to Pro for unlimited gifts and more features!'}
+                </AlertDialogBody>
+                <AlertDialogFooter>
+                  <Button ref={cancelRef} onClick={() => setPaywallOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button colorScheme="blue" ml={3} as={RouterLink} to="/subscription/plans">
+                    Upgrade Now
+                  </Button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialogOverlay>
+          </AlertDialog>
+        </VStack>
+      </Container>
+    </Box>
   );
 };
 

@@ -18,62 +18,41 @@ export interface SubscriptionPlan {
 
 export const subscriptionPlans: SubscriptionPlan[] = [
   {
-    id: 'basic',
-    name: 'Basic',
-    price: 9.99,
+    id: 'free',
+    name: 'Free',
+    price: 0,
     billingCycle: 'monthly',
     features: [
-      'Up to 3 recipients',
+      '1 recipient',
       'Birthday & Christmas gifting',
       'Standard shipping',
       'Basic gift recommendations'
     ],
-    recipientLimit: 3,
+    recipientLimit: 1,
     giftLimit: 2,
     priorityShipping: false,
     giftWrap: false,
     customMessages: false,
-    description: 'Perfect for keeping in touch with your closest family members.'
+    description: 'Try Lazy Uncle with one recipient. Perfect for testing the service.'
   },
   {
-    id: 'standard',
-    name: 'Standard',
-    price: 19.99,
-    billingCycle: 'monthly',
-    features: [
-      'Up to 10 recipients',
-      'All important occasions',
-      'Priority shipping',
-      'Free gift wrapping',
-      'Personalized gift recommendations'
-    ],
-    recipientLimit: 10,
-    giftLimit: 4,
-    priorityShipping: true,
-    giftWrap: true,
-    customMessages: false,
-    description: 'Never miss an important occasion with our most popular plan.'
-  },
-  {
-    id: 'premium',
-    name: 'Premium',
-    price: 39.99,
+    id: 'pro',
+    name: 'Pro',
+    price: 4.99,
     billingCycle: 'monthly',
     features: [
       'Unlimited recipients',
       'All occasions covered',
-      'Premium shipping',
-      'Luxury gift wrapping',
+      'Priority support',
       'AI-powered gift recommendations',
-      'Custom gift messages',
-      'Dedicated gift concierge'
+      'Automated gifting workflow'
     ],
     recipientLimit: Infinity,
     giftLimit: Infinity,
     priorityShipping: true,
-    giftWrap: true,
+    giftWrap: false,
     customMessages: true,
-    description: 'The ultimate hands-off gifting experience for those who want the best.'
+    description: 'Automate gifting for everyone you care about, with AI-powered recommendations and full control.'
   }
 ];
 

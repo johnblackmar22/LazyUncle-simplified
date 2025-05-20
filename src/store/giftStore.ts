@@ -38,6 +38,7 @@ interface GiftState {
   fetchGiftSuggestions: (recipientId: string) => Promise<void>;
   clearSelectedGift: () => void;
   clearError: () => void;
+  setGifts: (gifts: Gift[]) => void;
 }
 
 export const useGiftStore = create<GiftState>()(
@@ -373,6 +374,11 @@ export const useGiftStore = create<GiftState>()(
       // Clear any error
       clearError: () => {
         set({ error: null });
+      },
+      
+      // Set gifts
+      setGifts: (gifts: Gift[]) => {
+        set({ gifts });
       }
     }),
     {

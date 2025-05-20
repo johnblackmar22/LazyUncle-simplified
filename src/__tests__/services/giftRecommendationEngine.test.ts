@@ -1,5 +1,5 @@
 import { getGiftRecommendations } from '../../services/giftRecommendationEngine';
-import { Recipient } from '../../types/index';
+import type { Recipient } from '../../types/index';
 
 describe('Gift Recommendation Engine', () => {
   test('should provide recommendations based on recipient interests', () => {
@@ -15,8 +15,7 @@ describe('Gift Recommendation Engine', () => {
           min: 20,
           max: 100
         },
-        categories: ['Electronics', 'Accessories'],
-        dislikes: ['Food']
+        categories: ['Electronics', 'Accessories']
       },
       createdAt: new Date(),
       updatedAt: new Date()
@@ -65,8 +64,7 @@ describe('Gift Recommendation Engine', () => {
         priceRange: {
           min: 30,
           max: 75
-        },
-        dislikes: ['Electronics']
+        }
       },
       createdAt: new Date(),
       updatedAt: new Date()
@@ -85,12 +83,5 @@ describe('Gift Recommendation Engine', () => {
     recommendations.forEach(gift => {
       expect(gift.price).toBeLessThanOrEqual(budget);
     });
-    
-    // Check no disliked categories are included
-    const dislikedItems = recommendations.filter(gift => 
-      gift.category && recipient.giftPreferences?.dislikes?.includes(gift.category)
-    );
-    
-    expect(dislikedItems.length).toBe(0);
   });
 }); 

@@ -74,10 +74,10 @@ export const demoSpecialDates = [
 ];
 
 // Create unique IDs for recipients to ensure consistent references
-const emmaId = uuidv4();
-const liamId = uuidv4();
-const robertId = uuidv4();
-const sophiaId = uuidv4();
+const emmaId = 'demo-recipient-emma';
+const liamId = 'demo-recipient-liam';
+const robertId = 'demo-recipient-robert';
+const sophiaId = 'demo-recipient-sophia';
 
 // Demo Recipients
 export const demoRecipients = [
@@ -334,21 +334,51 @@ export const initializeDemoData = () => {
   console.log('Initializing demo data');
   
   try {
+    // Clear any previous demo data to ensure clean state
+    localStorage.removeItem('recipients');
+    localStorage.removeItem('gifts');
+    
     // Set demo mode in localStorage
     localStorage.setItem('demo-mode', 'true');
-    safeSetItem('recipients', demoRecipients);
-    safeSetItem('gifts', demoGifts);
+    
+    // Process recipients - convert Date objects to ISO strings for localStorage
+    const processedRecipients = demoRecipients.map(recipient => ({
+      ...recipient,
+      birthdate: recipient.birthdate instanceof Date ? recipient.birthdate.toISOString() : recipient.birthdate,
+      createdAt: recipient.createdAt instanceof Date ? recipient.createdAt.toISOString() : recipient.createdAt,
+      updatedAt: recipient.updatedAt instanceof Date ? recipient.updatedAt.toISOString() : recipient.updatedAt,
+      specialDates: recipient.specialDates ? recipient.specialDates.map(sd => ({
+        ...sd,
+        date: sd.date instanceof Date ? sd.date.toISOString() : sd.date
+      })) : undefined
+    }));
+    
+    // Ensure each gift has a valid recipient by checking against the recipient IDs
+    const validRecipientIds = processedRecipients.map(r => r.id);
+    const validGifts = demoGifts.filter(gift => validRecipientIds.includes(gift.recipientId));
+    
+    // Process gifts - convert Date objects to ISO strings for localStorage
+    const processedGifts = validGifts.map(gift => ({
+      ...gift,
+      date: gift.date instanceof Date ? gift.date.toISOString() : gift.date,
+      createdAt: gift.createdAt instanceof Date ? gift.createdAt.toISOString() : gift.createdAt,
+      updatedAt: gift.updatedAt instanceof Date ? gift.updatedAt.toISOString() : gift.updatedAt
+    }));
+    
+    safeSetItem('recipients', processedRecipients);
+    safeSetItem('gifts', processedGifts);
     
     // Set demo mode in the auth store
     const authStore = useAuthStore.getState();
     authStore.setDemoMode(true);
+    authStore.signIn('demo@example.com', 'password');
     
-    console.log('Demo data set in localStorage:', {
-      recipients: demoRecipients.length,
-      gifts: demoGifts.length
-    });
+    // console.log('Demo data set in localStorage:', {
+    //   recipients: processedRecipients.length,
+    //   gifts: processedGifts.length
+    // }); // Uncomment for debugging only
     
-    return { recipients: demoRecipients, gifts: demoGifts };
+    return { recipients: processedRecipients, gifts: processedGifts };
   } catch (error) {
     console.error('Failed to initialize demo data:', error);
     return { recipients: [], gifts: [] };
@@ -383,7 +413,7 @@ export const clearDemoData = () => {
     const authStore = useAuthStore.getState();
     authStore.setDemoMode(false);
     
-    console.log('Demo data cleared');
+    // console.log('Demo data cleared'); // Uncomment for debugging only
   } catch (error) {
     console.error('Error clearing demo data:', error);
   }

@@ -23,26 +23,33 @@ interface AuthState {
   resetPassword: (email: string) => Promise<void>;
   resetError: () => void;
   setDemoMode: (isDemo: boolean) => void;
+  setPlanId: (planId: string) => void;
 }
 
-const convertFirebaseUser = (firebaseUser: FirebaseUser): User => ({
-  id: firebaseUser.uid,
-  email: firebaseUser.email || '',
-  displayName: firebaseUser.displayName || '',
-  photoURL: firebaseUser.photoURL || '',
-  createdAt: firebaseUser.metadata.creationTime 
-    ? new Date(firebaseUser.metadata.creationTime).getTime() 
-    : Date.now(),
-});
+function convertFirebaseUser(firebaseUser: FirebaseUser): User {
+  return {
+    id: firebaseUser.uid,
+    email: firebaseUser.email || '',
+    displayName: firebaseUser.displayName || '',
+    photoURL: firebaseUser.photoURL || '',
+    createdAt: firebaseUser.metadata.creationTime 
+      ? new Date(firebaseUser.metadata.creationTime).getTime() 
+      : Date.now(),
+    planId: 'free',
+  };
+}
 
 // Create demo user for testing
-const createDemoUser = (): User => ({
-  id: 'demo-user',
-  email: 'demo@example.com',
-  displayName: 'Demo User',
-  photoURL: '',
-  createdAt: Date.now(),
-});
+function createDemoUser(): User {
+  return {
+    id: 'demo-user',
+    email: 'demo@example.com',
+    displayName: 'Demo User',
+    photoURL: '',
+    createdAt: Date.now(),
+    planId: 'free',
+  };
+}
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
@@ -58,7 +65,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (email === 'demo@example.com' && password === 'password') {
         // Set demo mode and create demo user
         set({ 
-          user: createDemoUser(),
+          user: { ...createDemoUser(), planId: 'free' },
           loading: false,
           demoMode: true
         });
@@ -88,7 +95,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       set({ 
-        user: convertFirebaseUser(userCredential.user),
+        user: { ...convertFirebaseUser(userCredential.user), planId: 'free' },
         loading: false 
       });
     } catch (error) {
@@ -152,7 +159,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   resetError: () => set({ error: null }),
   
-  setDemoMode: (isDemo) => set({ demoMode: isDemo })
+  setDemoMode: (isDemo) => set({ demoMode: isDemo }),
+
+  setPlanId: (planId: string) => {
+    set(state => ({
+      user: state.user ? { ...state.user, planId } : null
+    }));
+  }
 }));
 
 // Initialize auth state listener

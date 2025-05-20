@@ -22,26 +22,19 @@ import {
   VStack
 } from '@chakra-ui/react';
 import { AddIcon } from '@chakra-ui/icons';
-import { useRecipients } from '../hooks/useRecipients';
-import { useGifts } from '../hooks/useGifts';
+import { useRecipientStore } from '../store/recipientStore';
+import { useGiftStore } from '../store/giftStore';
 import { GiftReminders } from '../components/GiftReminders';
 import { UpcomingDates } from '../components/UpcomingDates';
-import { isDemoMode } from '../services/demoData';
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { recipients, loadDemoData: loadDemoRecipients } = useRecipients();
-  const { gifts, loadDemoData: loadDemoGifts } = useGifts();
+  const { recipients } = useRecipientStore();
+  const { gifts } = useGiftStore();
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
   const hasData = recipients.length > 0 || gifts.length > 0;
-  const isDemo = isDemoMode();
-
-  const loadDemoData = () => {
-    loadDemoRecipients();
-    loadDemoGifts();
-  };
 
   return (
     <Container maxW="container.xl" py={6}>
@@ -80,19 +73,7 @@ export const Dashboard: React.FC = () => {
               <Button colorScheme="blue" onClick={() => navigate('/recipients/new')}>
                 Add Your First Recipient
               </Button>
-              <Button colorScheme="green" onClick={loadDemoData}>
-                Load Sample Data
-              </Button>
             </VStack>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {isDemo && (
-        <Alert status="success" mb={6} borderRadius="lg">
-          <AlertIcon />
-          <AlertDescription>
-            You're using demo mode with sample data. Feel free to explore all features!
           </AlertDescription>
         </Alert>
       )}

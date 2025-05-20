@@ -68,6 +68,7 @@ export default function GiftRecommendations({ recipients, onSendGift, settings }
   const [isMessageModalOpen, setIsMessageModalOpen] = useState<boolean>(false);
   const [currentGift, setCurrentGift] = useState<Gift | null>(null);
   const [personalMessage, setPersonalMessage] = useState<string>('');
+  const [sendError, setSendError] = useState<string | null>(null);
   
   const toast = useToast();
   const cardBg = useColorModeValue('white', 'gray.700');
@@ -267,21 +268,25 @@ export default function GiftRecommendations({ recipients, onSendGift, settings }
                           
                           <Flex align="center" mt={2}>
                             <Text fontSize="sm" mr={2}>Auto-send:</Text>
-                            <IconButton
-                              aria-label="Toggle auto-send"
-                              icon={gift.autoSend ? <FiCheck /> : <FiX />}
-                              size="xs"
-                              colorScheme={gift.autoSend ? "green" : "gray"}
-                              onClick={() => toggleAutoSend(recipient.id, gift.id)}
-                              isDisabled={gift.status === 'sent'}
-                            />
-                            <Tooltip label="Auto-send will automatically send this gift when the date approaches">
+                            <Tooltip label="Toggle auto-send for this gift. If enabled, the gift will be sent automatically when the date approaches." aria-label="Auto-send help">
                               <IconButton
-                                aria-label="Info"
+                                aria-label={gift.autoSend ? "Disable auto-send" : "Enable auto-send"}
+                                icon={gift.autoSend ? <FiCheck /> : <FiX />}
+                                size="xs"
+                                colorScheme={gift.autoSend ? "green" : "gray"}
+                                onClick={() => toggleAutoSend(recipient.id, gift.id)}
+                                isDisabled={gift.status === 'sent'}
+                                tabIndex={0}
+                              />
+                            </Tooltip>
+                            <Tooltip label="Auto-send will automatically send this gift when the date approaches" aria-label="Auto-send info">
+                              <IconButton
+                                aria-label="Info about auto-send"
                                 icon={<FiInfo />}
                                 size="xs"
                                 variant="ghost"
                                 ml={1}
+                                tabIndex={0}
                               />
                             </Tooltip>
                           </Flex>
