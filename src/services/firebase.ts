@@ -1,17 +1,19 @@
 // Import both environment modules and choose based on the environment
 import { getEnv as getEnvBrowser } from './firebase.env';
+import { getEnv as getEnvNode } from './firebase.env.node';
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 // Dynamically choose the right getEnv function
-let getEnv: (key: string) => string | undefined = getEnvBrowser;
+let getEnv: (key: string) => string | undefined;
 
 // For tests, override with the Node version if in Jest
 if (typeof process !== 'undefined' && process.env && process.env.JEST_WORKER_ID !== undefined) {
-  // We would normally import this, but it's a conditional import for testing only
-  // The app will never hit this in the browser
   console.log('Using Node.js environment for tests');
+  getEnv = getEnvNode;
+} else {
+  getEnv = getEnvBrowser;
 }
 
 // Set to false to use Firebase in production
@@ -27,9 +29,10 @@ const demoModeEnv = getEnv('VITE_DEMO_MODE');
 
 const hasValidConfig = !!apiKey && 
   apiKey !== 'replace-with-your-api-key' &&
-  apiKey !== 'demo-mode';
+  apiKey !== 'demo-mode' &&
+  apiKey !== 'test-api-key';  // Don't count test values as valid
 
-export const DEMO_MODE = forceDemoMode || demoModeEnv === 'true' || !hasValidConfig;
+export const DEMO_MODE = forceDemoMode || demoModeEnv === 'true' || !hasValidConfig || process.env.NODE_ENV === 'test';
 
 console.log('Running in demo mode:', DEMO_MODE); // Keep for debugging
 

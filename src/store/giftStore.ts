@@ -39,6 +39,11 @@ interface GiftState {
   clearSelectedGift: () => void;
   clearError: () => void;
   setGifts: (gifts: Gift[]) => void;
+  
+  // Aliases for test compatibility
+  addGift: (data: Omit<Gift, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<Gift>;
+  deleteGift: (id: string) => Promise<void>;
+  getGiftsByRecipient: (recipientId: string) => Gift[];
 }
 
 export const useGiftStore = create<GiftState>()(
@@ -379,6 +384,85 @@ export const useGiftStore = create<GiftState>()(
       // Set gifts
       setGifts: (gifts: Gift[]) => {
         set({ gifts });
+      },
+      
+      // Aliases for test compatibility
+      addGift: async (data) => {
+        set({ loading: true, error: null });
+        try {
+          const newGift = await addGift(data);
+          
+          // Update both the main list and recipient-specific list
+          set(state => {
+            const updatedRecipientGifts = { ...state.recipientGifts };
+            if (updatedRecipientGifts[data.recipientId]) {
+              updatedRecipientGifts[data.recipientId] = [
+                newGift,
+                ...updatedRecipientGifts[data.recipientId]
+              ];
+            }
+            
+            return { 
+              gifts: [newGift, ...state.gifts],
+              recipientGifts: updatedRecipientGifts,
+              loading: false 
+            };
+          });
+          
+          return newGift;
+        } catch (error) {
+          set({ 
+            error: (error as Error).message, 
+            loading: false 
+          });
+          throw error;
+        }
+      },
+      
+      deleteGift: async (id) => {
+        set({ loading: true, error: null });
+        try {
+          await deleteGift(id);
+          
+          // Remove from all state lists
+          set(state => {
+            // Remove from main gifts list
+            const updatedGifts = state.gifts.filter(g => g.id !== id);
+            
+            // Remove from recipient-specific list
+            const updatedRecipientGifts = { ...state.recipientGifts };
+            if (updatedRecipientGifts[id]) {
+              updatedRecipientGifts[id] = [];
+            }
+            
+            // Remove from auto-send list if present
+            const updatedAutoSendGifts = state.autoSendGifts.filter(g => g.id !== id);
+            
+            return { 
+              gifts: updatedGifts,
+              recipientGifts: updatedRecipientGifts,
+              autoSendGifts: updatedAutoSendGifts,
+              selectedGift: state.selectedGift?.id === id ? null : state.selectedGift,
+              loading: false 
+            };
+          });
+        } catch (error) {
+          set({ 
+            error: (error as Error).message, 
+            loading: false 
+          });
+          throw error;
+        }
+      },
+      
+      getGiftsByRecipient: (recipientId) => {
+        const state = get();
+        // Return cached gifts if available
+        if (state.recipientGifts[recipientId]) {
+          return state.recipientGifts[recipientId];
+        }
+        // Otherwise return empty array
+        return [];
       }
     }),
     {

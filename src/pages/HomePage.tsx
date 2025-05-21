@@ -20,6 +20,7 @@ import SmallLogoJpeg from '/Logos/Small logo.jpeg';
 import ConvertedHero from '/Logos/converted_1747771169_5314 (1).svg';
 import { keyframes } from '@emotion/react';
 import { useAuthStore } from '../store/authStore';
+import { HomeNavbar } from '../components/HomeNavbar';
 
 // Theme colors from logo
 const ACCENT_BLUE = 'brand.700';
@@ -100,7 +101,10 @@ export default function HomePage() {
       minH="100vh"
       overflowY="auto"
     >
-      <Container maxW="container.lg" centerContent>
+      {/* Add HomeNavbar at the top of the page */}
+      <HomeNavbar />
+      
+      <Container maxW="container.lg" centerContent pt={{ base: 24, md: 32 }}>
         {/* Hero Section */}
         <Flex direction={{ base: 'column', md: 'row' }} align="center" justify="center" py={{ base: 12, md: 24 }} gap={16} w="full">
           <Box

@@ -23,11 +23,12 @@ import {
 } from '@chakra-ui/react';
 import { useRecipientStore } from '../store/recipientStore';
 import { useGiftStore } from '../store/giftStore';
-import { getGiftRecommendationsFromAI } from '../services/giftRecommendationEngine';
+import { getGiftRecommendationsFromAI, getGiftRecommendations } from '../services/giftRecommendationEngine';
 import { showErrorToast } from '../utils/toastUtils';
 import { useAuthStore } from '../store/authStore';
 import { getPlanById } from '../services/subscription/plans';
 import { Link as RouterLink } from 'react-router-dom';
+import type { GiftSuggestion } from '../types';
 
 const relationshipOptions = [
   'Nephew', 'Niece', 'Family', 'Friend', 'Colleague', 'Other'
@@ -92,14 +93,63 @@ const AddRecipientPage: React.FC = () => {
       setStep(1);
     } else if (step === 1) {
       setLoading(true);
-      const recs = await getGiftRecommendationsFromAI({
-        recipient: { ...recipient },
-        budget: Number(budget)
-      });
-      setRecommendations(recs);
-      setSelectedGiftIdx(0);
-      setLoading(false);
-      setStep(2);
+      try {
+        const recs = await getGiftRecommendationsFromAI({
+          recipient: { ...recipient },
+          budget: Number(budget)
+        });
+        setRecommendations(recs);
+        setSelectedGiftIdx(0);
+        setStep(2);
+      } catch (error) {
+        console.error('Error getting recommendations:', error);
+        toast({
+          title: 'Error getting recommendations',
+          description: error instanceof Error ? error.message : 'Unknown error occurred',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+        
+        // Fallback to local recommendation engine
+        try {
+          const localRecs = getGiftRecommendations(recipient, occasion, Number(budget));
+          if (localRecs && localRecs.length > 0) {
+            // Transform to match AI recommendation format
+            const formattedRecs = localRecs.map((rec: GiftSuggestion) => ({
+              id: `local-${rec.id}`,
+              name: rec.name,
+              description: rec.description,
+              price: rec.price,
+              category: rec.category || 'Other',
+              interests: rec.interests || [],
+              imageUrl: rec.imageUrl
+            }));
+            setRecommendations(formattedRecs);
+            setSelectedGiftIdx(0);
+            setStep(2);
+          } else {
+            toast({
+              title: 'No gift recommendations available',
+              description: 'Please try again with different interests or budget',
+              status: 'warning',
+              duration: 5000,
+              isClosable: true,
+            });
+          }
+        } catch (fallbackError) {
+          console.error('Error with fallback recommendations:', fallbackError);
+          toast({
+            title: 'Failed to generate recommendations',
+            description: 'Please try again later',
+            status: 'error',
+            duration: 5000,
+            isClosable: true,
+          });
+        }
+      } finally {
+        setLoading(false);
+      }
     }
   };
   const handleBack = () => setStep((s) => Math.max(s - 1, 0));
@@ -108,6 +158,17 @@ const AddRecipientPage: React.FC = () => {
   const handleApproveGift = async () => {
     setLoading(true);
     try {
+      // Validate we have the necessary data
+      if (!recipient.name || !recipient.relationship) {
+        throw new Error('Recipient information is incomplete');
+      }
+
+      if (!recommendations || !recommendations[selectedGiftIdx]) {
+        throw new Error('Gift recommendation is not available');
+      }
+
+      console.log('Adding recipient:', recipient);
+      
       // Save recipient
       const birthdateObj = recipient.birthdate ? new Date(recipient.birthdate) : undefined;
       const newRecipient = await addRecipient({
@@ -119,32 +180,60 @@ const AddRecipientPage: React.FC = () => {
           priceRange: { min: 0, max: Number(budget) }
         }
       });
+      
+      if (!newRecipient) {
+        throw new Error('Failed to create recipient');
+      }
+      
+      console.log('Recipient created:', newRecipient);
+
+      // Get the selected gift recommendation
+      const giftRec = recommendations[selectedGiftIdx];
+      
       // Save gift
-      if (newRecipient && recommendations[selectedGiftIdx]) {
-        await createGift({
+      try {
+        const newGift = await createGift({
           recipientId: newRecipient.id,
-          name: recommendations[selectedGiftIdx].name,
-          description: recommendations[selectedGiftIdx].description,
-          price: recommendations[selectedGiftIdx].price,
-          category: recommendations[selectedGiftIdx].category,
+          name: giftRec.name,
+          description: giftRec.description,
+          price: giftRec.price || Number(budget),
+          category: giftRec.category || 'Other',
           occasion,
           date: birthdateObj || new Date(),
           status: 'planned',
-          imageUrl: recommendations[selectedGiftIdx].imageUrl,
+          imageUrl: giftRec.imageUrl,
           notes: 'Auto-send enabled',
         });
+        
+        console.log('Gift created:', newGift);
+        
+        toast({
+          title: 'Recipient and gift added!',
+          description: 'Your gift has been scheduled.',
+          status: 'success',
+          duration: 4000,
+          isClosable: true,
+        });
+      } catch (giftError) {
+        console.error('Error creating gift:', giftError);
+        // We still created the recipient, so show partial success
+        toast({
+          title: 'Recipient added but gift creation failed',
+          description: 'You can add a gift later from the recipient details page.',
+          status: 'warning',
+          duration: 5000,
+          isClosable: true,
+        });
       }
-      toast({
-        title: 'Recipient and gift added!',
-        status: 'success',
-        duration: 4000,
-        isClosable: true,
-      });
+      
+      // Move to confirmation step regardless
       setStep(3);
     } catch (err) {
-      showErrorToast(toast, err, { title: 'Error adding recipient or gift' });
-    } finally {
-      setLoading(false);
+      console.error('Error in recipient/gift workflow:', err);
+      showErrorToast(toast, err, { 
+        title: 'Error adding recipient or gift',
+        description: err instanceof Error ? err.message : 'Unknown error occurred'
+      });
     }
   };
 

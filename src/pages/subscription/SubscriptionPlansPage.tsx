@@ -19,7 +19,7 @@ import {
 import { CheckIcon } from '@chakra-ui/icons';
 import { subscriptionPlans, getYearlyPrice } from '../../services/subscription/plans';
 import { useNavigate } from 'react-router-dom';
-import { Navbar } from '../../components/Navbar';
+import { HomeNavbar } from '../../components/HomeNavbar';
 
 export default function SubscriptionPlansPage() {
   const [isYearly, setIsYearly] = useState(false);
@@ -36,8 +36,8 @@ export default function SubscriptionPlansPage() {
 
   return (
     <Box bg="neutral.100" minH="100vh">
-      <Navbar />
-      <Box py={{ base: 4, md: 12 }}>
+      <HomeNavbar />
+      <Box py={{ base: 4, md: 12 }} pt={{ base: 24, md: 32 }}>
         <Container maxW="container.xl" px={{ base: 2, md: 0 }}>
           <VStack spacing={{ base: 4, md: 8 }}>
             <Heading as="h1" size={{ base: 'lg', md: '2xl' }}>

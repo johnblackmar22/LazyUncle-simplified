@@ -80,35 +80,45 @@ export default function GiftRecommendations({ recipients, onSendGift, settings }
     }
   }, [recipients]);
   
-  // NEW: Generate AI recommendations for all recipients
+  // Generate AI recommendations for all recipients
   const generateAIRecommendationsForAll = async () => {
     setLoading(true);
     const allRecommendations: { [key: string]: Gift[] } = {};
+    
     for (const recipient of recipients) {
       const now = new Date();
       const occasionDate = new Date();
       occasionDate.setDate(occasionDate.getDate() + 30);
       const occasion = 'Birthday'; // Simplified
+      
       try {
+        // Try to get AI recommendations first
         const aiRecs = await getGiftRecommendationsFromAI({ recipient, budget: 200 });
-        // If AI returns nothing, fallback to local
-        const recs = (aiRecs && aiRecs.length > 0) ? aiRecs : getGiftRecommendations(recipient, occasion, 200);
-        const giftRecommendations = recs.map((rec: any, idx: number) => ({
-          id: `ai-${rec.id || idx}-${recipient.id}`,
-          recipientId: recipient.id,
-          name: rec.name,
-          description: rec.description,
-          price: rec.price || rec.estimatedPrice || 0,
-          occasion,
-          imageUrl: rec.imageUrl,
-          status: 'recommended' as const,
-          date: occasionDate.toISOString().split('T')[0],
-          autoSend: false,
-          personalMessage: generateGiftMessage(recipient.name, occasion, recipient.relationship)
-        }));
-        allRecommendations[recipient.id] = giftRecommendations;
-      } catch (e) {
-        // Fallback to local engine
+        
+        // If AI returns valid recommendations, use them
+        if (aiRecs && aiRecs.length > 0) {
+          const giftRecommendations = aiRecs.map((rec: any, idx: number) => ({
+            id: `ai-${rec.id || idx}-${recipient.id}`,
+            recipientId: recipient.id,
+            name: rec.name,
+            description: rec.description,
+            price: rec.price || rec.estimatedPrice || 0,
+            occasion,
+            imageUrl: rec.imageUrl,
+            status: 'recommended' as const,
+            date: occasionDate.toISOString().split('T')[0],
+            autoSend: false,
+            personalMessage: generateGiftMessage(recipient.name, occasion, recipient.relationship)
+          }));
+          allRecommendations[recipient.id] = giftRecommendations;
+        } else {
+          // If AI returns empty results, fall back to local recommendations
+          throw new Error('AI returned empty recommendations');
+        }
+      } catch (error) {
+        console.error(`Error getting AI recommendations for ${recipient.name}:`, error);
+        
+        // Fallback to local recommendation engine
         const recipientRecommendations = getGiftRecommendations(recipient, occasion, 200);
         const giftRecommendations = recipientRecommendations.map(rec => ({
           id: `rec-${rec.id}-${recipient.id}`,
@@ -126,6 +136,7 @@ export default function GiftRecommendations({ recipients, onSendGift, settings }
         allRecommendations[recipient.id] = giftRecommendations;
       }
     }
+    
     setRecommendations(allRecommendations);
     setLoading(false);
   };

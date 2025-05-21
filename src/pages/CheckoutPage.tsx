@@ -21,6 +21,7 @@ import {
   useElements,
 } from '@stripe/react-stripe-js';
 import { useAuthStore } from '../store/authStore';
+import { HomeNavbar } from '../components/HomeNavbar';
 
 // TODO: Replace with your Stripe publishable key
 const stripePromise = loadStripe('pk_test_12345');
@@ -139,11 +140,14 @@ const CheckoutPage: React.FC = () => {
   const billing = query.get('billing') || 'monthly';
 
   return (
-    <Container maxW="container.md" py={8}>
-      <Elements stripe={stripePromise}>
-        <CheckoutForm planId={planId} billing={billing} />
-      </Elements>
-    </Container>
+    <Box bg="neutral.100" minH="100vh">
+      <HomeNavbar />
+      <Container maxW="container.md" py={8} pt={{ base: 24, md: 32 }}>
+        <Elements stripe={stripePromise}>
+          <CheckoutForm planId={planId} billing={billing} />
+        </Elements>
+      </Container>
+    </Box>
   );
 };
 

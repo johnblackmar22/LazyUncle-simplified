@@ -57,14 +57,21 @@
   }
 }
 
-/* Hide ONLY sidebar on homepage, not navbar */
+/* 
+ * Hide sidebars on homepage ONLY - these styles should only apply 
+ * when the body has the homepage-view class AND the path is the homepage
+ */
 body.homepage-view aside.sidebar,
-body.homepage-view .sidebar,
 body.homepage-view [data-testid="sidebar"] {
   display: none !important;
 }
 
-/* Ensure the homepage container is properly positioned */
+/* Ensure the navbar is always visible regardless of page */
+nav, [data-testid="navbar"] {
+  display: block !important;
+}
+
+/* Only restrict overflow on homepage */
 body.homepage-view {
   overflow: hidden;
 }

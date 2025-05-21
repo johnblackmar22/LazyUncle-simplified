@@ -1,6 +1,7 @@
-// A simplified environment variable getter for Node.js environments (like tests)
+// Mock implementation of the environment variable getter
 export function getEnv(key: string): string | undefined {
-  const testValues: Record<string, string> = {
+  // Return mock values for testing
+  const mockEnvVars: Record<string, string> = {
     VITE_FIREBASE_API_KEY: 'test-api-key',
     VITE_FIREBASE_AUTH_DOMAIN: 'test.firebaseapp.com',
     VITE_FIREBASE_PROJECT_ID: 'test-project',
@@ -10,15 +11,7 @@ export function getEnv(key: string): string | undefined {
     VITE_FIREBASE_DATABASE_URL: 'https://test-project.firebaseio.com',
   };
   
-  // First try Node.js process.env
-  if (typeof process !== 'undefined' && process.env && key in process.env) {
-    return process.env[key];
-  }
-  
-  // Fall back to test values
-  if (key in testValues) {
-    return testValues[key];
-  }
-  
-  return undefined;
-} 
+  return mockEnvVars[key];
+}
+
+export default getEnv; 

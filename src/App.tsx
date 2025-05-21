@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Box } from '@chakra-ui/react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import HomePage from './pages/HomePage';
@@ -19,44 +19,50 @@ import Layout from './components/Layout';
 import { useAuthStore } from './store/authStore';
 import OnboardingWizard from './components/OnboardingWizard';
 import SubscriptionPlansPage from './pages/subscription/SubscriptionPlansPage';
-import HowItWorksPage from './pages/HowItWorksPage';
 import CheckoutPage from './pages/CheckoutPage';
 import { Navbar } from './components/Navbar';
+import { isDemoMode } from './services/demoData';
+import { DEMO_MODE } from './services/firebase';
 
 function App() {
-  const { initialized, user } = useAuthStore();
+  const { initialized, user, demoMode } = useAuthStore();
+  const storedDemoMode = isDemoMode();
   const location = useLocation();
   
-  // Paths that should NEVER have the navbar
+  // List ALL paths that should NEVER have the main navbar
   const noNavbarPaths = [
+    '/', // Homepage has its own navbar
     '/login', 
     '/register',
-    '/onboarding'
+    '/onboarding',
+    '/subscription/plans', // This will now use HomePage's navbar
+    '/checkout' // Use HomePage navbar
   ];
   
-  // Paths that should have navbar even when not logged in
-  const publicWithNavbarPaths = [
-    '/',
-    '/subscription/plans',
-    '/how-it-works'
-  ];
+  // Consider a user authenticated if they have a user object OR any demo mode is active
+  const isAuthenticated = !!user || demoMode || storedDemoMode || DEMO_MODE;
   
-  // Show navbar if:
-  // 1. User is logged in AND we're not on a "no navbar" path, OR
-  // 2. We're on a public path that should show the navbar
-  const shouldShowNavbar = 
-    (!!user && !noNavbarPaths.includes(location.pathname)) || 
-    publicWithNavbarPaths.includes(location.pathname);
+  // We show the main navbar when:
+  // 1. User is authenticated AND
+  // 2. We're not on a path that should never have the navbar
+  const shouldShowNavbar = isAuthenticated && !noNavbarPaths.includes(location.pathname);
     
-  console.log('Navbar visibility check:', { 
-    path: location.pathname, 
-    user: !!user, 
-    shouldShow: shouldShowNavbar 
-  });
+  // For debugging
+  useEffect(() => {
+    console.log('App component - Navbar visibility check:', { 
+      path: location.pathname, 
+      user: !!user,
+      demoMode,
+      storedDemoMode,
+      DEMO_MODE,
+      isAuthenticated,
+      shouldShow: shouldShowNavbar 
+    });
+  }, [location.pathname, user, demoMode, storedDemoMode, isAuthenticated, shouldShowNavbar]);
   
   return (
     <Box minH="100vh" bg="gray.50">
-      {/* Only show navbar where appropriate */}
+      {/* Only show navbar for authenticated routes */}
       {shouldShowNavbar && <Navbar />}
       
       <Routes>
@@ -65,7 +71,6 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/subscription/plans" element={<SubscriptionPlansPage />} />
-        <Route path="/how-it-works" element={<HowItWorksPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
         {/* Disable wizard for now - redirect to home */}
         <Route path="/onboarding" element={<Navigate to="/" replace />} />
