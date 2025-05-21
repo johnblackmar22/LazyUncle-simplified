@@ -119,6 +119,12 @@ const OnboardingWizard: React.FC = () => {
     try {
       // Save recipient
       const birthdateObj = recipient.birthdate ? new Date(recipient.birthdate) : undefined;
+      
+      // Ensure price is valid
+      const giftPrice = typeof recommendations[selectedGiftIdx]?.price === 'number' 
+        ? recommendations[selectedGiftIdx].price 
+        : Number(recommendations[selectedGiftIdx]?.estimatedPrice || budget);
+        
       const newRecipient = await addRecipient({
         name: recipient.name,
         relationship: recipient.relationship,
@@ -128,38 +134,43 @@ const OnboardingWizard: React.FC = () => {
           priceRange: { min: 0, max: Number(budget) }
         }
       });
+      
       if (!newRecipient) {
-        setLoading(false);
-        toast({
-          title: 'Error adding recipient',
-          description: 'Could not add recipient. Please check your connection or try again.',
-          status: 'error',
-          duration: 4000,
-          isClosable: true,
-        });
-        return;
+        throw new Error("Failed to create recipient");
       }
-      // Save gift
+      
+      // Save gift if we have a recommendation
       if (newRecipient && recommendations[selectedGiftIdx]) {
-        await createGift({
+        const gift = {
           recipientId: newRecipient.id,
           name: recommendations[selectedGiftIdx].name,
-          description: recommendations[selectedGiftIdx].description,
-          price: recommendations[selectedGiftIdx].price,
-          category: recommendations[selectedGiftIdx].category,
+          description: recommendations[selectedGiftIdx].description || 'A thoughtful gift',
+          price: giftPrice,
+          category: recommendations[selectedGiftIdx].category || 'Other',
           occasion,
           date: birthdateObj || new Date(),
-          status: 'planned',
-          imageUrl: recommendations[selectedGiftIdx].imageUrl,
+          status: 'planned' as const,
+          imageUrl: recommendations[selectedGiftIdx].imageUrl || '',
           notes: 'Auto-send enabled',
-        });
+        };
+        
+        await createGift(gift);
       }
+      
       setApproved(true);
-      setStep(4);
-      navigate('/dashboard');
-    } catch (err) {
       toast({
-        title: 'Error saving recipient or gift',
+        title: 'Success!',
+        description: 'Recipient and gift have been saved.',
+        status: 'success',
+        duration: 4000,
+        isClosable: true,
+      });
+      setStep(4);
+    } catch (err) {
+      console.error('Error in handleApproveGift:', err);
+      toast({
+        title: 'Error saving data',
+        description: 'There was an error saving your information. Please try again.',
         status: 'error',
         duration: 4000,
         isClosable: true,

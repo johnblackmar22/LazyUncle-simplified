@@ -1,5 +1,5 @@
-import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Navigate, Outlet, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { isDemoMode } from '../services/demoData';
 import { DEMO_MODE } from '../services/firebase';
@@ -7,24 +7,26 @@ import { DEMO_MODE } from '../services/firebase';
 const ProtectedRoute = () => {
   const { user, demoMode } = useAuthStore();
   const storedDemoMode = isDemoMode();
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    // If user signs out while on a protected route, redirect them
+    if (!user && !demoMode && !storedDemoMode) {
+      navigate('/login', { replace: true });
+    }
+  }, [user, demoMode, storedDemoMode, navigate]);
   
   // If we have an active user, allow access
   if (user) {
     return <Outlet />;
   }
   
-  // If in any demo mode (from store or localStorage), allow access
+  // If explicitly in demo mode, allow access
   if (storedDemoMode || demoMode) {
     return <Outlet />;
   }
   
-  // If Firebase config is missing (DEMO_MODE), but user hasn't explicitly
-  // chosen demo mode yet, redirect to login
-  if (DEMO_MODE) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  // For normal usage with no user, redirect to login
+  // Otherwise redirect to login
   return <Navigate to="/login" replace />;
 };
 

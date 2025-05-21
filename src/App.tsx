@@ -31,14 +31,16 @@ function App() {
   return (
     <Box minH="100vh" bg="gray.50">
       <Routes>
-        {/* Public routes */}
+        {/* Public routes (without full navigation) */}
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/subscription/plans" element={<SubscriptionPlansPage />} />
         <Route path="/how-it-works" element={<HowItWorksPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
-        {/* Protected routes */}
+        <Route path="/onboarding" element={<OnboardingWizard />} />
+        
+        {/* Protected routes (with navigation) */}
         <Route element={<ProtectedRoute />}>
           <Route element={<Layout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
@@ -48,17 +50,16 @@ function App() {
             <Route path="/recipients/:id" element={<RecipientDetailPage />} />
             <Route path="/recipients/:id/edit" element={<EditRecipientPage />} />
             {/* Gift routes */}
-            {/* <Route path="/gifts" element={<GiftsListPage />} />
+            <Route path="/gifts" element={<GiftsListPage />} />
             <Route path="/gifts/:id" element={<GiftDetailPage />} />
             <Route path="/gifts/add" element={<AddGiftPage />} />
             <Route path="/gifts/add/:recipientId" element={<AddGiftPage />} />
-            <Route path="/gifts/:id/edit" element={<EditGiftPage />} /> */}
+            <Route path="/gifts/:id/edit" element={<EditGiftPage />} />
             {/* Settings route */}
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
         </Route>
-        {/* Onboarding route (outside Layout) */}
-        <Route path="/onboarding" element={<OnboardingWizard />} />
+        
         {/* Fallback route */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>

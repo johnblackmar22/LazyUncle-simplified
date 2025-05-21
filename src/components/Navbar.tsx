@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -51,6 +51,7 @@ export const Navbar: React.FC = () => {
   const bgColor = useColorModeValue('white', 'gray.800');
   const { isOpen, onOpen, onClose } = useDisclosure();
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Minimal nav for HomePage/public pages
   const publicLinks = [
@@ -64,6 +65,11 @@ export const Navbar: React.FC = () => {
     { label: 'Settings', to: '/settings' },
   ];
 
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
+
   // Desktop nav links
   const navLinks = user
     ? (
@@ -73,7 +79,7 @@ export const Navbar: React.FC = () => {
             {link.label}
           </Button>
         ))}
-        <Button onClick={async () => { await signOut(); window.location.href = '/'; }} variant="outline" colorScheme="blue" w={{ base: 'full', md: 'auto' }}>
+        <Button onClick={handleSignOut} variant="outline" colorScheme="blue" w={{ base: 'full', md: 'auto' }}>
           Sign Out
         </Button>
       </>
@@ -109,7 +115,7 @@ export const Navbar: React.FC = () => {
           onClick={async () => {
             await signOut();
             onClose();
-            window.location.href = '/';
+            navigate('/');
           }}
           variant="outline"
           colorScheme="blue"
