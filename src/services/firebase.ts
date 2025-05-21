@@ -31,7 +31,15 @@ const demoModeEnv = getEnv('VITE_DEMO_MODE');
 const hasValidConfig = !!apiKey && 
   apiKey !== 'replace-with-your-api-key' &&
   apiKey !== 'demo-mode' &&
-  apiKey !== 'test-api-key';  // Don't count test values as valid
+  apiKey !== 'test-api-key' && 
+  apiKey.length > 10;  // API keys should be reasonably long
+
+// Debug log for API key issues
+console.log('Firebase API Key validation:', { 
+  hasKey: !!apiKey, 
+  keyLength: apiKey ? apiKey.length : 0,
+  hasValidConfig
+});
 
 // Only enable demo mode if explicitly forced, environment variable is set, 
 // config is invalid, or we're in a test environment
@@ -46,13 +54,14 @@ export const DEMO_MODE =
 
 console.log('Running in demo mode:', DEMO_MODE); // Keep for debugging
 
+// Only initialize Firebase with real credentials if we have them and aren't in demo mode
 const firebaseConfig = {
-  apiKey: hasValidConfig ? apiKey : 'demo-mode',
-  authDomain: hasValidConfig ? authDomain : 'demo-mode',
-  projectId: hasValidConfig ? projectId : 'demo-mode',
-  storageBucket: hasValidConfig ? storageBucket : 'demo-mode',
-  messagingSenderId: hasValidConfig ? messagingSenderId : 'demo-mode',
-  appId: hasValidConfig ? appId : 'demo-mode',
+  apiKey: hasValidConfig && !DEMO_MODE ? apiKey : 'demo-mode',
+  authDomain: hasValidConfig && !DEMO_MODE ? authDomain : 'demo-mode',
+  projectId: hasValidConfig && !DEMO_MODE ? projectId : 'demo-mode',
+  storageBucket: hasValidConfig && !DEMO_MODE ? storageBucket : 'demo-mode',
+  messagingSenderId: hasValidConfig && !DEMO_MODE ? messagingSenderId : 'demo-mode',
+  appId: hasValidConfig && !DEMO_MODE ? appId : 'demo-mode',
 };
 
 const app = initializeApp(firebaseConfig);

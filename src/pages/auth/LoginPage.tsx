@@ -236,26 +236,31 @@ const LoginPage: React.FC = () => {
             </VStack>
           </form>
 
-          <Divider my={4} />
-          
-          <VStack spacing={3}>
-            <Text textAlign="center" fontSize="sm">
-              Want to try LazyUncle without creating an account?
-            </Text>
-            <Button 
-              colorScheme="green" 
-              variant="solid"
-              w="full"
-              onClick={handleDemoMode}
-              isLoading={demoLoading}
-              loadingText="Loading Demo Data"
-            >
-              Try Demo Mode
-            </Button>
-            <Text fontSize="xs" color="gray.500" textAlign="center">
-              Demo mode provides sample data to explore the application features
-            </Text>
-          </VStack>
+          {/* Only show demo mode section when DEMO_MODE is true */}
+          {DEMO_MODE && (
+            <>
+              <Divider my={4} />
+              
+              <VStack spacing={3}>
+                <Text textAlign="center" fontSize="sm">
+                  Want to try LazyUncle without creating an account?
+                </Text>
+                <Button 
+                  colorScheme="green" 
+                  variant="solid"
+                  w="full"
+                  onClick={handleDemoMode}
+                  isLoading={demoLoading}
+                  loadingText="Loading Demo Data"
+                >
+                  Try Demo Mode
+                </Button>
+                <Text fontSize="xs" color="gray.500" textAlign="center">
+                  Demo mode provides sample data to explore the application features
+                </Text>
+              </VStack>
+            </>
+          )}
         </VStack>
       </Container>
 
