@@ -60,7 +60,7 @@ function App() {
       {shouldShowNavbar && <Navbar />}
       
       <Routes>
-        {/* Public routes (without full navigation) */}
+        {/* Public routes (completely standalone, no Layout) */}
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
@@ -69,7 +69,7 @@ function App() {
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/onboarding" element={<OnboardingWizard />} />
         
-        {/* Protected routes (with navigation) */}
+        {/* Protected routes wrapped in Layout (with sidebar) */}
         <Route element={<ProtectedRoute />}>
           <Route element={<Layout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
