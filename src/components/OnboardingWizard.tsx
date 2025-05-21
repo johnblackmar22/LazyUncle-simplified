@@ -5,12 +5,14 @@ import { useGiftStore } from '../store/giftStore';
 import { getGiftRecommendations } from '../services/giftRecommendationEngine';
 import { useNavigate } from 'react-router-dom';
 import { Navbar } from './Navbar';
+import { useAuthStore } from '../store/authStore';
 
 const steps = [
   'Welcome',
   'Add Recipient',
   'Set Budget & Occasion',
   'Gift Recommendation',
+  'Subscribe',
   'Confirmation',
 ];
 
@@ -44,9 +46,16 @@ const OnboardingWizard: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const [errors, setErrors] = useState<{ name?: string; relationship?: string; budget?: string; occasion?: string }>({});
+  const [subscribed, setSubscribed] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState('basic');
+  const { user, demoMode, setDemoMode } = useAuthStore();
 
   // Step Handlers
   const handleNext = async () => {
+    // If not logged in and not in demo mode, enable demo mode for onboarding
+    if (!user && !demoMode && setDemoMode) {
+      setDemoMode(true);
+    }
     if (step === 1) {
       // Validate recipient
       const newErrors: { name?: string; relationship?: string } = {};
@@ -119,6 +128,17 @@ const OnboardingWizard: React.FC = () => {
           priceRange: { min: 0, max: Number(budget) }
         }
       });
+      if (!newRecipient) {
+        setLoading(false);
+        toast({
+          title: 'Error adding recipient',
+          description: 'Could not add recipient. Please check your connection or try again.',
+          status: 'error',
+          duration: 4000,
+          isClosable: true,
+        });
+        return;
+      }
       // Save gift
       if (newRecipient && recommendations[selectedGiftIdx]) {
         await createGift({
@@ -151,7 +171,7 @@ const OnboardingWizard: React.FC = () => {
 
   // Step UIs
   return (
-    <Box bg="gray.100" minH="100vh">
+    <Box bg="neutral.100" minH="100vh">
       <Navbar />
       <Box maxW="lg" mx="auto" mt={{ base: 4, md: 10 }} p={{ base: 2, md: 8 }} bg="white" borderRadius="lg" boxShadow="md">
         <Progress value={((step + 1) / steps.length) * 100} mb={6} />
@@ -262,9 +282,35 @@ const OnboardingWizard: React.FC = () => {
         )}
         {step === 4 && (
           <VStack spacing={6} align="stretch">
+            <Heading size="md">Subscribe to Continue</Heading>
+            <Text>Choose a subscription plan to activate automatic gifting. You can change or cancel anytime.</Text>
+            <FormControl as="fieldset">
+              <FormLabel as="legend">Select a plan:</FormLabel>
+              <VStack align="start" spacing={2}>
+                <Box>
+                  <input type="radio" id="basic" name="plan" value="basic" checked={selectedPlan === 'basic'} onChange={() => setSelectedPlan('basic')} />
+                  <label htmlFor="basic" style={{ marginLeft: 8, fontWeight: 500 }}>Basic - $5/mo (up to 2 recipients)</label>
+                </Box>
+                <Box>
+                  <input type="radio" id="premium" name="plan" value="premium" checked={selectedPlan === 'premium'} onChange={() => setSelectedPlan('premium')} />
+                  <label htmlFor="premium" style={{ marginLeft: 8, fontWeight: 500 }}>Premium - $10/mo (unlimited recipients)</label>
+                </Box>
+              </VStack>
+            </FormControl>
+            <Button colorScheme="orange" isDisabled={subscribed} onClick={() => setSubscribed(true)}>
+              {subscribed ? 'Subscribed!' : 'Subscribe'}
+            </Button>
+            <Flex justify="space-between">
+              <Button variant="ghost" onClick={handleBack}>Back</Button>
+              <Button colorScheme="blue" isDisabled={!subscribed} onClick={handleNext}>Next</Button>
+            </Flex>
+          </VStack>
+        )}
+        {step === 5 && (
+          <VStack spacing={6} align="stretch">
             <Heading size="md">All Set!</Heading>
             <Text>Your recipient and gift are set up. We'll handle the rest. You can always edit your preferences later.</Text>
-            <Text mt={6} fontSize="lg" color="gray.700" textAlign="center">
+            <Text mt={6} fontSize="lg" color="neutral.700" textAlign="center">
               We'll tee up a personalized gift for your approval one week before it's scheduled to ship. You'll have the option to veto or approve the selection. If we don't hear from you, we'll handle everything for you—no action needed.
             </Text>
             <Button colorScheme="green" as="a" href="/dashboard">Go to Dashboard</Button>

@@ -28,7 +28,7 @@ import {
   Textarea,
 } from '@chakra-ui/react';
 import { FiSend, FiInfo, FiEdit, FiCheck, FiX } from 'react-icons/fi';
-import { getGiftRecommendations, generateGiftMessage, handleAutoSendGift } from '../services/giftRecommendationEngine';
+import { getGiftRecommendations, generateGiftMessage, handleAutoSendGift, getGiftRecommendationsFromAI } from '../services/giftRecommendationEngine';
 import type { UserSettings } from '../types/settings';
 
 interface Recipient {
@@ -76,44 +76,56 @@ export default function GiftRecommendations({ recipients, onSendGift, settings }
   
   useEffect(() => {
     if (recipients.length > 0) {
-      generateRecommendationsForAll();
+      generateAIRecommendationsForAll();
     }
   }, [recipients]);
   
-  // Generate recommendations for all recipients
-  const generateRecommendationsForAll = () => {
+  // NEW: Generate AI recommendations for all recipients
+  const generateAIRecommendationsForAll = async () => {
     setLoading(true);
     const allRecommendations: { [key: string]: Gift[] } = {};
-    
-    recipients.forEach(recipient => {
+    for (const recipient of recipients) {
       const now = new Date();
       const occasionDate = new Date();
-      occasionDate.setDate(occasionDate.getDate() + 30); // Example: next 30 days
-      
-      // Determine upcoming occasion (in a real app, this would be more sophisticated)
-      const occasion = 'Birthday'; // Simplified example
-      
-      // Get recommendations from the engine
-      const recipientRecommendations = getGiftRecommendations(recipient, occasion, 200);
-      
-      // Convert to Gift objects
-      const giftRecommendations = recipientRecommendations.map(rec => ({
-        id: `rec-${rec.id}-${recipient.id}`,
-        recipientId: recipient.id,
-        name: rec.name,
-        description: rec.description,
-        price: rec.price,
-        occasion,
-        imageUrl: rec.imageUrl,
-        status: 'recommended' as const,
-        date: occasionDate.toISOString().split('T')[0],
-        autoSend: false,
-        personalMessage: generateGiftMessage(recipient.name, occasion, recipient.relationship)
-      }));
-      
-      allRecommendations[recipient.id] = giftRecommendations;
-    });
-    
+      occasionDate.setDate(occasionDate.getDate() + 30);
+      const occasion = 'Birthday'; // Simplified
+      try {
+        const aiRecs = await getGiftRecommendationsFromAI({ recipient, budget: 200 });
+        // If AI returns nothing, fallback to local
+        const recs = (aiRecs && aiRecs.length > 0) ? aiRecs : getGiftRecommendations(recipient, occasion, 200);
+        const giftRecommendations = recs.map((rec: any, idx: number) => ({
+          id: `ai-${rec.id || idx}-${recipient.id}`,
+          recipientId: recipient.id,
+          name: rec.name,
+          description: rec.description,
+          price: rec.price || rec.estimatedPrice || 0,
+          occasion,
+          imageUrl: rec.imageUrl,
+          status: 'recommended' as const,
+          date: occasionDate.toISOString().split('T')[0],
+          autoSend: false,
+          personalMessage: generateGiftMessage(recipient.name, occasion, recipient.relationship)
+        }));
+        allRecommendations[recipient.id] = giftRecommendations;
+      } catch (e) {
+        // Fallback to local engine
+        const recipientRecommendations = getGiftRecommendations(recipient, occasion, 200);
+        const giftRecommendations = recipientRecommendations.map(rec => ({
+          id: `rec-${rec.id}-${recipient.id}`,
+          recipientId: recipient.id,
+          name: rec.name,
+          description: rec.description,
+          price: rec.price,
+          occasion,
+          imageUrl: rec.imageUrl,
+          status: 'recommended' as const,
+          date: occasionDate.toISOString().split('T')[0],
+          autoSend: false,
+          personalMessage: generateGiftMessage(recipient.name, occasion, recipient.relationship)
+        }));
+        allRecommendations[recipient.id] = giftRecommendations;
+      }
+    }
     setRecommendations(allRecommendations);
     setLoading(false);
   };

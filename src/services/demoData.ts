@@ -307,6 +307,9 @@ export const demoGifts = [
   }
 ];
 
+// Import Firebase environment modules
+import { getEnv as browserGetEnv } from './firebase.env';
+
 // A function to safely get data from localStorage with error handling
 const safeGetItem = (key: string, defaultValue: any = null) => {
   try {
@@ -329,59 +332,53 @@ const safeSetItem = (key: string, value: any) => {
   }
 };
 
+// Use the browser version of getEnv (we don't need the Node.js version here since it's for tests)
+let getEnv: (key: string) => string | undefined = browserGetEnv;
+
 // A function to initialize all demo data
 export const initializeDemoData = () => {
-  console.log('Initializing demo data');
-  
   try {
-    // Clear any previous demo data to ensure clean state
-    localStorage.removeItem('recipients');
-    localStorage.removeItem('gifts');
+    // Check if demo data already exists
+    const hasUser = !!safeGetItem('demoUser');
+    const hasRecipients = !!safeGetItem('recipients');
+    const hasGifts = !!safeGetItem('gifts');
     
-    // Set demo mode in localStorage
-    localStorage.setItem('demo-mode', 'true');
+    console.log('Initializing demo data:', { hasUser, hasRecipients, hasGifts });
     
-    // Process recipients - convert Date objects to ISO strings for localStorage
-    const processedRecipients = demoRecipients.map(recipient => ({
-      ...recipient,
-      birthdate: recipient.birthdate instanceof Date ? recipient.birthdate.toISOString() : recipient.birthdate,
-      createdAt: recipient.createdAt instanceof Date ? recipient.createdAt.toISOString() : recipient.createdAt,
-      updatedAt: recipient.updatedAt instanceof Date ? recipient.updatedAt.toISOString() : recipient.updatedAt,
-      specialDates: recipient.specialDates ? recipient.specialDates.map(sd => ({
-        ...sd,
-        date: sd.date instanceof Date ? sd.date.toISOString() : sd.date
-      })) : undefined
-    }));
+    // Initialize the demo user if it doesn't exist
+    if (!hasUser) {
+      const demoUser = {
+        id: 'demo-user-' + Date.now(),
+        email: 'demo@lazyuncle.com',
+        displayName: 'Demo User',
+        planId: 'premium',
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      };
+      safeSetItem('demoUser', demoUser);
+      console.log('Demo user created');
+    }
     
-    // Ensure each gift has a valid recipient by checking against the recipient IDs
-    const validRecipientIds = processedRecipients.map(r => r.id);
-    const validGifts = demoGifts.filter(gift => validRecipientIds.includes(gift.recipientId));
+    // Initialize recipients if they don't exist
+    if (!hasRecipients) {
+      safeSetItem('recipients', demoRecipients);
+      console.log('Demo recipients created:', demoRecipients.length);
+    }
     
-    // Process gifts - convert Date objects to ISO strings for localStorage
-    const processedGifts = validGifts.map(gift => ({
-      ...gift,
-      date: gift.date instanceof Date ? gift.date.toISOString() : gift.date,
-      createdAt: gift.createdAt instanceof Date ? gift.createdAt.toISOString() : gift.createdAt,
-      updatedAt: gift.updatedAt instanceof Date ? gift.updatedAt.toISOString() : gift.updatedAt
-    }));
+    // Initialize gifts if they don't exist
+    if (!hasGifts) {
+      safeSetItem('gifts', demoGifts);
+      console.log('Demo gifts created:', demoGifts.length);
+    }
     
-    safeSetItem('recipients', processedRecipients);
-    safeSetItem('gifts', processedGifts);
+    // Set demo mode flag
+    safeSetItem('demoMode', true);
+    console.log('Demo mode initialized successfully');
     
-    // Set demo mode in the auth store
-    const authStore = useAuthStore.getState();
-    authStore.setDemoMode(true);
-    authStore.signIn('demo@example.com', 'password');
-    
-    // console.log('Demo data set in localStorage:', {
-    //   recipients: processedRecipients.length,
-    //   gifts: processedGifts.length
-    // }); // Uncomment for debugging only
-    
-    return { recipients: processedRecipients, gifts: processedGifts };
+    return true;
   } catch (error) {
-    console.error('Failed to initialize demo data:', error);
-    return { recipients: [], gifts: [] };
+    console.error('Error initializing demo data:', error);
+    return false;
   }
 };
 
@@ -389,10 +386,9 @@ export const initializeDemoData = () => {
 export const isDemoMode = () => {
   try {
     // Check for explicit env setting first
-    if (import.meta.env.VITE_DEMO_MODE === 'true') {
+    if (getEnv('VITE_DEMO_MODE') === 'true') {
       return true;
     }
-    
     // Then check for persisted demo mode in localStorage
     return localStorage.getItem('demo-mode') === 'true';
   } catch (error) {

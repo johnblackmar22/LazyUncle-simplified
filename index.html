@@ -6,6 +6,24 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vite + React + TS</title>
+    <script>
+      // Debug logging
+      window.onerror = function(message, source, lineno, colno, error) {
+        console.error('Global error:', message, 'at', source, ':', lineno);
+        // Create a visible error message for debugging
+        const errorDiv = document.createElement('div');
+        errorDiv.style.position = 'fixed';
+        errorDiv.style.top = '10px';
+        errorDiv.style.left = '10px';
+        errorDiv.style.padding = '20px';
+        errorDiv.style.backgroundColor = 'rgba(255,0,0,0.8)';
+        errorDiv.style.color = 'white';
+        errorDiv.style.zIndex = '9999';
+        errorDiv.textContent = `Error: ${message} at ${source}:${lineno}`;
+        document.body.appendChild(errorDiv);
+        return false;
+      };
+    </script>
   </head>
   <body>
     <div id="root"></div>

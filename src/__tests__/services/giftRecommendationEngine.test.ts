@@ -1,5 +1,6 @@
 import { getGiftRecommendations } from '../../services/giftRecommendationEngine';
 import type { Recipient } from '../../types/index';
+import { getGiftRecommendationsFromAI } from '../../services/giftRecommendationEngine';
 
 describe('Gift Recommendation Engine', () => {
   test('should provide recommendations based on recipient interests', () => {
@@ -83,5 +84,42 @@ describe('Gift Recommendation Engine', () => {
     recommendations.forEach(gift => {
       expect(gift.price).toBeLessThanOrEqual(budget);
     });
+  });
+});
+
+describe('AI-powered Gift Recommendation Engine', () => {
+  const mockRecipient = {
+    name: 'Test User',
+    interests: ['Music', 'Books'],
+    gender: 'Female',
+    age: 28
+  };
+  const mockBudget = 100;
+
+  beforeEach(() => {
+    global.fetch = jest.fn();
+  });
+
+  afterEach(() => {
+    jest.resetAllMocks();
+  });
+
+  test('should return gift ideas from AI (success)', async () => {
+    const mockGiftIdeas = [
+      { name: 'Bluetooth Speaker', description: 'Portable speaker', estimatedPrice: 50 },
+      { name: 'Book Subscription', description: 'Monthly book box', estimatedPrice: 30 }
+    ];
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => mockGiftIdeas
+    });
+    const result = await getGiftRecommendationsFromAI({ recipient: mockRecipient, budget: mockBudget });
+    expect(result).toEqual(mockGiftIdeas);
+  });
+
+  test('should handle fetch error gracefully', async () => {
+    (global.fetch as jest.Mock).mockRejectedValue(new Error('Network error'));
+    const result = await getGiftRecommendationsFromAI({ recipient: mockRecipient, budget: mockBudget });
+    expect(result).toEqual([]);
   });
 }); 

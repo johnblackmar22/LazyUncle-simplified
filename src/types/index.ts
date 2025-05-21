@@ -68,6 +68,20 @@ export interface Address {
   country: string;
 }
 
+// GiftSuggestion type for recommendations
+export interface GiftSuggestion {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  ageRange?: string;
+  gender?: string;
+  interests?: string[];
+  occasion?: string;
+  imageUrl?: string;
+}
+
 // Gift types - simplified
 export interface Gift {
   id: string;
@@ -84,4 +98,5 @@ export interface Gift {
   notes?: string;
   createdAt: Date | number;
   updatedAt: Date | number;
+  autoSend?: boolean; // For test compatibility
 } 

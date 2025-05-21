@@ -6,7 +6,7 @@ import { Navbar } from '../components/Navbar';
 
 export default function HowItWorksPage() {
   return (
-    <Box bg="gray.100" minH="100vh">
+    <Box bg="neutral.100" minH="100vh">
       <Navbar />
       <Container maxW="container.md" py={{ base: 4, md: 12 }} px={{ base: 2, md: 0 }}>
         <VStack spacing={{ base: 4, md: 8 }} align="stretch">

@@ -31,31 +31,30 @@ function App() {
   return (
     <Box minH="100vh" bg="gray.50">
       <Routes>
-        {/* Public routes with shared Layout */}
-        <Route path="/" element={<Layout />}>
-          <Route index element={<HomePage />} />
-          <Route path="login" element={<LoginPage />} />
-          <Route path="register" element={<RegisterPage />} />
-          <Route path="subscription/plans" element={<SubscriptionPlansPage />} />
-          <Route path="how-it-works" element={<HowItWorksPage />} />
-          <Route path="checkout" element={<CheckoutPage />} />
-          {/* Add other public pages here if needed */}
-          {/* Protected routes */}
-          <Route element={<ProtectedRoute />}>
-            <Route path="dashboard" element={<DashboardPage />} />
+        {/* Public routes */}
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/subscription/plans" element={<SubscriptionPlansPage />} />
+        <Route path="/how-it-works" element={<HowItWorksPage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
+        {/* Protected routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<Layout />}>
+            <Route path="/dashboard" element={<DashboardPage />} />
             {/* Recipient routes */}
-            <Route path="recipients" element={<RecipientsListPage />} />
-            <Route path="recipients/add" element={<AddRecipientPage />} />
-            <Route path="recipients/:id" element={<RecipientDetailPage />} />
-            <Route path="recipients/:id/edit" element={<EditRecipientPage />} />
+            <Route path="/recipients" element={<RecipientsListPage />} />
+            <Route path="/recipients/add" element={<AddRecipientPage />} />
+            <Route path="/recipients/:id" element={<RecipientDetailPage />} />
+            <Route path="/recipients/:id/edit" element={<EditRecipientPage />} />
             {/* Gift routes */}
-            {/* <Route path="gifts" element={<GiftsListPage />} />
-            <Route path="gifts/:id" element={<GiftDetailPage />} />
-            <Route path="gifts/add" element={<AddGiftPage />} />
-            <Route path="gifts/add/:recipientId" element={<AddGiftPage />} />
-            <Route path="gifts/:id/edit" element={<EditGiftPage />} /> */}
+            {/* <Route path="/gifts" element={<GiftsListPage />} />
+            <Route path="/gifts/:id" element={<GiftDetailPage />} />
+            <Route path="/gifts/add" element={<AddGiftPage />} />
+            <Route path="/gifts/add/:recipientId" element={<AddGiftPage />} />
+            <Route path="/gifts/:id/edit" element={<EditGiftPage />} /> */}
             {/* Settings route */}
-            <Route path="settings" element={<SettingsPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Route>
         </Route>
         {/* Onboarding route (outside Layout) */}

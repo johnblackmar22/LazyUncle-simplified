@@ -1,13 +1,146 @@
 # LazyUncle - Never Forget Another Birthday
 
-LazyUncle is a gift automation platform for busy uncles and aunts who want to be the cool relative without all the hassle. Set it up once, and we'll remind you, recommend age-appropriate gifts, and ship them directly to your nephews and nieces.
+LazyUncle is a gift automation platform for busy people who want to be remembered for thoughtful gifts without all the hassle. Set it up once, and we'll remind you, recommend appropriate gifts, and ship them directly to your loved ones.
 
 ## Features
 
 - **Automated Gift Giving**: Set it and forget it. We handle everything from reminders to delivery.
-- **Smart Gift Recommendations**: Age-appropriate suggestions that kids will actually love.
+- **Smart Gift Recommendations**: Thoughtful suggestions that recipients will actually love.
 - **Multiple Subscription Tiers**: Choose the plan that fits your needs and budget.
-- **Simple Setup Process**: Add your nephews and nieces in just a few minutes.
+- **Simple Setup Process**: Add your recipients in just a few minutes.
+
+## Quick Start
+
+```bash
+# Install dependencies
+npm install
+
+# Create .env file (copy example values)
+echo "VITE_DEMO_MODE=true" > .env
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+```
+
+## Development Setup
+
+### Prerequisites
+- Node.js v18 or higher
+- npm v7 or higher
+
+### Environment Configuration
+Create a `.env` file in the root directory with the following variables:
+
+```
+# Enable demo mode (no Firebase account needed)
+VITE_DEMO_MODE=true
+
+# Or use Firebase configuration (for production)
+VITE_FIREBASE_API_KEY=your_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+```
+
+### Running in Development Mode
+The application can run in two modes:
+
+1. **Demo Mode**: Uses local storage to simulate a backend. Great for testing the UI without Firebase.
+   ```
+   VITE_DEMO_MODE=true
+   ```
+
+2. **Firebase Mode**: Connects to a real Firebase backend for authentication and data storage.
+   ```
+   VITE_DEMO_MODE=false
+   ```
+
+## Production Deployment
+
+### Build for Production
+```bash
+npm run build
+```
+This creates optimized files in the `dist` folder that can be deployed to any static hosting service.
+
+### Recommended Hosting Services
+
+1. **Firebase Hosting** (Recommended if using Firebase)
+   ```bash
+   npm install -g firebase-tools
+   firebase login
+   firebase init hosting
+   firebase deploy
+   ```
+
+2. **Netlify**
+   - Connect your GitHub repository or drag and drop the `dist` folder
+   - Set the required environment variables in Netlify dashboard
+
+3. **Vercel**
+   - Import from Git repository
+   - Configure environment variables in Vercel dashboard
+
+### Important Notes for Deployment
+
+- **Environment Variables**: All Firebase credentials should be set as environment variables on your hosting platform.
+- **Firebase Security Rules**: Review and update Firestore security rules before going live.
+- **Demo Mode**: Set `VITE_DEMO_MODE=false` for production deployments.
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Blank Screen / Loading Issues**
+   - Check browser console for errors
+   - Verify Firebase credentials are correct
+   - Make sure demo mode is properly configured
+
+2. **Image Loading Failures**
+   - Images use fallback SVGs when loading fails
+   - Verify the Logos directory is properly deployed
+
+3. **ES Module Errors**
+   - The project uses ES modules; avoid CommonJS `require()` statements
+   - Use `import` instead of `require`
+
+## Tech Stack
+
+- **Frontend**: React 18, TypeScript, Chakra UI
+- **Build Tool**: Vite
+- **State Management**: Zustand
+- **Styling**: Tailwind CSS v4 + Chakra UI
+- **Backend**: Firebase (Auth, Firestore)
+- **Testing**: Jest
+
+## Project Structure
+
+```
+LazyUncle/
+├── src/               # Source code
+│   ├── components/    # Reusable UI components
+│   ├── pages/         # Application pages/routes
+│   ├── services/      # Firebase and API services
+│   ├── store/         # State management
+│   ├── hooks/         # Custom React hooks
+│   └── utils/         # Utility functions
+├── public/            # Static assets
+├── Logos/             # Logo assets
+├── dist/              # Production build output
+└── netlify/           # Netlify serverless functions
+```
+
+## License
+
+This project is proprietary and confidential. Unauthorized copying, distribution, or use is prohibited.
 
 ## Development Status
 
@@ -50,76 +183,24 @@ LazyUncle is currently in development. The core functionality includes:
 - User management
 - Analytics and reporting
 
-## Getting Started
-
-To run the project locally:
-
-```bash
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-
-# Run tests
-npm test
-
-# Build for production
-npm run build
-```
-
-## Deployment (For Non-Technical Users)
-
-LazyUncle can be easily deployed to the web using modern hosting services. Here are the simplest options:
-
-### One-Click Deploy (Recommended)
-
-- **Vercel** (https://vercel.com/import):
-  1. Click the link and import your GitHub repository.
-  2. Set the required environment variables (see below).
-  3. Click "Deploy". Your app will be live in minutes.
-
-- **Netlify** (https://app.netlify.com/drop):
-  1. Drag and drop your project folder, or connect your GitHub repository.
-  2. Set environment variables as prompted.
-  3. Click "Deploy".
-
-### Environment Variables
-
-Before deploying, make sure to set up your `.env` file with the following (example):
-
-```
-VITE_FIREBASE_API_KEY=your_firebase_api_key
-VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your_project_id
-VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-VITE_FIREBASE_APP_ID=your_app_id
-VITE_STRIPE_PUBLIC_KEY=your_stripe_public_key
-```
-
-You can find these values in your Firebase and Stripe dashboards.
-
-### Manual Deploy (Advanced)
-
-1. Build the app:
-   ```bash
-   npm run build
-   ```
-2. Upload the `dist/` folder to your web host (e.g., Netlify, Vercel, Firebase Hosting).
-
-### Need Help?
-If you get stuck, reach out to a developer friend or contact support for your chosen hosting provider. Most platforms have excellent guides for React/Vite apps.
-
-## Tech Stack
-
-- React + TypeScript
-- Vite for build tooling
-- Chakra UI for components
-- Firebase for backend
-- Jest for testing
-- Zustand for state management
-
 ## Contributing
 
 This project is currently in private development. Contribution guidelines will be provided when the project moves to open source.
+
+## ⚠️ Deployment Reminder: OpenAI API Key Security
+
+Before going live, make sure to:
+- Set your `OPENAI_API_KEY` as a **secret** in Netlify environment variables.
+- Scope it to **Functions** only (not Builds, Runtime, or Post processing).
+- Never expose your API key to the frontend or commit it to your codebase.
+
+If you are on a free Netlify plan and cannot set secrets/scopes, remember to update this setting after upgrading your account.
+
+## Local Development Setup
+
+1. Create a `.env` file in your project root (if it doesn't exist).
+2. Add this line:
+   ```
+   OPENAI_API_KEY=sk-...yourkey...
+   ```
+3. Save the file. The Netlify CLI will use this value when running `netlify dev`.

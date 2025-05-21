@@ -23,7 +23,7 @@ import {
 } from '@chakra-ui/react';
 import { useRecipientStore } from '../store/recipientStore';
 import { useGiftStore } from '../store/giftStore';
-import { getGiftRecommendations } from '../services/giftRecommendationEngine';
+import { getGiftRecommendationsFromAI } from '../services/giftRecommendationEngine';
 import { showErrorToast } from '../utils/toastUtils';
 import { useAuthStore } from '../store/authStore';
 import { getPlanById } from '../services/subscription/plans';
@@ -92,11 +92,10 @@ const AddRecipientPage: React.FC = () => {
       setStep(1);
     } else if (step === 1) {
       setLoading(true);
-      const recs = getGiftRecommendations(
-        { ...recipient },
-        occasion,
-        Number(budget)
-      );
+      const recs = await getGiftRecommendationsFromAI({
+        recipient: { ...recipient },
+        budget: Number(budget)
+      });
       setRecommendations(recs);
       setSelectedGiftIdx(0);
       setLoading(false);

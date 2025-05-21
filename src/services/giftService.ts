@@ -224,13 +224,10 @@ export const deleteGift = async (id: string): Promise<void> => {
 export const scheduleAutoSend = async (id: string, sendDate: string): Promise<Gift> => {
   const { user } = useAuthStore.getState();
   if (!user) throw new Error('User not authenticated');
-  
   try {
     // Update the gift with auto-send data
     return await updateGift(id, {
-      autoSend: true,
-      autoSendDate: sendDate,
-      autoSendStatus: 'scheduled'
+      autoSend: true
     });
   } catch (error) {
     console.error('Error scheduling gift for auto-send:', error);
@@ -242,12 +239,10 @@ export const scheduleAutoSend = async (id: string, sendDate: string): Promise<Gi
 export const cancelAutoSend = async (id: string): Promise<Gift> => {
   const { user } = useAuthStore.getState();
   if (!user) throw new Error('User not authenticated');
-  
   try {
     // Update the gift to cancel auto-send
     return await updateGift(id, {
-      autoSend: false,
-      autoSendStatus: 'cancelled'
+      autoSend: false
     });
   } catch (error) {
     console.error('Error cancelling auto-send:', error);
@@ -276,69 +271,61 @@ let mockGifts: Gift[] = [];
 // Generate sample gifts for demo mode
 const generateSampleGifts = (userId: string): Gift[] => {
   const now = Date.now();
-  
   return [
     {
       id: 'gift-1',
       userId,
-      recipientId: 'sample-1', // John Smith
+      recipientId: 'sample-1',
       name: 'PS5 Console',
       description: 'PlayStation 5 Digital Edition',
       price: 399.99,
-      currency: 'USD',
       status: 'idea',
-      imageURL: 'https://example.com/ps5.jpg',
       category: 'gaming',
-      url: 'https://www.amazon.com/PlayStation-5-Digital/dp/B08FC6MR62',
-      retailer: 'Amazon',
+      occasion: 'Birthday',
+      date: new Date('2023-06-15'),
       createdAt: now,
       updatedAt: now
     },
     {
       id: 'gift-2',
       userId,
-      recipientId: 'sample-1', // John Smith
+      recipientId: 'sample-1',
       name: 'Hiking Backpack',
       description: 'Waterproof hiking backpack with hydration system',
       price: 89.99,
-      currency: 'USD',
       status: 'purchased',
-      occasion: 'Birthday',
-      date: '2023-06-15',
       category: 'outdoors',
+      occasion: 'Birthday',
+      date: new Date('2023-06-15'),
       createdAt: now - 1000000,
       updatedAt: now - 1000000
     },
     {
       id: 'gift-3',
       userId,
-      recipientId: 'sample-2', // Sarah Johnson
+      recipientId: 'sample-2',
       name: 'Cooking Masterclass Subscription',
       description: '1-year subscription to online cooking classes',
       price: 180,
-      currency: 'USD',
       status: 'idea',
       category: 'classes',
-      url: 'https://www.masterclass.com',
-      retailer: 'MasterClass',
+      occasion: 'Anniversary',
+      date: new Date('2023-03-15'),
       autoSend: true,
-      autoSendDate: '2023-03-15',
-      autoSendStatus: 'scheduled',
       createdAt: now - 2000000,
       updatedAt: now - 500000
     },
     {
       id: 'gift-4',
       userId,
-      recipientId: 'sample-2', // Sarah Johnson
+      recipientId: 'sample-2',
       name: 'Book: The Midnight Library',
       description: 'Novel by Matt Haig',
       price: 14.99,
-      currency: 'USD',
       status: 'given',
-      occasion: 'Christmas',
-      date: '2022-12-25',
       category: 'books',
+      occasion: 'Christmas',
+      date: new Date('2022-12-25'),
       createdAt: now - 3000000,
       updatedAt: now - 3000000
     }
@@ -353,39 +340,21 @@ const mockGiftSuggestions: {[key: string]: GiftSuggestion[]} = {
       name: 'Hiking GPS Watch',
       description: 'GPS watch with trail maps and fitness tracking',
       price: 349.99,
-      currency: 'USD',
-      imageURL: 'https://example.com/gps-watch.jpg',
-      url: 'https://www.rei.com/product/watch',
-      retailer: 'REI',
-      category: 'outdoors',
-      matchScore: 95,
-      available: true
+      category: 'outdoors'
     },
     {
       id: 'suggestion-2',
       name: 'Gaming Headset',
       description: 'Wireless gaming headset with noise cancellation',
       price: 149.99,
-      currency: 'USD',
-      imageURL: 'https://example.com/headset.jpg',
-      url: 'https://www.bestbuy.com/headset',
-      retailer: 'Best Buy',
-      category: 'gaming',
-      matchScore: 90,
-      available: true
+      category: 'gaming'
     },
     {
       id: 'suggestion-3',
       name: 'National Parks Pass',
       description: 'Annual pass to all US National Parks',
       price: 80,
-      currency: 'USD',
-      imageURL: 'https://example.com/parks-pass.jpg',
-      url: 'https://www.nps.gov/planyourvisit/passes.htm',
-      retailer: 'National Park Service',
-      category: 'outdoors',
-      matchScore: 87,
-      available: true
+      category: 'outdoors'
     }
   ],
   'sample-2': [
@@ -394,39 +363,21 @@ const mockGiftSuggestions: {[key: string]: GiftSuggestion[]} = {
       name: 'Gourmet Cooking Set',
       description: 'Professional-grade cooking tools set',
       price: 199.99,
-      currency: 'USD',
-      imageURL: 'https://example.com/cooking-set.jpg',
-      url: 'https://www.williams-sonoma.com/cookingset',
-      retailer: 'Williams Sonoma',
-      category: 'cooking',
-      matchScore: 98,
-      available: true
+      category: 'cooking'
     },
     {
       id: 'suggestion-5',
       name: 'Book Club Subscription',
       description: 'Monthly delivery of best-selling books',
       price: 19.99,
-      currency: 'USD',
-      imageURL: 'https://example.com/book-club.jpg',
-      url: 'https://www.bookofthemonth.com',
-      retailer: 'Book of the Month',
-      category: 'books',
-      matchScore: 93,
-      available: true
+      category: 'books'
     },
     {
       id: 'suggestion-6',
       name: 'Cookbook Collection',
       description: 'Set of 3 bestselling cookbooks',
       price: 65,
-      currency: 'USD',
-      imageURL: 'https://example.com/cookbooks.jpg',
-      url: 'https://www.amazon.com/cookbooks',
-      retailer: 'Amazon',
-      category: 'books',
-      matchScore: 89,
-      available: true
+      category: 'books'
     }
   ]
 };
@@ -475,19 +426,14 @@ const addMockGift = (userId: string, data: Partial<Gift>): Gift => {
     recipientId: data.recipientId || '',
     name: data.name || '',
     description: data.description,
-    price: data.price,
-    currency: data.currency || 'USD',
+    price: data.price || 0,
     status: data.status || 'idea',
-    occasion: data.occasion,
-    date: data.date,
-    imageURL: data.imageURL,
-    url: data.url,
-    retailer: data.retailer,
-    category: data.category,
-    rating: data.rating,
+    category: data.category || '',
+    occasion: data.occasion || '',
+    date: data.date || new Date(),
+    imageUrl: data.imageUrl,
+    notes: data.notes,
     autoSend: data.autoSend || false,
-    autoSendDate: data.autoSendDate,
-    autoSendStatus: data.autoSendStatus,
     createdAt: now,
     updatedAt: now
   };

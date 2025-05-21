@@ -25,9 +25,9 @@ export default function SubscriptionPlansPage() {
   const [isYearly, setIsYearly] = useState(false);
   const navigate = useNavigate();
   
-  const bgColor = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
-  const textColor = useColorModeValue('gray.600', 'gray.400');
+  const bgColor = useColorModeValue('white', 'neutral.800');
+  const borderColor = useColorModeValue('neutral.200', 'neutral.700');
+  const textColor = useColorModeValue('neutral.600', 'neutral.400');
   
   const handleSubscribe = (planId: string) => {
     // In a real app, this would navigate to checkout with the selected plan
@@ -35,7 +35,7 @@ export default function SubscriptionPlansPage() {
   };
 
   return (
-    <Box bg="gray.100" minH="100vh">
+    <Box bg="neutral.100" minH="100vh">
       <Navbar />
       <Box py={{ base: 4, md: 12 }}>
         <Container maxW="container.xl" px={{ base: 2, md: 0 }}>
@@ -83,7 +83,12 @@ export default function SubscriptionPlansPage() {
                     borderRadius={'xl'}
                     position="relative"
                     width={{ base: '100%', md: '350px' }}
-                    px={{ base: 2, md: 12 }}
+                    px={{ base: 2, md: 6 }}
+                    bg={bgColor}
+                    display="flex"
+                    flexDirection="column"
+                    justifyContent="space-between"
+                    minHeight="540px"
                   >
                     {isBestValue && (
                       <Box
@@ -103,15 +108,14 @@ export default function SubscriptionPlansPage() {
                         </Badge>
                       </Box>
                     )}
-
-                    <Box py={4} px={12} position="relative">
+                    <Box py={4} px={2} position="relative">
                       <Heading as="h3" fontSize="2xl" fontWeight="bold" mb={2}>
                         {plan.name}
                       </Heading>
                       <Text fontWeight="500" fontSize="md" mb={2}>
                         {plan.description}
                       </Text>
-                      <Box display="flex" justifyContent="center" alignItems="baseline" my={8}>
+                      <Box display="flex" justifyContent="center" alignItems="baseline" my={6}>
                         <Text fontSize="5xl" fontWeight="900">
                           ${typeof price === 'number' ? price.toFixed(2) : '??'}
                         </Text>
@@ -119,6 +123,24 @@ export default function SubscriptionPlansPage() {
                           /{isYearly ? 'year' : 'month'}
                         </Text>
                       </Box>
+                    </Box>
+                    <VStack
+                      bg={useColorModeValue('neutral.50', 'neutral.700')}
+                      py={4}
+                      borderRadius="xl"
+                      flexGrow={1}
+                      spacing={0}
+                    >
+                      <List spacing={3} textAlign="start" px={6} py={2} w="100%">
+                        {plan.features.map((feature, index) => (
+                          <ListItem key={index}>
+                            <ListIcon as={CheckIcon} color="green.500" />
+                            {feature}
+                          </ListItem>
+                        ))}
+                      </List>
+                    </VStack>
+                    <Box px={6} pb={6} pt={2}>
                       <Button
                         size="lg"
                         w="full"
@@ -129,26 +151,12 @@ export default function SubscriptionPlansPage() {
                         Start {isYearly ? 'Yearly' : 'Monthly'} Plan
                       </Button>
                     </Box>
-                    <VStack
-                      bg={useColorModeValue('gray.50', 'gray.700')}
-                      py={4}
-                      borderBottomRadius={'xl'}
-                    >
-                      <List spacing={3} textAlign="start" px={12} py={6}>
-                        {plan.features.map((feature, index) => (
-                          <ListItem key={index}>
-                            <ListIcon as={CheckIcon} color="green.500" />
-                            {feature}
-                          </ListItem>
-                        ))}
-                      </List>
-                    </VStack>
                   </Box>
                 );
               })}
             </Stack>
           </VStack>
-          <Text fontSize={{ base: 'xs', md: 'sm' }} color="gray.500" mt={8} textAlign="center">
+          <Text fontSize={{ base: 'xs', md: 'sm' }} color="neutral.500" mt={8} textAlign="center">
             <em>Note: Your subscription covers access to Lazy Uncle's gifting engine and automation. When a gift is selected and approved, you will be charged the exact price of that gift (plus any applicable fees or shipping). You can always review and approve gifts before purchase.</em>
           </Text>
         </Container>

@@ -87,11 +87,11 @@ export const SpecialDates: React.FC<{ recipientId: string }> = ({ recipientId })
         <h3 className="text-lg font-medium mb-2">Existing Dates</h3>
         <div className="space-y-2">
           {(recipient.specialDates as SpecialDate[] | undefined)?.map((date: SpecialDate) => (
-            <div key={date.id} className="flex items-center justify-between bg-gray-50 p-3 rounded">
+            <div key={date.id} className="flex items-center justify-between bg-neutral-50 p-3 rounded">
               <div>
                 <span className="font-medium">{format(new Date(date.date), 'MMMM d, yyyy')}</span>
-                <span className="ml-2 text-gray-600">({date.description})</span>
-                <span className="ml-2 text-sm text-gray-500 capitalize">({date.type})</span>
+                <span className="ml-2 text-neutral-600">({date.description})</span>
+                <span className="ml-2 text-sm text-neutral-500 capitalize">({date.type})</span>
               </div>
               <button
                 onClick={() => handleDeleteDate(date.id)}

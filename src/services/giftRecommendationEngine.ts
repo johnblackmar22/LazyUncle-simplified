@@ -4,18 +4,7 @@
  * This service provides functionality for recommending gifts based on recipient data.
  */
 
-interface GiftSuggestion {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  category: string;
-  ageRange?: string;
-  gender?: string;
-  interests?: string[];
-  occasion?: string;
-  imageUrl?: string;
-}
+import type { GiftSuggestion } from '../types';
 
 // Mock database of gift ideas
 const giftCatalog: GiftSuggestion[] = [
@@ -294,4 +283,27 @@ export const handleAutoSendGift = async (gift: any, recipient: any, settings: an
       resolve(true);
     }, 1500);
   });
-}; 
+};
+
+/**
+ * Call the OpenAI-powered Netlify function for gift recommendations
+ */
+export async function getGiftRecommendationsFromAI({ recipient, budget, pastGifts = [], trendingGifts = [] }: {
+  recipient: any;
+  budget: number;
+  pastGifts?: any[];
+  trendingGifts?: any[];
+}): Promise<any[]> {
+  try {
+    const response = await fetch('/.netlify/functions/gift-recommendations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ recipient, budget, pastGifts, trendingGifts })
+    });
+    if (!response.ok) throw new Error('Failed to fetch gift recommendations');
+    return await response.json();
+  } catch (err) {
+    console.error('AI gift recommendation error:', err);
+    return [];
+  }
+} 

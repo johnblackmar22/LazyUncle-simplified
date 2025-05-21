@@ -1,3 +1,4 @@
+global.TextEncoder = require('util').TextEncoder;
 const request = require('supertest');
 const express = require('express');
 const bodyParser = require('body-parser');

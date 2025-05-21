@@ -24,21 +24,21 @@ export const subscriptionPlans: SubscriptionPlan[] = [
     billingCycle: 'monthly',
     features: [
       '1 recipient',
-      'Birthday & Christmas gifting',
+      '1 occasion',
       'Standard shipping',
       'Basic gift recommendations'
     ],
     recipientLimit: 1,
-    giftLimit: 2,
+    giftLimit: 1,
     priorityShipping: false,
     giftWrap: false,
     customMessages: false,
-    description: 'Try Lazy Uncle with one recipient. Perfect for testing the service.'
+    description: 'Try Lazy Uncle with one recipient and one occasion. Perfect for testing the service.'
   },
   {
     id: 'pro',
     name: 'Pro',
-    price: 4.99,
+    price: 9.99,
     billingCycle: 'monthly',
     features: [
       'Unlimited recipients',

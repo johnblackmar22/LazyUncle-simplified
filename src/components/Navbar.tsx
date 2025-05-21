@@ -18,8 +18,9 @@ import {
   useDisclosure,
 } from '@chakra-ui/react';
 import { HamburgerIcon } from '@chakra-ui/icons';
-import SmallLogoJpeg from '../../Logos/Small logo.jpeg';
+import SmallLogoJpeg from '/Logos/Small logo.jpeg';
 import { useAuthStore } from '../store/authStore';
+import { useLocation } from 'react-router-dom';
 
 // Theme colors from logo
 const ACCENT_BLUE = 'brand.700';
@@ -28,7 +29,15 @@ const ACCENT_ORANGE = 'orange.400';
 function BrandLogo({ size = 36 }: { size?: number }) {
   return (
     <HStack spacing={2}>
-      <img src={SmallLogoJpeg} alt="Lazy Uncle Logo" style={{ width: size, height: size }} />
+      <img 
+        src={SmallLogoJpeg} 
+        alt="Lazy Uncle Logo" 
+        style={{ width: size, height: size }} 
+        onError={(e) => {
+          console.error('Failed to load logo image');
+          e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 36 36'%3E%3Crect width='36' height='36' fill='%23F97316'/%3E%3Ctext x='18' y='24' font-family='Arial' font-size='24' fill='white' text-anchor='middle'%3ELU%3C/text%3E%3C/svg%3E";
+        }}
+      />
       <Box as="span" fontWeight={900} fontSize="xl" letterSpacing={1}>
         <Box as="span" color={ACCENT_ORANGE}>Lazy</Box>
         <Box as="span" color={ACCENT_BLUE}>Uncle</Box>
@@ -41,30 +50,92 @@ export const Navbar: React.FC = () => {
   const { user, signOut } = useAuthStore();
   const bgColor = useColorModeValue('white', 'gray.800');
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const location = useLocation();
 
-  // Nav links for reuse
-  const navLinks = user ? (
-    <>
-      <Button as={RouterLink} to="/dashboard" variant="ghost" colorScheme="blue" w={{ base: 'full', md: 'auto' }}>
-        Dashboard
-      </Button>
-      <Button as={RouterLink} to="/settings" variant="ghost" colorScheme="blue" w={{ base: 'full', md: 'auto' }}>
-        Settings
-      </Button>
-      <Button onClick={async () => { await signOut(); }} variant="outline" colorScheme="blue" w={{ base: 'full', md: 'auto' }}>
-        Sign Out
-      </Button>
-    </>
-  ) : (
-    <>
-      <Button as={RouterLink} to="/login" variant="ghost" colorScheme="blue" w={{ base: 'full', md: 'auto' }}>
-        Sign In
-      </Button>
-      <Button as={RouterLink} to="/register" colorScheme="blue" w={{ base: 'full', md: 'auto' }}>
-        Register
-      </Button>
-    </>
-  );
+  // Minimal nav for HomePage/public pages
+  const publicLinks = [
+    { label: 'Subscribe', to: '/subscription/plans' },
+    { label: 'Sign In', to: '/login' },
+  ];
+
+  // Authenticated nav
+  const authLinks = [
+    { label: 'Home', to: '/' },
+    { label: 'Settings', to: '/settings' },
+  ];
+
+  // Desktop nav links
+  const navLinks = user
+    ? (
+      <>
+        {authLinks.map((link) => (
+          <Button key={link.to} as={RouterLink} to={link.to} variant="ghost" colorScheme="blue" w={{ base: 'full', md: 'auto' }}>
+            {link.label}
+          </Button>
+        ))}
+        <Button onClick={async () => { await signOut(); window.location.href = '/'; }} variant="outline" colorScheme="blue" w={{ base: 'full', md: 'auto' }}>
+          Sign Out
+        </Button>
+      </>
+    )
+    : (
+      <>
+        {publicLinks.map((link) => (
+          <Button key={link.to} as={RouterLink} to={link.to} variant="ghost" colorScheme="blue" w={{ base: 'full', md: 'auto' }}>
+            {link.label}
+          </Button>
+        ))}
+      </>
+    );
+
+  // Mobile nav links (close drawer on click)
+  const mobileNavLinks = user
+    ? (
+      <>
+        {authLinks.map((link) => (
+          <Button
+            key={link.to}
+            as={RouterLink}
+            to={link.to}
+            variant="ghost"
+            colorScheme="blue"
+            w="full"
+            onClick={onClose}
+          >
+            {link.label}
+          </Button>
+        ))}
+        <Button
+          onClick={async () => {
+            await signOut();
+            onClose();
+            window.location.href = '/';
+          }}
+          variant="outline"
+          colorScheme="blue"
+          w="full"
+        >
+          Sign Out
+        </Button>
+      </>
+    )
+    : (
+      <>
+        {publicLinks.map((link) => (
+          <Button
+            key={link.to}
+            as={RouterLink}
+            to={link.to}
+            variant="ghost"
+            colorScheme="blue"
+            w="full"
+            onClick={onClose}
+          >
+            {link.label}
+          </Button>
+        ))}
+      </>
+    );
 
   return (
     <Box as="nav" bg={bgColor} py={4} boxShadow="sm">
@@ -98,7 +169,7 @@ export const Navbar: React.FC = () => {
           <DrawerHeader>Menu</DrawerHeader>
           <DrawerBody>
             <VStack spacing={4} align="stretch">
-              {navLinks}
+              {mobileNavLinks}
             </VStack>
           </DrawerBody>
         </DrawerContent>

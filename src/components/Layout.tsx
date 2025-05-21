@@ -6,7 +6,7 @@ import { Sidebar } from './Sidebar';
 
 const Layout: React.FC = () => {
   return (
-    <Box minH="100vh" bg="gray.100">
+    <Box minH="100vh" bg="neutral.100">
       <Navbar />
       <Flex direction={{ base: 'column', md: 'row' }}>
         {/* Sidebar hidden on mobile */}

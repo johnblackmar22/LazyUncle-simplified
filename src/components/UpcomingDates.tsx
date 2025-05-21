@@ -94,7 +94,7 @@ export const UpcomingDates: React.FC = () => {
                   </Badge>
                 </HStack>
                 {date.description && (
-                  <Text fontSize="sm" color="gray.600" mt={1}>{date.description}</Text>
+                  <Text fontSize="sm" color="neutral.600" mt={1}>{date.description}</Text>
                 )}
               </Box>
             );

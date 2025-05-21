@@ -63,6 +63,7 @@ describe('Auth Store', () => {
           metadata: {
             creationTime: new Date().toISOString(),
           },
+          planId: 'free',
         },
       });
 
@@ -138,6 +139,7 @@ describe('Auth Store', () => {
           metadata: {
             creationTime: new Date().toISOString(),
           },
+          planId: 'free',
         },
       });
 
@@ -228,6 +230,7 @@ describe('Auth Store', () => {
           displayName: 'Test User',
           photoURL: '',
           createdAt: Date.now(),
+          planId: 'free',
         },
         loading: false,
         error: null,
@@ -262,6 +265,7 @@ describe('Auth Store', () => {
           displayName: 'Demo User',
           photoURL: '',
           createdAt: Date.now(),
+          planId: 'free',
         },
         loading: false,
         error: null,
