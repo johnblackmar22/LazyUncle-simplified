@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -69,8 +69,37 @@ export default function HomePage() {
     }
   };
   
+  // Force any sidebar elements to be hidden
+  useEffect(() => {
+    // Find and hide any sidebar elements that might be showing
+    const sidebarElements = document.querySelectorAll('[data-testid="sidebar"], aside, .sidebar');
+    sidebarElements.forEach(el => {
+      if (el instanceof HTMLElement) {
+        el.style.display = 'none';
+      }
+    });
+    
+    // Add a class to the body to indicate we're on the homepage
+    document.body.classList.add('homepage-view');
+    
+    return () => {
+      document.body.classList.remove('homepage-view');
+    };
+  }, []);
+  
   return (
-    <Box bgGradient={BG_GRADIENT} minH="100vh">
+    // We use position relative and z-index to ensure this container is above any potential sidebar
+    <Box 
+      position="absolute" 
+      top={0} 
+      left={0}
+      right={0}
+      bottom={0}
+      zIndex={5}
+      bgGradient={BG_GRADIENT} 
+      minH="100vh"
+      overflowY="auto"
+    >
       <Container maxW="container.lg" centerContent>
         {/* Hero Section */}
         <Flex direction={{ base: 'column', md: 'row' }} align="center" justify="center" py={{ base: 12, md: 24 }} gap={16} w="full">

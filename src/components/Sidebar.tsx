@@ -40,6 +40,8 @@ export const Sidebar: React.FC = () => {
       borderColor={borderColor}
       h="calc(100vh - 4rem)"
       pt={6}
+      data-testid="sidebar"
+      className="sidebar"
     >
       <VStack spacing={1} align="stretch" px={4}>
         {navItems.map((item) => (

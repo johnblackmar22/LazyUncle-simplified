@@ -56,3 +56,19 @@
     @apply bg-white rounded-lg shadow p-4;
   }
 }
+
+/* Hide sidebars on homepage */
+body.homepage-view aside,
+body.homepage-view .sidebar,
+body.homepage-view [data-testid="sidebar"] {
+  display: none !important;
+}
+
+/* Ensure the homepage container is properly positioned */
+body.homepage-view {
+  overflow: hidden;
+}
+
+body.homepage-view #root > div > div[position="absolute"] {
+  z-index: 10;
+}
