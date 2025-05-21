@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -19,6 +19,7 @@ import SmallLogo from '/Logos/Small-logo.svg';
 import SmallLogoJpeg from '/Logos/Small logo.jpeg';
 import ConvertedHero from '/Logos/converted_1747771169_5314 (1).svg';
 import { keyframes } from '@emotion/react';
+import { useAuthStore } from '../store/authStore';
 
 // Theme colors from logo
 const ACCENT_BLUE = 'brand.700';
@@ -57,137 +58,145 @@ function BrandLogo({ size = 36 }: { size?: number }) {
 }
 
 export default function HomePage() {
+  const { user } = useAuthStore();
+  const navigate = useNavigate();
+  
+  const handleGetStarted = () => {
+    if (user) {
+      navigate('/dashboard');
+    } else {
+      navigate('/register');
+    }
+  };
+  
   return (
-    <>
-      <Box bgGradient={BG_GRADIENT} minH="100vh">
-        <Container maxW="container.lg" centerContent>
-          {/* Hero Section */}
-          <Flex direction={{ base: 'column', md: 'row' }} align="center" justify="center" py={{ base: 12, md: 24 }} gap={16} w="full">
+    <Box bgGradient={BG_GRADIENT} minH="100vh">
+      <Container maxW="container.lg" centerContent>
+        {/* Hero Section */}
+        <Flex direction={{ base: 'column', md: 'row' }} align="center" justify="center" py={{ base: 12, md: 24 }} gap={16} w="full">
+          <Box
+            flexShrink={0}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            position="relative"
+            mb={{ base: 10, md: 0 }}
+          >
+            {/* Soft blurred background glow */}
             <Box
-              flexShrink={0}
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              position="relative"
-              mb={{ base: 10, md: 0 }}
+              position="absolute"
+              top="50%"
+              left="50%"
+              transform="translate(-50%, -50%)"
+              w={useBreakpointValue({ base: '260px', md: '370px' })}
+              h={useBreakpointValue({ base: '260px', md: '370px' })}
+              bgGradient="radial(ellipse at center, #e0f2fe 60%, #fff0 100%)"
+              filter="blur(32px)"
+              zIndex={0}
+              borderRadius="full"
+            />
+            <Box
+              bg="whiteAlpha.800"
+              borderRadius="2xl"
+              boxShadow="lg"
+              p={{ base: 4, md: 8 }}
+              zIndex={1}
+              animation={fadeInSync}
             >
-              {/* Soft blurred background glow */}
-              <Box
-                position="absolute"
-                top="50%"
-                left="50%"
-                transform="translate(-50%, -50%)"
-                w={useBreakpointValue({ base: '260px', md: '370px' })}
-                h={useBreakpointValue({ base: '260px', md: '370px' })}
-                bgGradient="radial(ellipse at center, #e0f2fe 60%, #fff0 100%)"
-                filter="blur(32px)"
-                zIndex={0}
-                borderRadius="full"
+              <img
+                src={ConvertedHero}
+                alt="Lazy Uncle Hero"
+                style={{ width: useBreakpointValue({ base: '220px', md: '320px' }), height: useBreakpointValue({ base: '220px', md: '320px' }) }}
+                onError={(e) => {
+                  console.error('Failed to load hero image');
+                  e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320' viewBox='0 0 320 320'%3E%3Crect width='320' height='320' fill='%23F0F9FF'/%3E%3Ctext x='160' y='160' font-family='Arial' font-size='48' fill='%2303449E' text-anchor='middle'%3ELazyUncle%3C/text%3E%3C/svg%3E";
+                }}
               />
-              <Box
-                bg="whiteAlpha.800"
-                borderRadius="2xl"
-                boxShadow="lg"
-                p={{ base: 4, md: 8 }}
-                zIndex={1}
-                animation={fadeInSync}
-              >
-                <img
-                  src={ConvertedHero}
-                  alt="Lazy Uncle Hero"
-                  style={{ width: useBreakpointValue({ base: '220px', md: '320px' }), height: useBreakpointValue({ base: '220px', md: '320px' }) }}
-                  onError={(e) => {
-                    console.error('Failed to load hero image');
-                    e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320' viewBox='0 0 320 320'%3E%3Crect width='320' height='320' fill='%23F0F9FF'/%3E%3Ctext x='160' y='160' font-family='Arial' font-size='48' fill='%2303449E' text-anchor='middle'%3ELazyUncle%3C/text%3E%3C/svg%3E";
-                  }}
-                />
-              </Box>
             </Box>
-            <Stack spacing={8} flex={1} maxW="lg" align={{ base: 'center', md: 'flex-start' }} textAlign={{ base: 'center', md: 'left' }}>
-              <Heading
-                as="h1"
-                size={useBreakpointValue({ base: '2xl', md: '3xl' })}
-                fontWeight={900}
-                color={ACCENT_BLUE}
-                lineHeight={1.1}
-                letterSpacing={-1}
-                mb={2}
-                animation={fadeInSync}
-              >
-                Gifting, on Autopilot.
-              </Heading>
-              <Text
-                color="neutral.700"
-                fontSize="lg"
-                fontWeight={400}
-                mb={2}
-                animation={fadeInSync}
-              >
-                Never forget a birthday, anniversary, or special moment again.
-              </Text>
-              <Stack direction={{ base: 'column', sm: 'row' }} spacing={4} pt={2} justify={{ base: 'center', md: 'flex-start' }}>
-                <Button
-                  as={RouterLink}
-                  to="/register"
-                  size="lg"
-                  colorScheme="orange"
-                  bg={ACCENT_ORANGE}
-                  color="white"
-                  _hover={{ bg: '#ea580c', boxShadow: 'lg', transform: 'scale(1.05)' }}
-                  fontWeight="bold"
-                  rounded="full"
-                  px={8}
-                  animation={fadeInSync}
-                >
-                  Get Started
-                </Button>
-              </Stack>
-            </Stack>
-          </Flex>
-
-          {/* Divider between hero and value props */}
-          <Box h={{ base: 2, md: 4 }} />
-
-          {/* Why Lazy Uncle Section */}
-          <Box w="full" py={16}>
-            <Heading as="h3" size="lg" color={ACCENT_BLUE} fontWeight={700} textAlign="center" mb={10} letterSpacing={-0.5}>
-              Why LazyUncle?
+          </Box>
+          <Stack spacing={8} flex={1} maxW="lg" align={{ base: 'center', md: 'flex-start' }} textAlign={{ base: 'center', md: 'left' }}>
+            <Heading
+              as="h1"
+              size={useBreakpointValue({ base: '2xl', md: '3xl' })}
+              fontWeight={900}
+              color={ACCENT_BLUE}
+              lineHeight={1.1}
+              letterSpacing={-1}
+              mb={2}
+              animation={fadeInSync}
+            >
+              Gifting, on Autopilot.
             </Heading>
-            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={10} maxW="900px" mx="auto">
-              <ValueProp
-                icon={FaRegCalendarCheck}
-                text="Never miss a date"
-                headline="We remember so you don't have to"
-                description="We track birthdays, anniversaries, and more—so you never forget an important moment."
-              />
-              <ValueProp
-                icon={FaGift}
-                text="Personalized gift recommendations"
-                headline="Gifts they'll actually love"
-                description="We learn about your recipients and suggest gifts they'll love, every time."
-              />
-              <ValueProp
-                icon={FaTruck}
-                text="Automatic delivery"
-                headline="We handle everything"
-                description="We handle the shopping, wrapping, and shipping. You get the credit."
-              />
-            </SimpleGrid>
-          </Box>
-
-          {/* Footer */}
-          <Box as="footer" w="full" py={8} mt={8} borderTop={`1px solid ${CARD_BORDER}`} textAlign="center" color="gray.400">
-            <Text fontSize="sm">&copy; {new Date().getFullYear()} LazyUncle. All rights reserved.</Text>
-            <Stack direction="row" spacing={6} justify="center" mt={2}>
-              <FooterLink to="/about">About</FooterLink>
-              <FooterLink to="/contact">Contact</FooterLink>
-              <FooterLink to="/faq">FAQ</FooterLink>
-              <FooterLink to="/privacy">Privacy</FooterLink>
+            <Text
+              color="neutral.700"
+              fontSize="lg"
+              fontWeight={400}
+              mb={2}
+              animation={fadeInSync}
+            >
+              Never forget a birthday, anniversary, or special moment again.
+            </Text>
+            <Stack direction={{ base: 'column', sm: 'row' }} spacing={4} pt={2} justify={{ base: 'center', md: 'flex-start' }}>
+              <Button
+                onClick={handleGetStarted}
+                size="lg"
+                colorScheme="orange"
+                bg={ACCENT_ORANGE}
+                color="white"
+                _hover={{ bg: '#ea580c', boxShadow: 'lg', transform: 'scale(1.05)' }}
+                fontWeight="bold"
+                rounded="full"
+                px={8}
+                animation={fadeInSync}
+              >
+                {user ? 'Go to Dashboard' : 'Get Started'}
+              </Button>
             </Stack>
-          </Box>
-        </Container>
-      </Box>
-    </>
+          </Stack>
+        </Flex>
+
+        {/* Divider between hero and value props */}
+        <Box h={{ base: 2, md: 4 }} />
+
+        {/* Why Lazy Uncle Section */}
+        <Box w="full" py={16}>
+          <Heading as="h3" size="lg" color={ACCENT_BLUE} fontWeight={700} textAlign="center" mb={10} letterSpacing={-0.5}>
+            Why LazyUncle?
+          </Heading>
+          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={10} maxW="900px" mx="auto">
+            <ValueProp
+              icon={FaRegCalendarCheck}
+              text="Never miss a date"
+              headline="We remember so you don't have to"
+              description="We track birthdays, anniversaries, and more—so you never forget an important moment."
+            />
+            <ValueProp
+              icon={FaGift}
+              text="Personalized gift recommendations"
+              headline="Gifts they'll actually love"
+              description="We learn about your recipients and suggest gifts they'll love, every time."
+            />
+            <ValueProp
+              icon={FaTruck}
+              text="Automatic delivery"
+              headline="We handle everything"
+              description="We handle the shopping, wrapping, and shipping. You get the credit."
+            />
+          </SimpleGrid>
+        </Box>
+
+        {/* Footer */}
+        <Box as="footer" w="full" py={8} mt={8} borderTop={`1px solid ${CARD_BORDER}`} textAlign="center" color="gray.400">
+          <Text fontSize="sm">&copy; {new Date().getFullYear()} LazyUncle. All rights reserved.</Text>
+          <Stack direction="row" spacing={6} justify="center" mt={2}>
+            <FooterLink to="/about">About</FooterLink>
+            <FooterLink to="/contact">Contact</FooterLink>
+            <FooterLink to="/faq">FAQ</FooterLink>
+            <FooterLink to="/privacy">Privacy</FooterLink>
+          </Stack>
+        </Box>
+      </Container>
+    </Box>
   );
 }
 

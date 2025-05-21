@@ -16,6 +16,7 @@ import {
   DrawerBody,
   VStack,
   useDisclosure,
+  useToast,
 } from '@chakra-ui/react';
 import { HamburgerIcon } from '@chakra-ui/icons';
 import SmallLogoJpeg from '/Logos/Small logo.jpeg';
@@ -52,6 +53,7 @@ export const Navbar: React.FC = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const location = useLocation();
   const navigate = useNavigate();
+  const toast = useToast();
 
   // Minimal nav for HomePage/public pages
   const publicLinks = [
@@ -72,10 +74,24 @@ export const Navbar: React.FC = () => {
       await signOut();
       console.log('Signed out successfully');
       
-      // Force redirect to home page
-      window.location.href = '/';
+      toast({
+        title: "Signed out successfully",
+        status: "success",
+        duration: 2000,
+        isClosable: true,
+      });
+      
+      // Force navigate to home page
+      navigate('/', { replace: true });
     } catch (error) {
       console.error('Error signing out:', error);
+      toast({
+        title: "Error signing out",
+        description: "Please try again",
+        status: "error",
+        duration: 2000,
+        isClosable: true,
+      });
     }
   };
 
@@ -125,10 +141,16 @@ export const Navbar: React.FC = () => {
             try {
               await signOut();
               onClose();
-              // Force redirect to home page
-              window.location.href = '/';
+              navigate('/', { replace: true });
             } catch (error) {
               console.error('Error signing out:', error);
+              toast({
+                title: "Error signing out",
+                description: "Please try again",
+                status: "error",
+                duration: 2000,
+                isClosable: true,
+              });
             }
           }}
           variant="outline"

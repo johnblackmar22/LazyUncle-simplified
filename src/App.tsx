@@ -27,11 +27,32 @@ function App() {
   const { initialized, user } = useAuthStore();
   const location = useLocation();
   
-  // Public routes that should have the navbar
-  const publicRoutesWithNavbar = ['/'];
+  // Paths that should NEVER have the navbar
+  const noNavbarPaths = [
+    '/login', 
+    '/register',
+    '/onboarding'
+  ];
   
-  // Show navbar only on certain routes when not logged in
-  const shouldShowNavbar = user || publicRoutesWithNavbar.includes(location.pathname);
+  // Paths that should have navbar even when not logged in
+  const publicWithNavbarPaths = [
+    '/',
+    '/subscription/plans',
+    '/how-it-works'
+  ];
+  
+  // Show navbar if:
+  // 1. User is logged in AND we're not on a "no navbar" path, OR
+  // 2. We're on a public path that should show the navbar
+  const shouldShowNavbar = 
+    (!!user && !noNavbarPaths.includes(location.pathname)) || 
+    publicWithNavbarPaths.includes(location.pathname);
+    
+  console.log('Navbar visibility check:', { 
+    path: location.pathname, 
+    user: !!user, 
+    shouldShow: shouldShowNavbar 
+  });
   
   return (
     <Box minH="100vh" bg="gray.50">
