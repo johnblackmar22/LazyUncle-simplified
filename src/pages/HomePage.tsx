@@ -72,7 +72,7 @@ export default function HomePage() {
   // Force any sidebar elements to be hidden
   useEffect(() => {
     // Find and hide any sidebar elements that might be showing
-    const sidebarElements = document.querySelectorAll('[data-testid="sidebar"], aside, .sidebar');
+    const sidebarElements = document.querySelectorAll('[data-testid="sidebar"], aside.sidebar, .sidebar');
     sidebarElements.forEach(el => {
       if (el instanceof HTMLElement) {
         el.style.display = 'none';

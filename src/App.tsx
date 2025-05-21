@@ -67,7 +67,8 @@ function App() {
         <Route path="/subscription/plans" element={<SubscriptionPlansPage />} />
         <Route path="/how-it-works" element={<HowItWorksPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
-        <Route path="/onboarding" element={<OnboardingWizard />} />
+        {/* Disable wizard for now - redirect to home */}
+        <Route path="/onboarding" element={<Navigate to="/" replace />} />
         
         {/* Protected routes wrapped in Layout (with sidebar) */}
         <Route element={<ProtectedRoute />}>

@@ -57,8 +57,8 @@
   }
 }
 
-/* Hide sidebars on homepage */
-body.homepage-view aside,
+/* Hide ONLY sidebar on homepage, not navbar */
+body.homepage-view aside.sidebar,
 body.homepage-view .sidebar,
 body.homepage-view [data-testid="sidebar"] {
   display: none !important;

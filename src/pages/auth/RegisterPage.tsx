@@ -18,6 +18,7 @@ import {
   FormErrorMessage
 } from '@chakra-ui/react';
 import { useAuthStore } from '../../store/authStore';
+import { useToast } from '@chakra-ui/react';
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -34,6 +35,7 @@ const RegisterPage: React.FC = () => {
     confirmPassword?: string;
     displayName?: string;
   }>({});
+  const toast = useToast();
 
   // Calculate password strength
   useEffect(() => {
@@ -113,7 +115,13 @@ const RegisterPage: React.FC = () => {
     
     try {
       await signUp(email, password, displayName);
-      navigate('/onboarding');
+      toast({
+        title: "Registration successful!",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+      navigate('/dashboard');
     } catch (err) {
       console.error('Registration error:', err);
     }
