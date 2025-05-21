@@ -1,7 +1,6 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Box, Flex, Container } from '@chakra-ui/react';
-import { Navbar } from './Navbar';
 import { Sidebar } from './Sidebar';
 import { useAuthStore } from '../store/authStore';
 
@@ -10,7 +9,6 @@ const Layout: React.FC = () => {
   
   return (
     <Box minH="100vh" bg="neutral.100">
-      <Navbar />
       <Flex direction={{ base: 'column', md: 'row' }}>
         {/* Sidebar only shown when user is authenticated */}
         {user && (

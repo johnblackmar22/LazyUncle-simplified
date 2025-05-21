@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box } from '@chakra-ui/react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
@@ -21,15 +21,23 @@ import OnboardingWizard from './components/OnboardingWizard';
 import SubscriptionPlansPage from './pages/subscription/SubscriptionPlansPage';
 import HowItWorksPage from './pages/HowItWorksPage';
 import CheckoutPage from './pages/CheckoutPage';
+import { Navbar } from './components/Navbar';
 
 function App() {
-  const { initialized } = useAuthStore();
+  const { initialized, user } = useAuthStore();
+  const location = useLocation();
   
-  // For demo purposes, we'll continue even if auth isn't initialized
-  // In a real app, you might want to show a loading spinner here
+  // Public routes that should have the navbar
+  const publicRoutesWithNavbar = ['/'];
+  
+  // Show navbar only on certain routes when not logged in
+  const shouldShowNavbar = user || publicRoutesWithNavbar.includes(location.pathname);
   
   return (
     <Box minH="100vh" bg="gray.50">
+      {/* Only show navbar where appropriate */}
+      {shouldShowNavbar && <Navbar />}
+      
       <Routes>
         {/* Public routes (without full navigation) */}
         <Route path="/" element={<HomePage />} />

@@ -61,13 +61,22 @@ export const Navbar: React.FC = () => {
 
   // Authenticated nav
   const authLinks = [
-    { label: 'Home', to: '/' },
+    { label: 'Dashboard', to: '/dashboard' },
+    { label: 'Recipients', to: '/recipients' },
     { label: 'Settings', to: '/settings' },
   ];
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
+    try {
+      console.log('Signing out...');
+      await signOut();
+      console.log('Signed out successfully');
+      
+      // Force redirect to home page
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   // Desktop nav links
@@ -113,9 +122,14 @@ export const Navbar: React.FC = () => {
         ))}
         <Button
           onClick={async () => {
-            await signOut();
-            onClose();
-            navigate('/');
+            try {
+              await signOut();
+              onClose();
+              // Force redirect to home page
+              window.location.href = '/';
+            } catch (error) {
+              console.error('Error signing out:', error);
+            }
           }}
           variant="outline"
           colorScheme="blue"

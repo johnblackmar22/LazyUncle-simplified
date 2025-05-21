@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Button, Heading, Text, VStack, Progress, useToast, Input, FormControl, FormLabel, Select, Checkbox, Flex, Image, Tooltip, FormErrorMessage } from '@chakra-ui/react';
 import { useRecipientStore } from '../store/recipientStore';
 import { useGiftStore } from '../store/giftStore';
 import { getGiftRecommendations } from '../services/giftRecommendationEngine';
 import { useNavigate } from 'react-router-dom';
-import { Navbar } from './Navbar';
 import { useAuthStore } from '../store/authStore';
+import { isDemoMode, initializeDemoData } from '../services/demoData';
+import { DEMO_MODE } from '../services/firebase';
 
 const steps = [
   'Welcome',
@@ -50,12 +51,23 @@ const OnboardingWizard: React.FC = () => {
   const [selectedPlan, setSelectedPlan] = useState('basic');
   const { user, demoMode, setDemoMode } = useAuthStore();
 
+  // Initialize demo mode if needed
+  useEffect(() => {
+    if (!user && !demoMode && setDemoMode) {
+      console.log('Enabling demo mode for onboarding');
+      setDemoMode(true);
+      initializeDemoData();
+    }
+  }, [user, demoMode, setDemoMode]);
+
   // Step Handlers
   const handleNext = async () => {
-    // If not logged in and not in demo mode, enable demo mode for onboarding
+    // Ensure demo mode is enabled for onboarding if not logged in
     if (!user && !demoMode && setDemoMode) {
       setDemoMode(true);
+      initializeDemoData();
     }
+    
     if (step === 1) {
       // Validate recipient
       const newErrors: { name?: string; relationship?: string } = {};
@@ -89,17 +101,29 @@ const OnboardingWizard: React.FC = () => {
       }
       // Generate recommendations
       setLoading(true);
-      const recs = getGiftRecommendations(
-        { ...recipient },
-        occasion,
-        Number(budget)
-      );
-      setRecommendations(recs);
-      setSelectedGiftIdx(0);
-      setLoading(false);
+      try {
+        const recs = getGiftRecommendations(
+          { ...recipient },
+          occasion,
+          Number(budget)
+        );
+        setRecommendations(recs);
+        setSelectedGiftIdx(0);
+      } catch (error) {
+        console.error('Error generating recommendations:', error);
+        toast({
+          title: 'Error generating recommendations',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+      } finally {
+        setLoading(false);
+      }
     }
     setStep((s) => Math.min(s + 1, steps.length - 1));
   };
+  
   const handleBack = () => setStep((s) => Math.max(s - 1, 0));
 
   // Add/Remove Interests
@@ -109,6 +133,7 @@ const OnboardingWizard: React.FC = () => {
       setInterestInput('');
     }
   };
+  
   const removeInterest = (i: string) => {
     setRecipient(r => ({ ...r, interests: r.interests.filter(x => x !== i) }));
   };
@@ -117,6 +142,12 @@ const OnboardingWizard: React.FC = () => {
   const handleApproveGift = async () => {
     setLoading(true);
     try {
+      // Ensure demo mode is initialized for saving
+      if (isDemoMode() || DEMO_MODE) {
+        console.log('Saving in demo mode');
+        initializeDemoData();
+      }
+      
       // Save recipient
       const birthdateObj = recipient.birthdate ? new Date(recipient.birthdate) : undefined;
       
@@ -124,7 +155,8 @@ const OnboardingWizard: React.FC = () => {
       const giftPrice = typeof recommendations[selectedGiftIdx]?.price === 'number' 
         ? recommendations[selectedGiftIdx].price 
         : Number(recommendations[selectedGiftIdx]?.estimatedPrice || budget);
-        
+      
+      console.log('Adding recipient:', recipient);
       const newRecipient = await addRecipient({
         name: recipient.name,
         relationship: recipient.relationship,
@@ -136,8 +168,11 @@ const OnboardingWizard: React.FC = () => {
       });
       
       if (!newRecipient) {
+        console.error('Failed to create recipient - returned null/undefined');
         throw new Error("Failed to create recipient");
       }
+      
+      console.log('Recipient created:', newRecipient);
       
       // Save gift if we have a recommendation
       if (newRecipient && recommendations[selectedGiftIdx]) {
@@ -154,7 +189,9 @@ const OnboardingWizard: React.FC = () => {
           notes: 'Auto-send enabled',
         };
         
-        await createGift(gift);
+        console.log('Creating gift:', gift);
+        const newGift = await createGift(gift);
+        console.log('Gift created:', newGift);
       }
       
       setApproved(true);
@@ -183,7 +220,6 @@ const OnboardingWizard: React.FC = () => {
   // Step UIs
   return (
     <Box bg="neutral.100" minH="100vh">
-      <Navbar />
       <Box maxW="lg" mx="auto" mt={{ base: 4, md: 10 }} p={{ base: 2, md: 8 }} bg="white" borderRadius="lg" boxShadow="md">
         <Progress value={((step + 1) / steps.length) * 100} mb={6} />
         <Flex mb={4} justify="center" gap={2}>
@@ -324,7 +360,7 @@ const OnboardingWizard: React.FC = () => {
             <Text mt={6} fontSize="lg" color="neutral.700" textAlign="center">
               We'll tee up a personalized gift for your approval one week before it's scheduled to ship. You'll have the option to veto or approve the selection. If we don't hear from you, we'll handle everything for you—no action needed.
             </Text>
-            <Button colorScheme="green" as="a" href="/dashboard">Go to Dashboard</Button>
+            <Button colorScheme="green" onClick={() => navigate('/dashboard')}>Go to Dashboard</Button>
           </VStack>
         )}
         <Box mt={4} textAlign="center">
