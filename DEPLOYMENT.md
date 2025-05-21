@@ -9,6 +9,38 @@ You'll need:
 - A Vercel or Netlify account (free tier is sufficient)
 - Your Firebase credentials (if not using demo mode)
 
+## Production Mode Configuration
+
+For production deployments, it's crucial to disable demo mode and connect to the real Firebase and OpenAI API services:
+
+1. **Disable Demo Mode**
+   - Set the environment variable `VITE_DEMO_MODE=false` in your hosting platform
+   - Ensure all Firebase credentials are correctly configured (see below)
+
+2. **Firebase Configuration**
+   - Add these environment variables with your real Firebase values:
+     ```
+     VITE_FIREBASE_API_KEY=your-api-key
+     VITE_FIREBASE_AUTH_DOMAIN=your-domain.firebaseapp.com
+     VITE_FIREBASE_PROJECT_ID=your-project-id
+     VITE_FIREBASE_STORAGE_BUCKET=your-bucket.appspot.com
+     VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+     VITE_FIREBASE_APP_ID=your-app-id
+     ```
+   
+3. **OpenAI API Configuration**
+   - Create the required Netlify function (see `/netlify/functions/gift-recommendations`)
+   - Add your OpenAI API key as an environment variable:
+     ```
+     OPENAI_API_KEY=your-openai-api-key
+     ```
+   - Make sure the Netlify function endpoint is accessible at `/.netlify/functions/gift-recommendations`
+
+4. **Verifying Production Setup**
+   - After deployment, check the browser console
+   - You should see the message "Running in demo mode: false"
+   - Test the gift recommendation feature to ensure it connects to the real API
+
 ## Option 1: Deploy to Netlify (Easiest)
 
 1. **Create a Netlify account**
@@ -27,6 +59,7 @@ You'll need:
      VITE_DEMO_MODE=true
      ```
    - If using Firebase, add all your Firebase credentials (see README.md)
+   - NOTE: For production deployments, set VITE_DEMO_MODE=false and follow the "Production Mode Configuration" section above
 
 4. **Trigger a redeployment**
    - Go to "Deploys" and click "Trigger deploy" → "Deploy site"
@@ -51,6 +84,7 @@ You'll need:
      VITE_DEMO_MODE=true
      ```
    - If using Firebase, add all Firebase credentials
+   - NOTE: For production deployments, set VITE_DEMO_MODE=false and follow the "Production Mode Configuration" section above
 
 4. **Deploy**
    - Click "Deploy" and wait for the build to complete
@@ -99,6 +133,20 @@ You'll need:
 ### Application errors
 - Open browser developer tools (F12) to check for console errors
 - Verify that all environment variables are correctly set
+
+### API Connection Issues
+- If gift recommendations don't work in production mode, check:
+  - Netlify function deployment status
+  - OpenAI API key configuration
+  - Network requests in browser developer tools
+  - Try setting `VITE_DEMO_MODE=true` temporarily to verify other functionality
+
+### Firebase Connection Issues
+- If login/authentication doesn't work:
+  - Verify Firebase credentials are correctly set
+  - Check Firebase console to ensure Authentication service is enabled
+  - Confirm that your Firebase security rules allow the operations
+  - Check browser console for specific Firebase error messages
 
 ## Need More Help?
 

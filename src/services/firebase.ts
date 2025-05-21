@@ -27,12 +27,22 @@ const messagingSenderId = getEnv('VITE_FIREBASE_MESSAGING_SENDER_ID');
 const appId = getEnv('VITE_FIREBASE_APP_ID');
 const demoModeEnv = getEnv('VITE_DEMO_MODE');
 
+// Check for valid Firebase configuration
 const hasValidConfig = !!apiKey && 
   apiKey !== 'replace-with-your-api-key' &&
   apiKey !== 'demo-mode' &&
   apiKey !== 'test-api-key';  // Don't count test values as valid
 
-export const DEMO_MODE = forceDemoMode || demoModeEnv === 'true' || !hasValidConfig || process.env.NODE_ENV === 'test';
+// Only enable demo mode if explicitly forced, environment variable is set, 
+// config is invalid, or we're in a test environment
+export const DEMO_MODE = 
+  forceDemoMode || 
+  demoModeEnv === 'true' || 
+  !hasValidConfig || 
+  process.env.NODE_ENV === 'test' ||
+  // Check if running locally - not in production
+  (typeof window !== 'undefined' && 
+   (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'));
 
 console.log('Running in demo mode:', DEMO_MODE); // Keep for debugging
 

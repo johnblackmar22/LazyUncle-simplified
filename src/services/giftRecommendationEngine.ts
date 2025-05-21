@@ -5,6 +5,7 @@
  */
 
 import type { GiftSuggestion } from '../types';
+import { DEMO_MODE } from './firebase';
 
 // Mock database of gift ideas
 const giftCatalog: GiftSuggestion[] = [
@@ -304,13 +305,8 @@ export async function getGiftRecommendationsFromAI({ recipient, budget, pastGift
       throw new Error('Valid budget is required for gift recommendations');
     }
 
-    // Check if we're in demo mode or local development
-    const isDemoMode = 
-      typeof window !== 'undefined' && 
-      (window.location.hostname === 'localhost' || 
-       window.location.hostname === '127.0.0.1');
-    
-    if (isDemoMode) {
+    // Use DEMO_MODE from firebase.ts to determine if we should use real API
+    if (DEMO_MODE) {
       console.log('Using mock AI recommendations in demo mode');
       // Return local recommendations instead of calling the API
       const mockRecommendations = [
