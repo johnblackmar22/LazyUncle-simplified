@@ -23,7 +23,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { useRecipientStore } from '../../store/recipientStore';
-import type { Address } from '../../types';
+import type { Address, Occasion } from '../../types';
 
 const AddRecipient = () => {
   const navigate = useNavigate();
@@ -52,6 +52,10 @@ const AddRecipient = () => {
     name?: string;
     relationship?: string;
   }>({});
+  
+  // Occasions state
+  const [occasions, setOccasions] = useState<Occasion[]>([]);
+  const [newOccasion, setNewOccasion] = useState<Partial<Occasion>>({ type: 'Birthday', date: '', budget: 50 });
   
   const handleAddInterest = () => {
     if (newInterest.trim() && !interests.includes(newInterest.trim())) {
@@ -86,6 +90,16 @@ const AddRecipient = () => {
     return Object.keys(newErrors).length === 0;
   };
   
+  const handleAddOccasion = () => {
+    if (!newOccasion.type || !newOccasion.date || !newOccasion.budget) return;
+    setOccasions([...occasions, { ...newOccasion, id: `${newOccasion.type}-${newOccasion.date}-${Date.now()}`, customName: newOccasion.type === 'Other' ? newOccasion.customName : undefined, notes: newOccasion.notes || undefined } as Occasion]);
+    setNewOccasion({ type: 'Birthday', date: '', budget: 50 });
+  };
+  
+  const handleRemoveOccasion = (id: string) => {
+    setOccasions(occasions.filter(o => o.id !== id));
+  };
+  
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -101,8 +115,7 @@ const AddRecipient = () => {
       name,
       relationship,
       interests,
-      notes: notes || undefined,
-      address: recipientAddress,
+      occasions,
     });
     
     toast({
@@ -267,6 +280,54 @@ const AddRecipient = () => {
                 placeholder="Country"
               />
             </FormControl>
+          </Flex>
+          
+          <Divider my={4} />
+          <Heading as="h3" size="md" mb={2}>Occasions</Heading>
+          <Stack spacing={3} mb={4}>
+            {occasions.map((occasion, idx) => (
+              <Box key={occasion.id} p={3} borderWidth="1px" borderRadius="md" borderColor={borderColor}>
+                <Flex align="center" justify="space-between">
+                  <Box>
+                    <Text fontWeight="bold">{occasion.type === 'Other' ? occasion.customName : occasion.type}</Text>
+                    <Text fontSize="sm">Date: {occasion.date}</Text>
+                    <Text fontSize="sm">Budget: ${occasion.budget}</Text>
+                    {occasion.notes && <Text fontSize="sm">Notes: {occasion.notes}</Text>}
+                  </Box>
+                  <Button size="sm" colorScheme="red" variant="outline" onClick={() => handleRemoveOccasion(occasion.id)}>Remove</Button>
+                </Flex>
+              </Box>
+            ))}
+          </Stack>
+          <Flex gap={3} align="flex-end">
+            <FormControl isRequired w="30%">
+              <FormLabel>Type</FormLabel>
+              <Select value={newOccasion.type} onChange={e => setNewOccasion({ ...newOccasion, type: e.target.value })}>
+                <option value="Birthday">Birthday</option>
+                <option value="Christmas">Christmas</option>
+                <option value="Anniversary">Anniversary</option>
+                <option value="Other">Other</option>
+              </Select>
+            </FormControl>
+            <FormControl isRequired w="30%">
+              <FormLabel>Date</FormLabel>
+              <Input type="date" value={newOccasion.date || ''} onChange={e => setNewOccasion({ ...newOccasion, date: e.target.value })} />
+            </FormControl>
+            <FormControl isRequired w="20%">
+              <FormLabel>Budget</FormLabel>
+              <Input type="number" min={1} value={newOccasion.budget || ''} onChange={e => setNewOccasion({ ...newOccasion, budget: Number(e.target.value) })} />
+            </FormControl>
+            {newOccasion.type === 'Other' && (
+              <FormControl isRequired w="30%">
+                <FormLabel>Custom Name</FormLabel>
+                <Input value={newOccasion.customName || ''} onChange={e => setNewOccasion({ ...newOccasion, customName: e.target.value })} />
+              </FormControl>
+            )}
+            <FormControl w="30%">
+              <FormLabel>Notes</FormLabel>
+              <Input value={newOccasion.notes || ''} onChange={e => setNewOccasion({ ...newOccasion, notes: e.target.value })} />
+            </FormControl>
+            <Button colorScheme="blue" onClick={handleAddOccasion}>Add Occasion</Button>
           </Flex>
           
           <Flex justify="space-between" mt={6}>

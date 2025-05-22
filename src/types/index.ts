@@ -38,6 +38,15 @@ export interface AutoSendPreferences {
 }
 
 // Recipient types
+export interface Occasion {
+  id: string;
+  type: string; // 'Birthday', 'Christmas', 'Anniversary', 'Other'
+  date: string; // ISO date string
+  customName?: string; // for 'Other'
+  budget: number;
+  notes?: string;
+}
+
 export interface Recipient {
   id: string;
   userId: string;
@@ -56,6 +65,7 @@ export interface Recipient {
   autoSendPreferences?: AutoSendPreferences;
   createdAt: Date | number;
   updatedAt: Date | number;
+  occasions?: Occasion[];
 }
 
 // Address type - keep for future use

@@ -204,3 +204,79 @@ If you are on a free Netlify plan and cannot set secrets/scopes, remember to upd
    OPENAI_API_KEY=sk-...yourkey...
    ```
 3. Save the file. The Netlify CLI will use this value when running `netlify dev`.
+
+## Firestore Security Rules
+
+Below are the Firestore security rules for this project. These rules ensure that users can only access their own data in the `users`, `recipients`, and `gifts` collections.
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Recipients: Only the authenticated user can read/write their own recipients
+    match /recipients/{recipientId} {
+      allow read, write: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+    // Users: Only the authenticated user can read/write their own user profile
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    // Gifts: Only the authenticated user can read/write their own gifts
+    match /gifts/{giftId} {
+      allow read, write: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+    // Add additional collections below as needed
+  }
+}
+```
+
+### Explanation
+- **recipients**: Users can only read/write recipient documents where `userId` matches their own UID. On create, the new document's `userId` must match the authenticated user's UID.
+- **users**: Users can only read/write their own user profile document.
+- **gifts**: Users can only read/write gift documents where `userId` matches their own UID. On create, the new document's `userId` must match the authenticated user's UID.
+
+If you add new collections, be sure to add appropriate security rules for them.
+
+### Recipient Data Structure (Multiple Occasions)
+
+Each recipient can now have multiple occasions, each with its own budget and details. Example:
+
+```json
+{
+  "id": "recipient123",
+  "userId": "user456",
+  "name": "Jane Doe",
+  "relationship": "Daughter",
+  "interests": ["Books", "Music"],
+  "createdAt": 1717000000000,
+  "updatedAt": 1717000000000,
+  "occasions": [
+    {
+      "id": "bday-2024",
+      "type": "Birthday",
+      "date": "2024-08-15",
+      "budget": 50
+    },
+    {
+      "id": "xmas-2024",
+      "type": "Christmas",
+      "date": "2024-12-25",
+      "budget": 75
+    },
+    {
+      "id": "other-2024",
+      "type": "Other",
+      "customName": "Graduation",
+      "date": "2024-06-01",
+      "budget": 100,
+      "notes": "College graduation gift"
+    }
+  ]
+}
+```
+
+- Each occasion has a unique `id`, `type`, `date`, and `budget`.
+- For 'Other', use `customName` and optional `notes`.
+- Gifts can reference both `recipientId` and `occasion`.
