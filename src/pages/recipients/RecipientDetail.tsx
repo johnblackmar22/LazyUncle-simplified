@@ -30,6 +30,8 @@ import {
 } from '@chakra-ui/react';
 import { useRecipientStore } from '../../store/recipientStore';
 import { useGiftStore } from '../../store/giftStore';
+import type { Occasion } from '../../types';
+import { AddIcon } from '@chakra-ui/icons';
 
 const RecipientDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -38,10 +40,10 @@ const RecipientDetail = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const cancelRef = React.useRef(null);
   
-  const { recipients, getRecipientById, deleteRecipient } = useRecipientStore();
+  const { recipients, deleteRecipient } = useRecipientStore();
   const { gifts, getGiftsByRecipient } = useGiftStore();
   
-  const recipient = id ? getRecipientById(id) : undefined;
+  const recipient = id ? recipients.find(r => r.id === id) : undefined;
   const recipientGifts = id ? getGiftsByRecipient(id) : [];
   
   // Redirect if recipient not found
@@ -127,12 +129,11 @@ const RecipientDetail = () => {
                 <Text fontWeight="bold">Relationship</Text>
                 <Text>{recipient.relationship}</Text>
               </Box>
-              
               {recipient.interests.length > 0 && (
                 <Box>
                   <Text fontWeight="bold">Interests</Text>
                   <Flex wrap="wrap" gap={2} mt={1}>
-                    {recipient.interests.map((interest, index) => (
+                    {recipient.interests.map((interest: string, index: number) => (
                       <Tag key={index} colorScheme="blue">
                         {interest}
                       </Tag>
@@ -140,33 +141,31 @@ const RecipientDetail = () => {
                   </Flex>
                 </Box>
               )}
-              
-              {recipient.notes && (
-                <Box>
-                  <Text fontWeight="bold">Notes</Text>
-                  <Text>{recipient.notes}</Text>
-                </Box>
-              )}
             </Stack>
           </Box>
-          
-          {recipient.address && (
-            <Box>
-              <Heading as="h3" size="md" mb={3}>
-                Address
-              </Heading>
-              <Stack spacing={1}>
-                <Text>{recipient.address.line1}</Text>
-                {recipient.address.line2 && <Text>{recipient.address.line2}</Text>}
-                <Text>
-                  {recipient.address.city}, {recipient.address.state} {recipient.address.postalCode}
-                </Text>
-                <Text>{recipient.address.country}</Text>
-              </Stack>
-            </Box>
-          )}
         </SimpleGrid>
       </Box>
+      
+      {/* Occasions Section */}
+      {recipient.occasions && recipient.occasions.length > 0 && (
+        <Box bg={boxBg} p={6} borderRadius="md" borderWidth="1px" borderColor={borderColor} mb={6}>
+          <Heading as="h3" size="md" mb={3}>Gift Occasions</Heading>
+          <Stack spacing={3}>
+            {recipient.occasions.map((occasion: Occasion) => (
+              <Box key={occasion.id} p={3} borderWidth="1px" borderRadius="md" borderColor={borderColor}>
+                <Flex align="center" justify="space-between">
+                  <Box>
+                    <Text fontWeight="bold">{occasion.type === 'Other' ? occasion.customName : occasion.type}</Text>
+                    <Text fontSize="sm">Date: {occasion.date}</Text>
+                    <Text fontSize="sm">Budget: ${occasion.budget}</Text>
+                    {occasion.notes && <Text fontSize="sm">Notes: {occasion.notes}</Text>}
+                  </Box>
+                </Flex>
+              </Box>
+            ))}
+          </Stack>
+        </Box>
+      )}
       
       <Tabs colorScheme="blue">
         <TabList>
@@ -180,8 +179,9 @@ const RecipientDetail = () => {
               <Heading as="h3" size="md">Gifts for {recipient.name}</Heading>
               <Button
                 as={RouterLink}
-                to="/gifts/add"
-                colorScheme="blue"
+                to={`/gifts/add/${recipient.id}`}
+                colorScheme="purple"
+                leftIcon={<AddIcon />}
                 size="sm"
               >
                 Add Gift
@@ -200,8 +200,10 @@ const RecipientDetail = () => {
                 <Text mb={4}>No gifts added for {recipient.name} yet.</Text>
                 <Button
                   as={RouterLink}
-                  to="/gifts/add"
-                  colorScheme="blue"
+                  to={`/gifts/add/${recipient.id}`}
+                  colorScheme="purple"
+                  leftIcon={<AddIcon />}
+                  size="sm"
                 >
                   Add First Gift
                 </Button>

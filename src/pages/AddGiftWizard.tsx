@@ -23,8 +23,10 @@ import {
   ModalBody,
   ModalFooter,
   ModalCloseButton,
+  Select,
 } from '@chakra-ui/react';
 import { useGiftStore } from '../store/giftStore';
+import { useRecipientStore } from '../store/recipientStore';
 import type { GiftSuggestion } from '../types';
 
 const OCCASIONS = [
@@ -98,9 +100,12 @@ const AddGiftWizard: React.FC = () => {
   const navigate = useNavigate();
   const toast = useToast();
   const { createGift } = useGiftStore();
+  const { recipients } = useRecipientStore();
+  const recipient = recipients.find(r => r.id === recipientId);
+  const [selectedOccasionId, setSelectedOccasionId] = useState<string>('');
+  const selectedOccasion = recipient?.occasions?.find(o => o.id === selectedOccasionId);
 
   // Form state
-  const [occasion, setOccasion] = useState('Birthday');
   const [date, setDate] = useState(getDefaultDate('Birthday'));
   const [amount, setAmount] = useState(50);
   const [recommendations, setRecommendations] = useState<GiftSuggestion[]>(FAKE_RECOMMENDATIONS.slice(0, 3));
@@ -113,7 +118,6 @@ const AddGiftWizard: React.FC = () => {
 
   // Update date and reset otherOccasion when occasion changes
   const handleOccasionChange = (value: string) => {
-    setOccasion(value);
     if (value === 'Birthday') setDate(getDefaultDate('Birthday'));
     else if (value === 'Christmas') setDate(getDefaultDate('Christmas'));
     else if (value === 'Anniversary') setDate('');
@@ -140,7 +144,7 @@ const AddGiftWizard: React.FC = () => {
 
   // Confirm and add gift
   const handleConfirm = async () => {
-    if (!recipientId || !acceptedGift) return;
+    if (!recipientId || !acceptedGift || !selectedOccasion) return;
     setLoading(true);
     try {
       await createGift({
@@ -149,8 +153,9 @@ const AddGiftWizard: React.FC = () => {
         description: acceptedGift.description,
         price: acceptedGift.price,
         category: acceptedGift.category,
-        occasion: occasion === 'Other' ? otherOccasion : occasion,
-        date: new Date(date),
+        occasion: selectedOccasion.type === 'Other' ? selectedOccasion.customName : selectedOccasion.type,
+        occasionId: selectedOccasion.id,
+        date: new Date(selectedOccasion.date),
         status: 'planned',
       });
       toast({
@@ -188,21 +193,16 @@ const AddGiftWizard: React.FC = () => {
             <VStack spacing={4} align="stretch">
               <Box>
                 <Text mb={1}>Occasion</Text>
-                <RadioGroup value={occasion} onChange={handleOccasionChange}>
-                  <HStack spacing={4}>
-                    {OCCASIONS.map(opt => (
-                      <Radio key={opt.value} value={opt.value}>{opt.label}</Radio>
+                {recipient?.occasions && recipient.occasions.length > 0 ? (
+                  <Select value={selectedOccasionId} onChange={e => setSelectedOccasionId(e.target.value)} placeholder="Select an occasion">
+                    {recipient.occasions.map(o => (
+                      <option key={o.id} value={o.id}>
+                        {o.type === 'Other' ? o.customName : o.type} ({o.date})
+                      </option>
                     ))}
-                  </HStack>
-                </RadioGroup>
-                {occasion === 'Other' && (
-                  <Input
-                    mt={2}
-                    placeholder="Enter occasion name"
-                    value={otherOccasion}
-                    onChange={e => setOtherOccasion(e.target.value)}
-                    isRequired
-                  />
+                  </Select>
+                ) : (
+                  <Text color="red.500">No occasions found for this recipient. Please add an occasion first.</Text>
                 )}
               </Box>
               <Box>
@@ -228,7 +228,7 @@ const AddGiftWizard: React.FC = () => {
                     <Text mb={2}>{recommendations[0].description}</Text>
                     <Text fontWeight="bold" mb={2}>${recommendations[0].price.toFixed(2)}</Text>
                     <HStack>
-                      <Button colorScheme="blue" size="sm" onClick={() => handleAccept(recommendations[0])}>
+                      <Button colorScheme="blue" size="sm" onClick={() => handleAccept(recommendations[0])} isDisabled={!selectedOccasionId}>
                         Accept
                       </Button>
                       <Button colorScheme="gray" size="sm" onClick={() => handleReject(recommendations[0].id)}>
@@ -242,14 +242,14 @@ const AddGiftWizard: React.FC = () => {
               </Box>
             </VStack>
           </Box>
-          {showConfirm && acceptedGift && (
+          {showConfirm && acceptedGift && selectedOccasion && (
             <Modal isOpen={showConfirm} onClose={() => setShowConfirm(false)} isCentered>
               <ModalOverlay />
               <ModalContent>
                 <ModalHeader>Confirm Gift</ModalHeader>
                 <ModalCloseButton />
                 <ModalBody>
-                  <Text mb={4}>You are about to add <strong>{acceptedGift.name}</strong> for <strong>{occasion === 'Other' ? otherOccasion : occasion}</strong> on <strong>{date}</strong> for <strong>${acceptedGift.price.toFixed(2)}</strong>.</Text>
+                  <Text mb={4}>You are about to add <strong>{acceptedGift.name}</strong> for <strong>{selectedOccasion.type === 'Other' ? selectedOccasion.customName : selectedOccasion.type}</strong> on <strong>{selectedOccasion.date}</strong> for <strong>${acceptedGift.price.toFixed(2)}</strong>.</Text>
                 </ModalBody>
                 <ModalFooter>
                   <Button colorScheme="green" onClick={handleConfirm} isLoading={loading}>

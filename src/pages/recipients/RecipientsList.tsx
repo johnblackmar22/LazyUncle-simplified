@@ -30,6 +30,7 @@ import {
   Icon,
 } from '@chakra-ui/react';
 import { useRecipientStore } from '../../store/recipientStore';
+import { AddIcon } from '@chakra-ui/icons';
 
 const RecipientsList = () => {
   const { recipients, deleteRecipient } = useRecipientStore();
@@ -172,6 +173,16 @@ const RecipientsList = () => {
                         onClick={() => handleDeleteClick(recipient.id)}
                       >
                         Delete
+                      </Button>
+                      <Button
+                        as={RouterLink}
+                        to={`/gifts/add/${recipient.id}`}
+                        size="sm"
+                        colorScheme="purple"
+                        leftIcon={<AddIcon />}
+                        variant="solid"
+                      >
+                        Add Gift
                       </Button>
                     </HStack>
                   </Td>

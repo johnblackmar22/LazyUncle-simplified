@@ -23,6 +23,7 @@ import { differenceInDays, format, isBefore, addDays, isValid } from 'date-fns';
 import type { Gift } from '../../types';
 import { useAuthStore } from '../../store/authStore';
 import { initializeDemoData } from '../../services/demoData';
+import { AddIcon } from '@chakra-ui/icons';
 
 export default function DashboardPage() {
   // Get state and actions from stores
@@ -223,7 +224,8 @@ export default function DashboardPage() {
                       </Flex>
                       <Button
                         mt={4}
-                        colorScheme="blue"
+                        colorScheme="purple"
+                        leftIcon={<AddIcon />}
                         size="sm"
                         onClick={e => {
                           e.stopPropagation();
