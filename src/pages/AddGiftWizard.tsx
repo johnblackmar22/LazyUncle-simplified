@@ -153,7 +153,7 @@ const AddGiftWizard: React.FC = () => {
         description: acceptedGift.description,
         price: acceptedGift.price,
         category: acceptedGift.category,
-        occasion: selectedOccasion.type === 'Other' ? selectedOccasion.customName : selectedOccasion.type,
+        occasion: selectedOccasion.type === 'Other' ? (selectedOccasion.customName || '') : selectedOccasion.type,
         occasionId: selectedOccasion.id,
         date: new Date(selectedOccasion.date),
         status: 'planned',
@@ -205,41 +205,36 @@ const AddGiftWizard: React.FC = () => {
                   <Text color="red.500">No occasions found for this recipient. Please add an occasion first.</Text>
                 )}
               </Box>
-              <Box>
-                <Text mb={1}>Date</Text>
-                <Input
-                  type="date"
-                  value={date}
-                  onChange={e => setDate(e.target.value)}
-                  isRequired
-                />
-              </Box>
-              <Box>
-                <Text mb={1}>Amount to Spend</Text>
-                <NumberInput value={amount} min={1} onChange={(_, val) => setAmount(val)}>
-                  <NumberInputField />
-                </NumberInput>
-              </Box>
-              <Box>
-                <Heading size="md" mb={2}>Gift Recommendation</Heading>
-                {recommendations.length > 0 ? (
-                  <Box p={4} borderWidth="1px" borderRadius="md" borderColor={borderColor} bg={bgColor}>
-                    <Heading as="h4" size="sm" mb={2}>{recommendations[0].name}</Heading>
-                    <Text mb={2}>{recommendations[0].description}</Text>
-                    <Text fontWeight="bold" mb={2}>${recommendations[0].price.toFixed(2)}</Text>
-                    <HStack>
-                      <Button colorScheme="blue" size="sm" onClick={() => handleAccept(recommendations[0])} isDisabled={!selectedOccasionId}>
-                        Accept
-                      </Button>
-                      <Button colorScheme="gray" size="sm" onClick={() => handleReject(recommendations[0].id)}>
-                        Reject
-                      </Button>
-                    </HStack>
+              {recipient?.occasions && recipient.occasions.length > 0 && (
+                <>
+                  <Box>
+                    <Text mb={1}>Amount to Spend</Text>
+                    <NumberInput value={amount} min={1} onChange={(_, val) => setAmount(val)}>
+                      <NumberInputField />
+                    </NumberInput>
                   </Box>
-                ) : (
-                  <Text>No more recommendations available.</Text>
-                )}
-              </Box>
+                  <Box>
+                    <Heading size="md" mb={2}>Gift Recommendation</Heading>
+                    {recommendations.length > 0 ? (
+                      <Box p={4} borderWidth="1px" borderRadius="md" borderColor={borderColor} bg={bgColor}>
+                        <Heading as="h4" size="sm" mb={2}>{recommendations[0].name}</Heading>
+                        <Text mb={2}>{recommendations[0].description}</Text>
+                        <Text fontWeight="bold" mb={2}>${recommendations[0].price.toFixed(2)}</Text>
+                        <HStack>
+                          <Button colorScheme="blue" size="sm" onClick={() => handleAccept(recommendations[0])} isDisabled={!selectedOccasionId}>
+                            Accept
+                          </Button>
+                          <Button colorScheme="gray" size="sm" onClick={() => handleReject(recommendations[0].id)}>
+                            Reject
+                          </Button>
+                        </HStack>
+                      </Box>
+                    ) : (
+                      <Text>No more recommendations available.</Text>
+                    )}
+                  </Box>
+                </>
+              )}
             </VStack>
           </Box>
           {showConfirm && acceptedGift && selectedOccasion && (

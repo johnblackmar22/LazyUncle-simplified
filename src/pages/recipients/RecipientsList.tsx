@@ -130,7 +130,22 @@ const RecipientsList = () => {
             <Tbody>
               {filteredRecipients.map((recipient) => (
                 <Tr key={recipient.id}>
-                  <Td fontWeight="medium">{recipient.name}</Td>
+                  <Td fontWeight="medium">
+                    <HStack spacing={2}>
+                      {recipient.name}
+                      <Button
+                        as={RouterLink}
+                        to={`/gifts/add/${recipient.id}`}
+                        size="sm"
+                        colorScheme="purple"
+                        leftIcon={<AddIcon />}
+                        variant="ghost"
+                        aria-label="Add Gift"
+                      >
+                        Add Gift
+                      </Button>
+                    </HStack>
+                  </Td>
                   <Td>{recipient.relationship}</Td>
                   <Td>
                     <HStack spacing={2} flexWrap="wrap">
@@ -173,16 +188,6 @@ const RecipientsList = () => {
                         onClick={() => handleDeleteClick(recipient.id)}
                       >
                         Delete
-                      </Button>
-                      <Button
-                        as={RouterLink}
-                        to={`/gifts/add/${recipient.id}`}
-                        size="sm"
-                        colorScheme="purple"
-                        leftIcon={<AddIcon />}
-                        variant="solid"
-                      >
-                        Add Gift
                       </Button>
                     </HStack>
                   </Td>
