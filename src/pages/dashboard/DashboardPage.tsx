@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -31,6 +31,7 @@ export default function DashboardPage() {
   const { demoMode } = useAuthStore();
   const [upcomingGifts, setUpcomingGifts] = useState<Gift[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
   
   // Fetch data when component mounts
   useEffect(() => {
@@ -203,7 +204,16 @@ export default function DashboardPage() {
                 <Heading as="h2" size="md" mb={4}>Recipients</Heading>
                 <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
                   {recipients.map(recipient => (
-                    <Box key={recipient.id} p={4} borderWidth="1px" borderRadius="lg" borderColor={borderColor}>
+                    <Box
+                      key={recipient.id}
+                      p={4}
+                      borderWidth="1px"
+                      borderRadius="lg"
+                      borderColor={borderColor}
+                      cursor="pointer"
+                      _hover={{ boxShadow: 'md', bg: 'gray.50' }}
+                      onClick={() => navigate(`/recipients/${recipient.id}`)}
+                    >
                       <Flex align="center" gap={4}>
                         <Avatar size="md" name={recipient.name} />
                         <Box>
@@ -211,6 +221,17 @@ export default function DashboardPage() {
                           <Text color="gray.500">{recipient.relationship}</Text>
                         </Box>
                       </Flex>
+                      <Button
+                        mt={4}
+                        colorScheme="blue"
+                        size="sm"
+                        onClick={e => {
+                          e.stopPropagation();
+                          navigate(`/gifts/add/${recipient.id}`);
+                        }}
+                      >
+                        Add Gift
+                      </Button>
                     </Box>
                   ))}
                 </SimpleGrid>

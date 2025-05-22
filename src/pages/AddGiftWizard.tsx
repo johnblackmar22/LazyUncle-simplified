@@ -16,6 +16,13 @@ import {
   SimpleGrid,
   useToast,
   useColorModeValue,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalCloseButton,
 } from '@chakra-ui/react';
 import { useGiftStore } from '../store/giftStore';
 import type { GiftSuggestion } from '../types';
@@ -102,11 +109,16 @@ const AddGiftWizard: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [currentRecIdx, setCurrentRecIdx] = useState(0);
+  const [otherOccasion, setOtherOccasion] = useState('');
 
-  // Update date when occasion changes
+  // Update date and reset otherOccasion when occasion changes
   const handleOccasionChange = (value: string) => {
     setOccasion(value);
-    setDate(getDefaultDate(value));
+    if (value === 'Birthday') setDate(getDefaultDate('Birthday'));
+    else if (value === 'Christmas') setDate(getDefaultDate('Christmas'));
+    else if (value === 'Anniversary') setDate('');
+    else setDate('');
+    setOtherOccasion('');
   };
 
   // Accept/Reject logic
@@ -137,7 +149,7 @@ const AddGiftWizard: React.FC = () => {
         description: acceptedGift.description,
         price: acceptedGift.price,
         category: acceptedGift.category,
-        occasion,
+        occasion: occasion === 'Other' ? otherOccasion : occasion,
         date: new Date(date),
         status: 'planned',
       });
@@ -183,6 +195,15 @@ const AddGiftWizard: React.FC = () => {
                     ))}
                   </HStack>
                 </RadioGroup>
+                {occasion === 'Other' && (
+                  <Input
+                    mt={2}
+                    placeholder="Enter occasion name"
+                    value={otherOccasion}
+                    onChange={e => setOtherOccasion(e.target.value)}
+                    isRequired
+                  />
+                )}
               </Box>
               <Box>
                 <Text mb={1}>Date</Text>
@@ -222,16 +243,24 @@ const AddGiftWizard: React.FC = () => {
             </VStack>
           </Box>
           {showConfirm && acceptedGift && (
-            <Box bg={bgColor} p={6} borderRadius="lg" borderWidth="1px" borderColor={borderColor} textAlign="center">
-              <Heading size="md" mb={4}>Confirm Gift</Heading>
-              <Text mb={4}>You are about to add <strong>{acceptedGift.name}</strong> for <strong>{occasion}</strong> on <strong>{date}</strong> for <strong>${acceptedGift.price.toFixed(2)}</strong>.</Text>
-              <Button colorScheme="green" onClick={handleConfirm} isLoading={loading}>
-                Confirm & Add Gift
-              </Button>
-              <Button variant="ghost" ml={4} onClick={() => setShowConfirm(false)}>
-                Cancel
-              </Button>
-            </Box>
+            <Modal isOpen={showConfirm} onClose={() => setShowConfirm(false)} isCentered>
+              <ModalOverlay />
+              <ModalContent>
+                <ModalHeader>Confirm Gift</ModalHeader>
+                <ModalCloseButton />
+                <ModalBody>
+                  <Text mb={4}>You are about to add <strong>{acceptedGift.name}</strong> for <strong>{occasion === 'Other' ? otherOccasion : occasion}</strong> on <strong>{date}</strong> for <strong>${acceptedGift.price.toFixed(2)}</strong>.</Text>
+                </ModalBody>
+                <ModalFooter>
+                  <Button colorScheme="green" onClick={handleConfirm} isLoading={loading}>
+                    Confirm & Add Gift
+                  </Button>
+                  <Button variant="ghost" ml={4} onClick={() => setShowConfirm(false)}>
+                    Cancel
+                  </Button>
+                </ModalFooter>
+              </ModalContent>
+            </Modal>
           )}
         </VStack>
       </Container>
