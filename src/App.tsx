@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Box } from '@chakra-ui/react';
+import { Box, Spinner } from '@chakra-ui/react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/auth/LoginPage';
@@ -38,6 +38,11 @@ function App() {
     '/subscription/plans', // This will now use HomePage's navbar
     '/checkout' // Use HomePage navbar
   ];
+  
+  if (!initialized) {
+    // Show a loading spinner while auth is loading
+    return <Spinner size="xl" thickness="4px" speed="0.65s" color="blue.500" emptyColor="gray.200" position="fixed" top="50%" left="50%" transform="translate(-50%, -50%)" />;
+  }
   
   // Consider a user authenticated if they have a user object OR any demo mode is active
   const isAuthenticated = !!user || demoMode || storedDemoMode || DEMO_MODE;
