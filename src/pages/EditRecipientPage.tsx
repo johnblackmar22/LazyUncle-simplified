@@ -23,11 +23,12 @@ import {
   TagCloseButton,
   useColorModeValue,
   Spinner,
-  Flex
+  Flex,
+  Select
 } from '@chakra-ui/react';
 import { AddIcon, ArrowBackIcon } from '@chakra-ui/icons';
 import { useRecipientStore } from '../store/recipientStore';
-import { getCurrentDateISO } from '../utils/dateUtils';
+import { getCurrentDateISO, months, days, years } from '../utils/dateUtils';
 import { showErrorToast } from '../utils/toastUtils';
 
 const EditRecipientPage: React.FC = () => {
@@ -39,7 +40,9 @@ const EditRecipientPage: React.FC = () => {
   // Form values
   const [name, setName] = useState('');
   const [relationship, setRelationship] = useState('');
-  const [birthdate, setBirthdate] = useState(getCurrentDateISO());
+  const [birthMonth, setBirthMonth] = useState<string>('');
+  const [birthDay, setBirthDay] = useState<string>('');
+  const [birthYear, setBirthYear] = useState<string>('');
   
   // Interest management
   const [interest, setInterest] = useState('');
@@ -62,7 +65,9 @@ const EditRecipientPage: React.FC = () => {
       if (recipient) {
         setName(recipient.name);
         setRelationship(recipient.relationship);
-        setBirthdate(recipient.birthdate ? new Date(recipient.birthdate).toISOString().split('T')[0] : getCurrentDateISO());
+        setBirthMonth(recipient.birthdate ? String(new Date(recipient.birthdate).getMonth() + 1).padStart(2, '0') : '');
+        setBirthDay(recipient.birthdate ? String(new Date(recipient.birthdate).getDate()).padStart(2, '0') : '');
+        setBirthYear(recipient.birthdate ? String(new Date(recipient.birthdate).getFullYear()) : '');
         setInterests([...recipient.interests]);
       }
     }
@@ -104,6 +109,7 @@ const EditRecipientPage: React.FC = () => {
     }
     
     try {
+      const birthdate = birthYear && birthMonth && birthDay ? `${birthYear}-${birthMonth}-${birthDay}` : '';
       await updateRecipient(id, {
         name,
         relationship,
@@ -180,12 +186,12 @@ const EditRecipientPage: React.FC = () => {
               </FormControl>
               
               <FormControl>
-                <FormLabel>Birthdate</FormLabel>
-                <Input
-                  type="date"
-                  value={birthdate}
-                  onChange={(e) => setBirthdate(e.target.value)}
-                />
+                <FormLabel>Birthday (Optional)</FormLabel>
+                <HStack>
+                  <Select placeholder="Month" value={birthMonth} onChange={e => setBirthMonth(e.target.value)}>{months.map((m: string, i: number) => <option key={i} value={String(i+1).padStart(2, '0')}>{m}</option>)}</Select>
+                  <Select placeholder="Day" value={birthDay} onChange={e => setBirthDay(e.target.value)}>{days.map((d: number) => <option key={d} value={String(d).padStart(2, '0')}>{d}</option>)}</Select>
+                  <Select placeholder="Year" value={birthYear} onChange={e => setBirthYear(e.target.value)}>{years.map((y: number) => <option key={y} value={y}>{y}</option>)}</Select>
+                </HStack>
               </FormControl>
               
               <Divider my={2} />

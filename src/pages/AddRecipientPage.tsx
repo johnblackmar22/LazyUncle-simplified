@@ -17,12 +17,14 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogContent,
-  AlertDialogOverlay
+  AlertDialogOverlay,
+  HStack
 } from '@chakra-ui/react';
 import { useRecipientStore } from '../store/recipientStore';
 import { useAuthStore } from '../store/authStore';
 import { getPlanById } from '../services/subscription/plans';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { months, days, years } from '../utils/dateUtils';
 
 const relationshipOptions = [
   'Nephew', 'Niece', 'Family', 'Friend', 'Colleague', 'Other'
@@ -45,6 +47,9 @@ const AddRecipientPage: React.FC = () => {
     interests: [] as string[],
   });
   const [interestInput, setInterestInput] = useState('');
+  const [birthMonth, setBirthMonth] = useState<string>('');
+  const [birthDay, setBirthDay] = useState<string>('');
+  const [birthYear, setBirthYear] = useState<string>('');
 
   // Add/Remove Interests
   const addInterest = () => {
@@ -82,11 +87,11 @@ const AddRecipientPage: React.FC = () => {
     setLoading(true);
     try {
       // Save recipient
-      const birthdateObj = recipient.birthdate ? new Date(recipient.birthdate) : undefined;
+      const birthdate = birthYear && birthMonth && birthDay ? `${birthYear}-${birthMonth}-${birthDay}` : '';
       const newRecipient = await addRecipient({
         name: recipient.name,
         relationship: recipient.relationship,
-        birthdate: birthdateObj,
+        birthdate: birthdate,
         interests: recipient.interests
       });
       
@@ -136,7 +141,11 @@ const AddRecipientPage: React.FC = () => {
               </FormControl>
               <FormControl>
                 <FormLabel>Birthday (Optional)</FormLabel>
-                <Input type="date" value={recipient.birthdate} onChange={e => setRecipient(r => ({ ...r, birthdate: e.target.value }))} />
+                <HStack>
+                  <Select placeholder="Month" value={birthMonth} onChange={e => setBirthMonth(e.target.value)}>{months.map((m: string, i: number) => <option key={i} value={String(i+1).padStart(2, '0')}>{m}</option>)}</Select>
+                  <Select placeholder="Day" value={birthDay} onChange={e => setBirthDay(e.target.value)}>{days.map((d: number) => <option key={d} value={String(d).padStart(2, '0')}>{d}</option>)}</Select>
+                  <Select placeholder="Year" value={birthYear} onChange={e => setBirthYear(e.target.value)}>{years.map((y: number) => <option key={y} value={y}>{y}</option>)}</Select>
+                </HStack>
               </FormControl>
               <FormControl>
                 <FormLabel>Interests</FormLabel>

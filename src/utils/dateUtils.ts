@@ -57,4 +57,11 @@ export const getDaysUntil = (dateString: string): number => {
 export const getCurrentDateISO = (): string => {
   const date = new Date();
   return date.toISOString().split('T')[0];
-}; 
+};
+
+export const months = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+export const days = Array.from({ length: 31 }, (_, i) => i + 1);
+export const years = Array.from({ length: 120 }, (_, i) => new Date().getFullYear() - i); 

@@ -28,7 +28,6 @@ import { useRecipientStore } from '../store/recipientStore';
 import { format } from 'date-fns';
 import type { Recipient } from '../types';
 import { showErrorToast } from '../utils/toastUtils';
-import { Navbar } from '../components/Navbar';
 
 export const RecipientDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -79,15 +78,15 @@ export const RecipientDetailPage: React.FC = () => {
   };
   
   // Format birthdate to readable format
-  const formatBirthdate = (date: Date | string | number | undefined) => {
+  const formatBirthdate = (date: string | undefined) => {
     if (!date) return 'Not set';
-    
     try {
-      const dateObj = date instanceof Date ? date : new Date(date);
-      return format(dateObj, 'MMMM d, yyyy');
-    } catch (error) {
-      console.error('Error formatting date:', error);
-      return 'Invalid date';
+      const [year, month, day] = date.split('-').map(Number);
+      const dateObj = new Date(year, month - 1, day);
+      const age = new Date().getFullYear() - year - (new Date() < new Date(new Date().getFullYear(), month - 1, day) ? 1 : 0);
+      return `${dateObj.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })} (${age} years old)`;
+    } catch {
+      return date;
     }
   };
   
@@ -156,7 +155,6 @@ export const RecipientDetailPage: React.FC = () => {
 
   return (
     <Box bg="gray.100" minH="100vh">
-      <Navbar />
       <Container maxW="container.lg" py={{ base: 4, md: 12 }} px={{ base: 2, md: 0 }}>
         <VStack spacing={{ base: 4, md: 8 }} align="stretch">
           <Box>

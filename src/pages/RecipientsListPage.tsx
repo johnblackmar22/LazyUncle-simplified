@@ -104,15 +104,15 @@ const RecipientsListPage: React.FC = () => {
   };
 
   // Format birthdate to readable format
-  const formatBirthdate = (date: Date | string | number | undefined) => {
+  const formatBirthdate = (date: string | undefined) => {
     if (!date) return 'Not set';
-    
     try {
-      const dateObj = date instanceof Date ? date : new Date(date);
-      return format(dateObj, 'MMM d, yyyy');
-    } catch (error) {
-      console.error('Error formatting date:', error);
-      return 'Invalid date';
+      const [year, month, day] = date.split('-').map(Number);
+      const dateObj = new Date(year, month - 1, day);
+      const age = new Date().getFullYear() - year - (new Date() < new Date(new Date().getFullYear(), month - 1, day) ? 1 : 0);
+      return `${dateObj.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })} (${age} years old)`;
+    } catch {
+      return date;
     }
   };
 
