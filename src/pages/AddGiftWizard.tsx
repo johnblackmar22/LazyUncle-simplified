@@ -4,7 +4,6 @@ import {
   Box,
   Button,
   Container,
-  Flex,
   Heading,
   Text,
   VStack,
@@ -17,7 +16,6 @@ import {
   SimpleGrid,
   useToast,
   useColorModeValue,
-  Spinner
 } from '@chakra-ui/react';
 import { useGiftStore } from '../store/giftStore';
 import type { GiftSuggestion } from '../types';
@@ -94,8 +92,7 @@ const AddGiftWizard: React.FC = () => {
   const toast = useToast();
   const { createGift } = useGiftStore();
 
-  // Step state
-  const [step, setStep] = useState(1);
+  // Form state
   const [occasion, setOccasion] = useState('Birthday');
   const [date, setDate] = useState(getDefaultDate('Birthday'));
   const [amount, setAmount] = useState(50);
@@ -103,22 +100,18 @@ const AddGiftWizard: React.FC = () => {
   const [rejectedIds, setRejectedIds] = useState<string[]>([]);
   const [acceptedGift, setAcceptedGift] = useState<GiftSuggestion | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
-  // Step 1: Occasion
-  const handleOccasionNext = () => {
-    setDate(getDefaultDate(occasion));
-    setStep(2);
+  // Update date when occasion changes
+  const handleOccasionChange = (value: string) => {
+    setOccasion(value);
+    setDate(getDefaultDate(value));
   };
 
-  // Step 2: Date & Amount
-  const handleDateAmountNext = () => {
-    setStep(3);
-  };
-
-  // Step 3: Recommendations
+  // Accept/Reject logic
   const handleAccept = (rec: GiftSuggestion) => {
     setAcceptedGift(rec);
-    setStep(4);
+    setShowConfirm(true);
   };
   const handleReject = (recId: string) => {
     setRejectedIds(ids => [...ids, recId]);
@@ -132,7 +125,7 @@ const AddGiftWizard: React.FC = () => {
     });
   };
 
-  // Step 4: Confirmation
+  // Confirm and add gift
   const handleConfirm = async () => {
     if (!recipientId || !acceptedGift) return;
     setLoading(true);
@@ -165,6 +158,8 @@ const AddGiftWizard: React.FC = () => {
       });
     } finally {
       setLoading(false);
+      setShowConfirm(false);
+      setAcceptedGift(null);
     }
   };
 
@@ -176,81 +171,66 @@ const AddGiftWizard: React.FC = () => {
       <Container maxW="container.sm" py={8}>
         <VStack spacing={8} align="stretch">
           <Heading size="lg">Add Gift</Heading>
-          {step === 1 && (
-            <Box bg={bgColor} p={6} borderRadius="lg" borderWidth="1px" borderColor={borderColor}>
-              <Heading size="md" mb={4}>Select Occasion</Heading>
-              <RadioGroup value={occasion} onChange={setOccasion}>
-                <HStack spacing={4}>
-                  {OCCASIONS.map(opt => (
-                    <Radio key={opt.value} value={opt.value}>{opt.label}</Radio>
+          <Box bg={bgColor} p={6} borderRadius="lg" borderWidth="1px" borderColor={borderColor}>
+            <VStack spacing={4} align="stretch">
+              <Box>
+                <Text mb={1}>Occasion</Text>
+                <RadioGroup value={occasion} onChange={handleOccasionChange}>
+                  <HStack spacing={4}>
+                    {OCCASIONS.map(opt => (
+                      <Radio key={opt.value} value={opt.value}>{opt.label}</Radio>
+                    ))}
+                  </HStack>
+                </RadioGroup>
+              </Box>
+              <Box>
+                <Text mb={1}>Date</Text>
+                <Input
+                  type="date"
+                  value={date}
+                  onChange={e => setDate(e.target.value)}
+                  isRequired
+                />
+              </Box>
+              <Box>
+                <Text mb={1}>Amount to Spend</Text>
+                <NumberInput value={amount} min={1} onChange={(_, val) => setAmount(val)}>
+                  <NumberInputField />
+                </NumberInput>
+              </Box>
+              <Box>
+                <Heading size="md" mb={2}>Gift Recommendations</Heading>
+                <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
+                  {recommendations.map(rec => (
+                    <Box key={rec.id} p={4} borderWidth="1px" borderRadius="md" borderColor={borderColor} bg={bgColor}>
+                      <Heading as="h4" size="sm" mb={2}>{rec.name}</Heading>
+                      <Text mb={2}>{rec.description}</Text>
+                      <Text fontWeight="bold" mb={2}>${rec.price.toFixed(2)}</Text>
+                      <HStack>
+                        <Button colorScheme="blue" size="sm" onClick={() => handleAccept(rec)}>
+                          Accept
+                        </Button>
+                        <Button colorScheme="gray" size="sm" onClick={() => handleReject(rec.id)}>
+                          Reject
+                        </Button>
+                      </HStack>
+                    </Box>
                   ))}
-                </HStack>
-              </RadioGroup>
-              <Button mt={6} colorScheme="blue" onClick={handleOccasionNext}>
-                Next
-              </Button>
-            </Box>
-          )}
-          {step === 2 && (
-            <Box bg={bgColor} p={6} borderRadius="lg" borderWidth="1px" borderColor={borderColor}>
-              <Heading size="md" mb={4}>Date & Amount</Heading>
-              <VStack spacing={4} align="stretch">
-                <Box>
-                  <Text mb={1}>Date</Text>
-                  <Input
-                    type="date"
-                    value={date}
-                    onChange={e => setDate(e.target.value)}
-                    isRequired
-                  />
-                </Box>
-                <Box>
-                  <Text mb={1}>Amount to Spend</Text>
-                  <NumberInput value={amount} min={1} onChange={(_, val) => setAmount(val)}>
-                    <NumberInputField />
-                  </NumberInput>
-                </Box>
-              </VStack>
-              <Button mt={6} colorScheme="blue" onClick={handleDateAmountNext}>
-                Next
-              </Button>
-            </Box>
-          )}
-          {step === 3 && (
-            <Box bg={bgColor} p={6} borderRadius="lg" borderWidth="1px" borderColor={borderColor}>
-              <Heading size="md" mb={4}>Gift Recommendations</Heading>
-              <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
-                {recommendations.map(rec => (
-                  <Box key={rec.id} p={4} borderWidth="1px" borderRadius="md" borderColor={borderColor} bg={bgColor}>
-                    <Heading as="h4" size="sm" mb={2}>{rec.name}</Heading>
-                    <Text mb={2}>{rec.description}</Text>
-                    <Text fontWeight="bold" mb={2}>${rec.price.toFixed(2)}</Text>
-                    <HStack>
-                      <Button colorScheme="blue" size="sm" onClick={() => handleAccept(rec)}>
-                        Accept
-                      </Button>
-                      <Button colorScheme="gray" size="sm" onClick={() => handleReject(rec.id)}>
-                        Reject
-                      </Button>
-                    </HStack>
-                  </Box>
-                ))}
-              </SimpleGrid>
-            </Box>
-          )}
-          {step === 4 && acceptedGift && (
+                </SimpleGrid>
+              </Box>
+            </VStack>
+          </Box>
+          {showConfirm && acceptedGift && (
             <Box bg={bgColor} p={6} borderRadius="lg" borderWidth="1px" borderColor={borderColor} textAlign="center">
               <Heading size="md" mb={4}>Confirm Gift</Heading>
               <Text mb={4}>You are about to add <strong>{acceptedGift.name}</strong> for <strong>{occasion}</strong> on <strong>{date}</strong> for <strong>${acceptedGift.price.toFixed(2)}</strong>.</Text>
               <Button colorScheme="green" onClick={handleConfirm} isLoading={loading}>
                 Confirm & Add Gift
               </Button>
+              <Button variant="ghost" ml={4} onClick={() => setShowConfirm(false)}>
+                Cancel
+              </Button>
             </Box>
-          )}
-          {step > 1 && step < 4 && (
-            <Button variant="ghost" onClick={() => setStep(step - 1)}>
-              Back
-            </Button>
           )}
         </VStack>
       </Container>
