@@ -7,9 +7,10 @@ import {
   sendPasswordResetEmail,
   type User as FirebaseUser
 } from 'firebase/auth';
-import { auth } from '../services/firebase';
+import { auth, db } from '../services/firebase';
 import type { User } from '../types';
 import { isDemoMode, initializeDemoData } from '../services/demoData';
+import { doc, setDoc } from 'firebase/firestore';
 
 interface AuthState {
   user: User | null;
@@ -94,9 +95,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = { ...convertFirebaseUser(userCredential.user), planId: 'free' };
       set({ 
-        user: { ...convertFirebaseUser(userCredential.user), planId: 'free' },
+        user,
         loading: false 
+      });
+      // Create user profile in Firestore
+      await setDoc(doc(db, 'users', user.id), {
+        email: user.email,
+        displayName: user.displayName,
+        createdAt: user.createdAt,
+        planId: user.planId
       });
     } catch (error) {
       set({ 
@@ -118,7 +127,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         });
         
         // Clear demo data from localStorage
-        localStorage.removeItem('demo-mode');
+        localStorage.removeItem('demoMode');
         localStorage.removeItem('recipients');
         localStorage.removeItem('gifts');
         return;

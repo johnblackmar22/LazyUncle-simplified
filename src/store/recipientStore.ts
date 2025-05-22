@@ -156,32 +156,33 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
       if (!user) {
         throw new Error('User not authenticated');
       }
+      // Validate required fields
+      if (!recipientData.name || !recipientData.relationship) {
+        throw new Error('Missing required recipient fields');
+      }
       const newRecipient = {
         ...recipientData,
-        userId: user!.id,
+        userId: user.id,
         interests: recipientData.interests || [],
         createdAt: timestamp,
         updatedAt: timestamp
       };
-      
+      console.log('Writing recipient to Firestore:', newRecipient);
       const docRef = await addDoc(collection(db, 'recipients'), newRecipient);
-      
-      const recipient: Recipient = {
+      const recipient = {
         id: docRef.id,
         ...newRecipient,
         createdAt: timestamp.toDate().getTime(),
         updatedAt: timestamp.toDate().getTime()
       };
-      
       set(state => ({ 
         recipients: [...state.recipients, recipient],
         loading: false 
       }));
-      
       return recipient;
     } catch (error) {
-      console.error('Error adding recipient:', error);
-      set({ error: `Failed to add recipient: ${(error as Error).message}. If in production, check Firebase config and Firestore rules.`, loading: false });
+      console.error('Error adding recipient to Firestore:', error, recipientData);
+      set({ error: `Failed to add recipient: ${(error as Error).message}. Check Firestore rules, config, and data structure.`, loading: false });
       return null;
     }
   },
