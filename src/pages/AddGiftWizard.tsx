@@ -101,6 +101,7 @@ const AddGiftWizard: React.FC = () => {
   const [acceptedGift, setAcceptedGift] = useState<GiftSuggestion | null>(null);
   const [loading, setLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [currentRecIdx, setCurrentRecIdx] = useState(0);
 
   // Update date when occasion changes
   const handleOccasionChange = (value: string) => {
@@ -115,14 +116,14 @@ const AddGiftWizard: React.FC = () => {
   };
   const handleReject = (recId: string) => {
     setRejectedIds(ids => [...ids, recId]);
-    setRecommendations(recs => {
-      const idx = recs.findIndex(r => r.id === recId);
-      const newRec = getRandomRecommendation([...rejectedIds, recId, ...recs.map(r => r.id)]);
-      if (!newRec) return recs;
-      const newRecs = [...recs];
-      newRecs[idx] = newRec;
-      return newRecs;
-    });
+    // Find a new recommendation not already shown
+    const nextRec = getRandomRecommendation([...rejectedIds, recId]);
+    if (nextRec) {
+      setRecommendations([nextRec]);
+      setCurrentRecIdx(0);
+    } else {
+      setRecommendations([]);
+    }
   };
 
   // Confirm and add gift
@@ -199,24 +200,24 @@ const AddGiftWizard: React.FC = () => {
                 </NumberInput>
               </Box>
               <Box>
-                <Heading size="md" mb={2}>Gift Recommendations</Heading>
-                <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
-                  {recommendations.map(rec => (
-                    <Box key={rec.id} p={4} borderWidth="1px" borderRadius="md" borderColor={borderColor} bg={bgColor}>
-                      <Heading as="h4" size="sm" mb={2}>{rec.name}</Heading>
-                      <Text mb={2}>{rec.description}</Text>
-                      <Text fontWeight="bold" mb={2}>${rec.price.toFixed(2)}</Text>
-                      <HStack>
-                        <Button colorScheme="blue" size="sm" onClick={() => handleAccept(rec)}>
-                          Accept
-                        </Button>
-                        <Button colorScheme="gray" size="sm" onClick={() => handleReject(rec.id)}>
-                          Reject
-                        </Button>
-                      </HStack>
-                    </Box>
-                  ))}
-                </SimpleGrid>
+                <Heading size="md" mb={2}>Gift Recommendation</Heading>
+                {recommendations.length > 0 ? (
+                  <Box p={4} borderWidth="1px" borderRadius="md" borderColor={borderColor} bg={bgColor}>
+                    <Heading as="h4" size="sm" mb={2}>{recommendations[0].name}</Heading>
+                    <Text mb={2}>{recommendations[0].description}</Text>
+                    <Text fontWeight="bold" mb={2}>${recommendations[0].price.toFixed(2)}</Text>
+                    <HStack>
+                      <Button colorScheme="blue" size="sm" onClick={() => handleAccept(recommendations[0])}>
+                        Accept
+                      </Button>
+                      <Button colorScheme="gray" size="sm" onClick={() => handleReject(recommendations[0].id)}>
+                        Reject
+                      </Button>
+                    </HStack>
+                  </Box>
+                ) : (
+                  <Text>No more recommendations available.</Text>
+                )}
               </Box>
             </VStack>
           </Box>

@@ -149,7 +149,7 @@ export const addGift = async (data: Omit<Gift, 'id' | 'userId' | 'createdAt' | '
       createdAt: now,
       updatedAt: now
     };
-    
+    console.log('[addGift] userId:', user.id, 'user:', user, 'newGift:', newGift);
     const docRef = await addDoc(collection(db, COLLECTION), newGift);
     
     return {
