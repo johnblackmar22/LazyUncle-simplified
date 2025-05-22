@@ -3,7 +3,8 @@ import { useRecipientStore } from '../store/recipientStore';
 import { useNavigate } from 'react-router-dom';
 import { Box, Heading, Text, Badge, Button, VStack, HStack, Divider, useColorModeValue } from '@chakra-ui/react';
 import { format, isAfter, isBefore, addDays, parseISO, differenceInDays } from 'date-fns';
-import type { Recipient as BaseRecipient } from '../types';
+import { safeFormatDate } from '../utils/dateUtils';
+import type { Recipient } from '../types';
 
 interface SpecialDate {
   id: string;
@@ -11,11 +12,6 @@ interface SpecialDate {
   description?: string;
   name?: string;
   type?: string;
-}
-
-interface Recipient extends BaseRecipient {
-  anniversary?: string | number | Date;
-  specialDates?: SpecialDate[];
 }
 
 export const GiftReminders = () => {
@@ -99,8 +95,8 @@ export const GiftReminders = () => {
       }
 
       // Check special dates
-      if (recipient.specialDates && recipient.specialDates.length > 0) {
-        recipient.specialDates.forEach((specialDate: SpecialDate) => {
+      if ((recipient as any).specialDates && (recipient as any).specialDates.length > 0) {
+        ((recipient as any).specialDates as SpecialDate[]).forEach((specialDate: SpecialDate) => {
           try {
             let dateObj: Date;
             
@@ -175,7 +171,7 @@ export const GiftReminders = () => {
                     </Badge>
                   </HStack>
                   {event.dateName && <Text fontSize="sm" color="gray.600">{event.dateName}</Text>}
-                  <Text fontSize="sm">{format(event.date, 'MMMM d, yyyy')}</Text>
+                  <Text fontSize="sm">{safeFormatDate(event.date)}</Text>
                 </Box>
                 <HStack>
                   <Button size="sm" colorScheme="blue" variant="outline" onClick={() => navigateToRecipient(event.recipientId)}>

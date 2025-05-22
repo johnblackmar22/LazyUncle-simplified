@@ -28,6 +28,7 @@ import { useRecipientStore } from '../store/recipientStore';
 import { format } from 'date-fns';
 import type { Recipient } from '../types';
 import { showErrorToast } from '../utils/toastUtils';
+import { safeFormatDate } from '../utils/dateUtils';
 
 export const RecipientDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -208,7 +209,7 @@ export const RecipientDetailPage: React.FC = () => {
             <CardBody>
               {currentRecipient.birthdate ? (
                 <Flex justify="space-between" align="center">
-                  <Text>{formatBirthdate(currentRecipient.birthdate)}</Text>
+                  <Text>{safeFormatDate(currentRecipient.birthdate)}</Text>
                   {getDaysUntilBirthday(currentRecipient.birthdate) !== null && (
                     <Badge 
                       colorScheme={getDaysUntilBirthday(currentRecipient.birthdate)! <= 7 ? "red" : 

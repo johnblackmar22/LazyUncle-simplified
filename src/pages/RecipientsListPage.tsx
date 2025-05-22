@@ -31,7 +31,7 @@ import {
   DeleteIcon 
 } from '@chakra-ui/icons';
 import { useRecipientStore } from '../store/recipientStore';
-import { formatDate } from '../utils/dateUtils';
+import { formatDate, safeFormatDate } from '../utils/dateUtils';
 import { format } from 'date-fns';
 import { showErrorToast } from '../utils/toastUtils';
 import { useAuthStore } from '../store/authStore';
@@ -191,7 +191,7 @@ const RecipientsListPage: React.FC = () => {
                 <VStack align="start" spacing={2}>
                   {recipient.birthdate && (
                     <Text fontSize="sm">
-                      <strong>Birthday:</strong> {formatBirthdate(recipient.birthdate)}
+                      <strong>Birthday:</strong> {safeFormatDate(recipient.birthdate)}
                     </Text>
                   )}
                   

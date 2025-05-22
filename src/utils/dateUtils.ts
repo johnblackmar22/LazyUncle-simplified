@@ -64,4 +64,12 @@ export const months = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 export const days = Array.from({ length: 31 }, (_, i) => i + 1);
-export const years = Array.from({ length: 120 }, (_, i) => new Date().getFullYear() - i); 
+export const years = Array.from({ length: 120 }, (_, i) => new Date().getFullYear() - i);
+
+export function safeFormatDate(date: any): string {
+  if (!date) return '';
+  if (typeof date === 'string') return date;
+  if (typeof date.toDate === 'function') return date.toDate().toLocaleDateString(); // Firestore Timestamp
+  if (date instanceof Date) return date.toLocaleDateString();
+  return String(date);
+} 
