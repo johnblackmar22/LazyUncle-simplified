@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -28,7 +28,7 @@ import {
 } from '@chakra-ui/react';
 import { useGiftStore } from '../store/giftStore';
 import { useRecipientStore } from '../store/recipientStore';
-import type { GiftSuggestion } from '../types';
+import type { GiftSuggestion, Recipient } from '../types';
 
 const OCCASIONS = [
   { label: 'Birthday', value: 'Birthday' },
@@ -96,6 +96,18 @@ const getDefaultDate = (occasion: string) => {
   return '';
 };
 
+// Helper to get default date for occasion type
+function getDefaultDateForOccasion(type: string, recipient?: Recipient): string {
+  const today = new Date();
+  if (type === 'Birthday' && recipient?.birthdate) {
+    return recipient.birthdate;
+  }
+  if (type === 'Christmas') {
+    return `${today.getFullYear()}-12-25`;
+  }
+  return '';
+}
+
 const AddGiftWizard: React.FC = () => {
   const { recipientId } = useParams<{ recipientId: string }>();
   const navigate = useNavigate();
@@ -114,6 +126,14 @@ const AddGiftWizard: React.FC = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [currentRecIdx, setCurrentRecIdx] = useState(0);
   const [repeatAnnually, setRepeatAnnually] = useState(false);
+
+  // Update date when occasion type changes
+  useEffect(() => {
+    setOccasionDate(getDefaultDateForOccasion(occasionType, recipient));
+    if (occasionType !== 'Other') {
+      setCustomOccasion('');
+    }
+  }, [occasionType, recipient]);
 
   // Accept/Reject logic
   const handleAccept = (rec: GiftSuggestion) => {
@@ -144,7 +164,6 @@ const AddGiftWizard: React.FC = () => {
         price: acceptedGift.price,
         category: acceptedGift.category,
         occasion: occasionType === 'Other' ? customOccasion : occasionType,
-        occasionId: undefined, // No longer used
         date: new Date(occasionDate),
         budget: occasionBudget,
         status: 'planned',
@@ -198,13 +217,14 @@ const AddGiftWizard: React.FC = () => {
                       value={customOccasion}
                       onChange={e => setCustomOccasion(e.target.value)}
                       w="50%"
+                      isRequired
                     />
                   )}
                 </HStack>
               </Box>
               <Box>
                 <Text mb={1}>Occasion Date</Text>
-                <Input type="date" value={occasionDate} onChange={e => setOccasionDate(e.target.value)} />
+                <Input type="date" value={occasionDate} onChange={e => setOccasionDate(e.target.value)} isRequired />
               </Box>
               <Box>
                 <Text mb={1}>Budget for this Occasion</Text>
