@@ -43,7 +43,7 @@ export interface Recipient {
   userId: string;
   name: string;
   relationship: string;
-  birthdate?: Date;
+  birthdate?: string; // Format: 'YYYY-MM-DD'
   interests: string[];
   giftPreferences?: {
     priceRange?: {
@@ -52,7 +52,7 @@ export interface Recipient {
     };
     categories?: string[];
   };
-  anniversary?: Date;
+  anniversary?: string; // Format: 'YYYY-MM-DD'
   autoSendPreferences?: AutoSendPreferences;
   createdAt: Date | number;
   updatedAt: Date | number;

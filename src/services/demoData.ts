@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { addDays, subDays, addMonths, addYears, format } from 'date-fns';
+import { addDays, subDays, addMonths, addYears, format as formatDate } from 'date-fns';
 import { useAuthStore } from '../store/authStore';
 
 // Generate dates relative to today for more realistic demo data
@@ -86,8 +86,8 @@ export const demoRecipients = [
     userId: "demo-user",
     name: "Emma Johnson",
     relationship: "Wife",
-    birthdate: addDays(today, 10), // Birthday in 10 days
-    anniversary: addDays(today, 15), // Anniversary in 15 days
+    birthdate: formatDate(addDays(today, 10), 'yyyy-MM-dd'), // Birthday in 10 days
+    anniversary: formatDate(addDays(today, 15), 'yyyy-MM-dd'), // Anniversary in 15 days
     interests: ["Books", "Hiking", "Yoga", "Cooking"],
     giftPreferences: {
       priceRange: {
@@ -114,7 +114,7 @@ export const demoRecipients = [
     userId: "demo-user",
     name: "Liam Smith",
     relationship: "Son",
-    birthdate: addDays(today, 7), // Birthday coming up soon in 7 days
+    birthdate: formatDate(addDays(today, 7), 'yyyy-MM-dd'), // Birthday coming up soon in 7 days
     interests: ["Video Games", "Soccer", "Science", "Drawing"],
     giftPreferences: {
       priceRange: {
@@ -141,7 +141,7 @@ export const demoRecipients = [
     userId: "demo-user",
     name: "Robert Chen",
     relationship: "Friend",
-    birthdate: addDays(today, 22), // Birthday in 22 days
+    birthdate: formatDate(addDays(today, 22), 'yyyy-MM-dd'), // Birthday in 22 days
     interests: ["Technology", "Coffee", "Travel", "Photography"],
     giftPreferences: {
       priceRange: {
@@ -168,8 +168,8 @@ export const demoRecipients = [
     userId: "demo-user",
     name: "Sophia Rodriguez",
     relationship: "Mother",
-    birthdate: addDays(today, 3), // Birthday very soon - 3 days
-    anniversary: addDays(today, 28), // 28 days from now
+    birthdate: formatDate(addDays(today, 3), 'yyyy-MM-dd'), // Birthday very soon - 3 days
+    anniversary: formatDate(addDays(today, 28), 'yyyy-MM-dd'), // 28 days from now
     interests: ["Gardening", "Cooking", "Classical Music", "Painting"],
     giftPreferences: {
       priceRange: {
@@ -387,10 +387,13 @@ export const isDemoMode = () => {
   try {
     // Check for explicit env setting first
     if (getEnv('VITE_DEMO_MODE') === 'true') {
+      // If demo mode is enabled via environment, store it in localStorage for persistence
+      localStorage.setItem('demoMode', 'true');
       return true;
     }
-    // Then check for persisted demo mode in localStorage
-    return localStorage.getItem('demo-mode') === 'true';
+    
+    // Then check for persisted demo mode in localStorage (using the correct key)
+    return localStorage.getItem('demoMode') === 'true';
   } catch (error) {
     console.error('Error checking demo mode:', error);
     return false;
@@ -401,7 +404,7 @@ export const isDemoMode = () => {
 export const clearDemoData = () => {
   try {
     // Clear localStorage
-    localStorage.removeItem('demo-mode');
+    localStorage.removeItem('demoMode');
     localStorage.removeItem('recipients');
     localStorage.removeItem('gifts');
     

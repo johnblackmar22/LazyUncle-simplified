@@ -50,12 +50,20 @@ export const GiftReminders = () => {
     (recipients as Recipient[]).forEach(recipient => {
       // Check birthdate
       if (recipient.birthdate) {
-        const birthdate = new Date(recipient.birthdate);
-        const thisYearBirthday = new Date(today.getFullYear(), birthdate.getMonth(), birthdate.getDate());
+        let birthdateObj: Date;
+        if (typeof recipient.birthdate === 'string') {
+          const [year, month, day] = recipient.birthdate.split('-').map(Number);
+          birthdateObj = new Date(year, month - 1, day);
+        } else if (Object.prototype.toString.call(recipient.birthdate) === '[object Date]') {
+          birthdateObj = recipient.birthdate as Date;
+        } else {
+          return;
+        }
+        const thisYearBirthday = new Date(today.getFullYear(), birthdateObj.getMonth(), birthdateObj.getDate());
         
         // If birthday already passed this year, look to next year
         const targetBirthday = isBefore(thisYearBirthday, today) 
-          ? new Date(today.getFullYear() + 1, birthdate.getMonth(), birthdate.getDate())
+          ? new Date(today.getFullYear() + 1, birthdateObj.getMonth(), birthdateObj.getDate())
           : thisYearBirthday;
         
         if (isBefore(targetBirthday, lookAheadDate)) {

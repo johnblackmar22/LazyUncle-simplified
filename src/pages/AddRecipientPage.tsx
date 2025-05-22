@@ -85,36 +85,28 @@ const AddRecipientPage: React.FC = () => {
     }
     
     setLoading(true);
+    let birthdateStr = '';
+    if (birthYear && birthMonth && birthDay) {
+      birthdateStr = `${birthYear}-${birthMonth}-${birthDay}`;
+    }
     try {
-      // Save recipient
-      const birthdate = birthYear && birthMonth && birthDay ? `${birthYear}-${birthMonth}-${birthDay}` : '';
-      const newRecipient = await addRecipient({
-        name: recipient.name,
-        relationship: recipient.relationship,
-        birthdate: birthdate,
-        interests: recipient.interests
+      await addRecipient({
+        ...recipient,
+        birthdate: birthdateStr || undefined,
       });
-      
-      if (!newRecipient) {
-        throw new Error('Failed to create recipient');
-      }
-      
       toast({
-        title: 'Recipient added successfully!',
+        title: 'Recipient added!',
         status: 'success',
         duration: 3000,
         isClosable: true,
       });
-      
-      // Navigate back to recipients list
       navigate('/recipients');
-    } catch (err) {
-      console.error('Error adding recipient:', err);
+    } catch (error) {
       toast({
         title: 'Error adding recipient',
-        description: err instanceof Error ? err.message : 'Unknown error occurred',
+        description: (error as Error).message,
         status: 'error',
-        duration: 5000,
+        duration: 4000,
         isClosable: true,
       });
     } finally {

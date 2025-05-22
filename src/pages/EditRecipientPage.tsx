@@ -65,9 +65,22 @@ const EditRecipientPage: React.FC = () => {
       if (recipient) {
         setName(recipient.name);
         setRelationship(recipient.relationship);
-        setBirthMonth(recipient.birthdate ? String(new Date(recipient.birthdate).getMonth() + 1).padStart(2, '0') : '');
-        setBirthDay(recipient.birthdate ? String(new Date(recipient.birthdate).getDate()).padStart(2, '0') : '');
-        setBirthYear(recipient.birthdate ? String(new Date(recipient.birthdate).getFullYear()) : '');
+        if (recipient.birthdate) {
+          let birthdateStr = '';
+          if (typeof recipient.birthdate === 'string') {
+            birthdateStr = recipient.birthdate;
+          } else if (Object.prototype.toString.call(recipient.birthdate) === '[object Date]') {
+            birthdateStr = (recipient.birthdate as Date).toISOString().split('T')[0];
+          }
+          const [year, month, day] = birthdateStr.split('-');
+          setBirthMonth(month || '');
+          setBirthDay(day || '');
+          setBirthYear(year || '');
+        } else {
+          setBirthMonth('');
+          setBirthDay('');
+          setBirthYear('');
+        }
         setInterests([...recipient.interests]);
       }
     }
@@ -109,11 +122,14 @@ const EditRecipientPage: React.FC = () => {
     }
     
     try {
-      const birthdate = birthYear && birthMonth && birthDay ? `${birthYear}-${birthMonth}-${birthDay}` : '';
+      let birthdateStr = '';
+      if (birthYear && birthMonth && birthDay) {
+        birthdateStr = `${birthYear}-${birthMonth}-${birthDay}`;
+      }
       await updateRecipient(id, {
         name,
         relationship,
-        birthdate: birthdate ? new Date(birthdate) : undefined,
+        birthdate: birthdateStr || undefined,
         interests
       });
       
