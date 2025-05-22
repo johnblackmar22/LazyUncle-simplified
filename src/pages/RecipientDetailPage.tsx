@@ -29,6 +29,7 @@ import { format } from 'date-fns';
 import type { Recipient } from '../types';
 import { showErrorToast } from '../utils/toastUtils';
 import { safeFormatDate } from '../utils/dateUtils';
+import { useGiftStore } from '../store/giftStore';
 
 export const RecipientDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -41,11 +42,36 @@ export const RecipientDetailPage: React.FC = () => {
     fetchRecipients, 
     deleteRecipient 
   } = useRecipientStore();
+  const { createGift } = useGiftStore();
   
   const [currentRecipient, setCurrentRecipient] = useState<Recipient | null>(null);
   
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
+
+  const [recommendations] = useState([
+    {
+      id: 'fake-1',
+      name: 'Bluetooth Speaker',
+      description: 'Portable speaker with high-quality sound.',
+      price: 49.99,
+      category: 'Electronics',
+    },
+    {
+      id: 'fake-2',
+      name: 'Personalized Mug',
+      description: 'Custom mug with their name and a fun design.',
+      price: 19.99,
+      category: 'Home',
+    },
+    {
+      id: 'fake-3',
+      name: 'Gift Card',
+      description: 'A $50 gift card to their favorite store.',
+      price: 50.00,
+      category: 'Gift Card',
+    },
+  ]);
 
   useEffect(() => {
     fetchRecipients();
@@ -119,6 +145,37 @@ export const RecipientDetailPage: React.FC = () => {
     } catch (error) {
       console.error('Error calculating days until birthday:', error);
       return null;
+    }
+  };
+
+  const handleAcceptRecommendation = async (rec: any) => {
+    if (!currentRecipient) return;
+    try {
+      await createGift({
+        recipientId: currentRecipient.id,
+        name: rec.name,
+        description: rec.description,
+        price: rec.price,
+        category: rec.category,
+        occasion: 'Birthday',
+        date: new Date(),
+        status: 'planned',
+      });
+      toast({
+        title: 'Gift added',
+        description: `${rec.name} has been added as a gift for ${currentRecipient.name}.`,
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (err) {
+      toast({
+        title: 'Error adding gift',
+        description: (err as Error).message,
+        status: 'error',
+        duration: 4000,
+        isClosable: true,
+      });
     }
   };
 
@@ -278,6 +335,26 @@ export const RecipientDetailPage: React.FC = () => {
               </CardBody>
             </Card>
           )}
+
+          <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
+            <CardHeader pb={0}>
+              <Heading size="md">Gift Recommendations (Demo)</Heading>
+            </CardHeader>
+            <CardBody>
+              <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
+                {recommendations.map(rec => (
+                  <Box key={rec.id} p={4} borderWidth="1px" borderRadius="md" borderColor={borderColor} bg={bgColor}>
+                    <Heading as="h4" size="sm" mb={2}>{rec.name}</Heading>
+                    <Text mb={2}>{rec.description}</Text>
+                    <Text fontWeight="bold" mb={2}>${rec.price.toFixed(2)}</Text>
+                    <Button colorScheme="blue" size="sm" onClick={() => handleAcceptRecommendation(rec)}>
+                      Accept
+                    </Button>
+                  </Box>
+                ))}
+              </SimpleGrid>
+            </CardBody>
+          </Card>
         </VStack>
       </Container>
     </Box>
