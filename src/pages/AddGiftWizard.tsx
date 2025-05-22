@@ -24,6 +24,7 @@ import {
   ModalFooter,
   ModalCloseButton,
   Select,
+  Checkbox,
 } from '@chakra-ui/react';
 import { useGiftStore } from '../store/giftStore';
 import { useRecipientStore } from '../store/recipientStore';
@@ -102,28 +103,17 @@ const AddGiftWizard: React.FC = () => {
   const { createGift } = useGiftStore();
   const { recipients } = useRecipientStore();
   const recipient = recipients.find(r => r.id === recipientId);
-  const [selectedOccasionId, setSelectedOccasionId] = useState<string>('');
-  const selectedOccasion = recipient?.occasions?.find(o => o.id === selectedOccasionId);
-
-  // Form state
-  const [date, setDate] = useState(getDefaultDate('Birthday'));
-  const [amount, setAmount] = useState(50);
+  const [occasionType, setOccasionType] = useState('Birthday');
+  const [customOccasion, setCustomOccasion] = useState('');
+  const [occasionDate, setOccasionDate] = useState('');
+  const [occasionBudget, setOccasionBudget] = useState(50);
   const [recommendations, setRecommendations] = useState<GiftSuggestion[]>(FAKE_RECOMMENDATIONS.slice(0, 3));
   const [rejectedIds, setRejectedIds] = useState<string[]>([]);
   const [acceptedGift, setAcceptedGift] = useState<GiftSuggestion | null>(null);
   const [loading, setLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [currentRecIdx, setCurrentRecIdx] = useState(0);
-  const [otherOccasion, setOtherOccasion] = useState('');
-
-  // Update date and reset otherOccasion when occasion changes
-  const handleOccasionChange = (value: string) => {
-    if (value === 'Birthday') setDate(getDefaultDate('Birthday'));
-    else if (value === 'Christmas') setDate(getDefaultDate('Christmas'));
-    else if (value === 'Anniversary') setDate('');
-    else setDate('');
-    setOtherOccasion('');
-  };
+  const [repeatAnnually, setRepeatAnnually] = useState(false);
 
   // Accept/Reject logic
   const handleAccept = (rec: GiftSuggestion) => {
@@ -144,7 +134,7 @@ const AddGiftWizard: React.FC = () => {
 
   // Confirm and add gift
   const handleConfirm = async () => {
-    if (!recipientId || !acceptedGift || !selectedOccasion) return;
+    if (!recipientId || !acceptedGift) return;
     setLoading(true);
     try {
       await createGift({
@@ -153,10 +143,12 @@ const AddGiftWizard: React.FC = () => {
         description: acceptedGift.description,
         price: acceptedGift.price,
         category: acceptedGift.category,
-        occasion: selectedOccasion.type === 'Other' ? (selectedOccasion.customName || '') : selectedOccasion.type,
-        occasionId: selectedOccasion.id,
-        date: new Date(selectedOccasion.date),
+        occasion: occasionType === 'Other' ? customOccasion : occasionType,
+        occasionId: undefined, // No longer used
+        date: new Date(occasionDate),
+        budget: occasionBudget,
         status: 'planned',
+        repeatAnnually,
       });
       toast({
         title: 'Gift added',
@@ -193,58 +185,70 @@ const AddGiftWizard: React.FC = () => {
             <VStack spacing={4} align="stretch">
               <Box>
                 <Text mb={1}>Occasion</Text>
-                {recipient?.occasions && recipient.occasions.length > 0 ? (
-                  <Select value={selectedOccasionId} onChange={e => setSelectedOccasionId(e.target.value)} placeholder="Select an occasion">
-                    {recipient.occasions.map(o => (
-                      <option key={o.id} value={o.id}>
-                        {o.type === 'Other' ? o.customName : o.type} ({o.date})
-                      </option>
-                    ))}
+                <HStack>
+                  <Select value={occasionType} onChange={e => setOccasionType(e.target.value)} w="50%">
+                    <option value="Birthday">Birthday</option>
+                    <option value="Christmas">Christmas</option>
+                    <option value="Anniversary">Anniversary</option>
+                    <option value="Other">Other</option>
                   </Select>
+                  {occasionType === 'Other' && (
+                    <Input
+                      placeholder="Custom Occasion Name"
+                      value={customOccasion}
+                      onChange={e => setCustomOccasion(e.target.value)}
+                      w="50%"
+                    />
+                  )}
+                </HStack>
+              </Box>
+              <Box>
+                <Text mb={1}>Occasion Date</Text>
+                <Input type="date" value={occasionDate} onChange={e => setOccasionDate(e.target.value)} />
+              </Box>
+              <Box>
+                <Text mb={1}>Budget for this Occasion</Text>
+                <NumberInput value={occasionBudget} min={1} onChange={(_, val) => setOccasionBudget(val)}>
+                  <NumberInputField />
+                </NumberInput>
+              </Box>
+              <Box>
+                <Checkbox isChecked={repeatAnnually} onChange={e => setRepeatAnnually(e.target.checked)}>
+                  Repeat every year (annual gift)
+                </Checkbox>
+              </Box>
+              <Box>
+                <Heading size="md" mb={2}>Gift Recommendation</Heading>
+                {recommendations.length > 0 ? (
+                  <Box p={4} borderWidth="1px" borderRadius="md" borderColor={borderColor} bg={bgColor}>
+                    <Heading as="h4" size="sm" mb={2}>{recommendations[0].name}</Heading>
+                    <Text mb={2}>{recommendations[0].description}</Text>
+                    <Text fontWeight="bold" mb={2}>${recommendations[0].price.toFixed(2)}</Text>
+                    <HStack>
+                      <Button colorScheme="blue" size="sm" onClick={() => handleAccept(recommendations[0])} isDisabled={!occasionDate || (occasionType === 'Other' && !customOccasion)}>
+                        Accept
+                      </Button>
+                      <Button colorScheme="gray" size="sm" onClick={() => handleReject(recommendations[0].id)}>
+                        Reject
+                      </Button>
+                    </HStack>
+                  </Box>
                 ) : (
-                  <Text color="red.500">No occasions found for this recipient. Please add an occasion first.</Text>
+                  <Text>No more recommendations available.</Text>
                 )}
               </Box>
-              {recipient?.occasions && recipient.occasions.length > 0 && (
-                <>
-                  <Box>
-                    <Text mb={1}>Amount to Spend</Text>
-                    <NumberInput value={amount} min={1} onChange={(_, val) => setAmount(val)}>
-                      <NumberInputField />
-                    </NumberInput>
-                  </Box>
-                  <Box>
-                    <Heading size="md" mb={2}>Gift Recommendation</Heading>
-                    {recommendations.length > 0 ? (
-                      <Box p={4} borderWidth="1px" borderRadius="md" borderColor={borderColor} bg={bgColor}>
-                        <Heading as="h4" size="sm" mb={2}>{recommendations[0].name}</Heading>
-                        <Text mb={2}>{recommendations[0].description}</Text>
-                        <Text fontWeight="bold" mb={2}>${recommendations[0].price.toFixed(2)}</Text>
-                        <HStack>
-                          <Button colorScheme="blue" size="sm" onClick={() => handleAccept(recommendations[0])} isDisabled={!selectedOccasionId}>
-                            Accept
-                          </Button>
-                          <Button colorScheme="gray" size="sm" onClick={() => handleReject(recommendations[0].id)}>
-                            Reject
-                          </Button>
-                        </HStack>
-                      </Box>
-                    ) : (
-                      <Text>No more recommendations available.</Text>
-                    )}
-                  </Box>
-                </>
-              )}
             </VStack>
           </Box>
-          {showConfirm && acceptedGift && selectedOccasion && (
+          {showConfirm && acceptedGift && (
             <Modal isOpen={showConfirm} onClose={() => setShowConfirm(false)} isCentered>
               <ModalOverlay />
               <ModalContent>
                 <ModalHeader>Confirm Gift</ModalHeader>
                 <ModalCloseButton />
                 <ModalBody>
-                  <Text mb={4}>You are about to add <strong>{acceptedGift.name}</strong> for <strong>{selectedOccasion.type === 'Other' ? selectedOccasion.customName : selectedOccasion.type}</strong> on <strong>{selectedOccasion.date}</strong> for <strong>${acceptedGift.price.toFixed(2)}</strong>.</Text>
+                  <Text mb={4}>
+                    You are about to add <strong>{acceptedGift.name}</strong> for <strong>{occasionType === 'Other' ? customOccasion : occasionType}</strong> on <strong>{occasionDate}</strong> for <strong>${acceptedGift.price.toFixed(2)}</strong>.
+                  </Text>
                 </ModalBody>
                 <ModalFooter>
                   <Button colorScheme="green" onClick={handleConfirm} isLoading={loading}>

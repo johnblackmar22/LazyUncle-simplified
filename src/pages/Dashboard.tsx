@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Box, 
@@ -26,6 +26,7 @@ import { useRecipientStore } from '../store/recipientStore';
 import { useGiftStore } from '../store/giftStore';
 import { GiftReminders } from '../components/GiftReminders';
 import { UpcomingDates } from '../components/UpcomingDates';
+import type { Gift } from '../types';
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -33,8 +34,30 @@ export const Dashboard: React.FC = () => {
   const { gifts } = useGiftStore();
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const [upcomingGifts, setUpcomingGifts] = useState<Gift[]>([]);
 
   const hasData = recipients.length > 0 || gifts.length > 0;
+
+  // Filter gifts to find upcoming ones (all future dates)
+  useEffect(() => {
+    if (gifts.length > 0 && recipients.length > 0) {
+      const now = new Date();
+      // Create a map of recipients by ID for faster lookup
+      const recipientMap = new Map();
+      recipients.forEach(recipient => {
+        recipientMap.set(recipient.id, recipient);
+      });
+      const upcoming = gifts.filter(gift => {
+        const giftDate = new Date(gift.date);
+        return giftDate >= now;
+      }).sort((a, b) => {
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        return dateA.getTime() - dateB.getTime();
+      });
+      setUpcomingGifts(upcoming);
+    }
+  }, [gifts, recipients]);
 
   return (
     <Container maxW="container.xl" py={6}>

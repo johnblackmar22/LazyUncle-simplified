@@ -102,6 +102,7 @@ export interface Gift {
   price: number;
   category: string;
   occasion: string;
+  occasionId?: string;
   date: Date;
   status: 'planned' | 'ordered' | 'shipped' | 'delivered' | 'given' | 'archived' | 'idea' | 'purchased';
   imageUrl?: string;
@@ -109,4 +110,6 @@ export interface Gift {
   createdAt: Date | number;
   updatedAt: Date | number;
   autoSend?: boolean; // For test compatibility
+  budget?: number; // Budget for the occasion (optional)
+  repeatAnnually?: boolean; // If true, this gift recurs every year
 } 

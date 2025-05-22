@@ -78,6 +78,17 @@ const RecipientDetail = () => {
   const boxBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   
+  // Occasions from gifts (flat, date-sorted)
+  const occasionsFromGifts = [...recipientGifts]
+    .map(gift => ({
+      id: gift.id,
+      name: gift.occasion,
+      date: gift.date,
+      budget: gift.budget,
+      repeatAnnually: gift.repeatAnnually,
+    }))
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  
   if (!recipient) {
     return (
       <Container maxW="container.lg" py={5}>
@@ -146,19 +157,23 @@ const RecipientDetail = () => {
         </SimpleGrid>
       </Box>
       
-      {/* Occasions Section */}
-      {recipient.occasions && recipient.occasions.length > 0 && (
+      {/* Occasions from Gifts Section */}
+      {occasionsFromGifts.length > 0 && (
         <Box bg={boxBg} p={6} borderRadius="md" borderWidth="1px" borderColor={borderColor} mb={6}>
-          <Heading as="h3" size="md" mb={3}>Gift Occasions</Heading>
+          <Heading as="h3" size="md" mb={3}>Occasions Covered</Heading>
           <Stack spacing={3}>
-            {recipient.occasions.map((occasion: Occasion) => (
+            {occasionsFromGifts.map(occasion => (
               <Box key={occasion.id} p={3} borderWidth="1px" borderRadius="md" borderColor={borderColor}>
                 <Flex align="center" justify="space-between">
                   <Box>
-                    <Text fontWeight="bold">{occasion.type === 'Other' ? occasion.customName : occasion.type}</Text>
-                    <Text fontSize="sm">Date: {occasion.date}</Text>
-                    <Text fontSize="sm">Budget: ${occasion.budget}</Text>
-                    {occasion.notes && <Text fontSize="sm">Notes: {occasion.notes}</Text>}
+                    <Text fontWeight="bold">{occasion.name}</Text>
+                    <Text fontSize="sm">Date: {new Date(occasion.date).toLocaleDateString()}</Text>
+                    {occasion.budget !== undefined && (
+                      <Text fontSize="sm">Budget: ${occasion.budget}</Text>
+                    )}
+                    {occasion.repeatAnnually && (
+                      <Tag colorScheme="green" ml={2}>Annual</Tag>
+                    )}
                   </Box>
                 </Flex>
               </Box>
