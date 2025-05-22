@@ -23,6 +23,7 @@ import CheckoutPage from './pages/CheckoutPage';
 import { Navbar } from './components/Navbar';
 import { isDemoMode } from './services/demoData';
 import { DEMO_MODE } from './services/firebase';
+import AddGiftWizard from './pages/AddGiftWizard';
 
 function App() {
   const { initialized, user, demoMode } = useAuthStore();
@@ -93,7 +94,7 @@ function App() {
             <Route path="/gifts" element={<GiftsListPage />} />
             <Route path="/gifts/:id" element={<GiftDetailPage />} />
             <Route path="/gifts/add" element={<AddGiftPage />} />
-            <Route path="/gifts/add/:recipientId" element={<AddGiftPage />} />
+            <Route path="/gifts/add/:recipientId" element={<AddGiftWizard />} />
             <Route path="/gifts/:id/edit" element={<EditGiftPage />} />
             {/* Settings route */}
             <Route path="/settings" element={<SettingsPage />} />
