@@ -74,7 +74,7 @@ export const HomeNavbar: React.FC = () => {
 
   // Call-to-action buttons based on auth state
   const ctaButton = user 
-    ? { label: 'Dashboard', to: '/dashboard' }
+    ? { label: 'Settings', to: '/settings' }
     : { label: 'Get Started', to: '/register' };
 
   // Secondary button based on auth state

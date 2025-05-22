@@ -61,10 +61,8 @@ export const Navbar: React.FC = () => {
     { label: 'Sign In', to: '/login' },
   ];
 
-  // Authenticated nav
+  // Authenticated nav - removed Dashboard and Recipients, keeping only Settings
   const authLinks = [
-    { label: 'Dashboard', to: '/dashboard' },
-    { label: 'Recipients', to: '/recipients' },
     { label: 'Settings', to: '/settings' },
   ];
 
