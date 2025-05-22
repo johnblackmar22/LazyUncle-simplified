@@ -120,17 +120,14 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
     const user = useAuthStore.getState().user;
     const demoMode = useAuthStore.getState().demoMode;
     
-    if (!user && !demoMode) {
-      console.error('No user found and not in demo mode');
-      set({ error: 'User not authenticated', loading: false });
-      return null;
-    }
-
+    console.log('Adding recipient in mode:', demoMode ? 'demo' : 'firebase', 'User:', user?.id);
+    
     set({ loading: true, error: null });
     try {
       const timestamp = Timestamp.now();
       
       if (demoMode) {
+        console.log('Creating demo recipient with data:', recipientData);
         // Handle demo mode recipient creation
         const newRecipient: Recipient = {
           id: `demo-${Date.now()}`,
@@ -151,10 +148,14 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
           loading: false 
         }));
         
+        console.log('Demo recipient created successfully:', newRecipient.id);
         return newRecipient;
       }
       
       // Normal Firebase mode
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
       const newRecipient = {
         ...recipientData,
         userId: user!.id,
@@ -180,7 +181,7 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
       return recipient;
     } catch (error) {
       console.error('Error adding recipient:', error);
-      set({ error: (error as Error).message, loading: false });
+      set({ error: `Failed to add recipient: ${(error as Error).message}. If in production, check Firebase config and Firestore rules.`, loading: false });
       return null;
     }
   },
