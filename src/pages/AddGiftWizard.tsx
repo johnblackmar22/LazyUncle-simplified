@@ -88,19 +88,26 @@ function getRandomRecommendation(excludeIds: string[] = []): GiftSuggestion | nu
   return available[Math.floor(Math.random() * available.length)];
 }
 
-const getDefaultDate = (occasion: string) => {
-  const today = new Date();
-  if (occasion === 'Birthday') return today.toISOString().split('T')[0];
-  if (occasion === 'Christmas') return `${today.getFullYear()}-12-25`;
-  if (occasion === 'Anniversary') return today.toISOString().split('T')[0];
+function toDateInputString(date: string | Date | undefined): string {
+  if (!date) return '';
+  if (typeof date === 'string') {
+    // If already in YYYY-MM-DD format, return as is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
+    // Try to parse and format
+    const d = new Date(date);
+    if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+    return '';
+  }
+  if (date instanceof Date && !isNaN(date.getTime())) {
+    return date.toISOString().split('T')[0];
+  }
   return '';
-};
+}
 
-// Helper to get default date for occasion type
 function getDefaultDateForOccasion(type: string, recipient?: Recipient): string {
   const today = new Date();
   if (type === 'Birthday' && recipient?.birthdate) {
-    return recipient.birthdate;
+    return toDateInputString(recipient.birthdate) || today.toISOString().split('T')[0];
   }
   if (type === 'Christmas') {
     return `${today.getFullYear()}-12-25`;
