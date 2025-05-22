@@ -16,6 +16,7 @@ import {
   Badge,
   Avatar,
   HStack,
+  Tag,
 } from '@chakra-ui/react';
 import { useRecipientStore } from '../../store/recipientStore';
 import { useGiftStore } from '../../store/giftStore';
@@ -238,6 +239,36 @@ export default function DashboardPage() {
                   ))}
                 </SimpleGrid>
               </Box>
+              {/* Occasions from Gifts Section */}
+              {gifts.length > 0 && (
+                <Box mt={10}>
+                  <Heading as="h2" size="md" mb={4}>All Occasions by Recipient</Heading>
+                  <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
+                    {recipients.map(recipient => {
+                      const recipientGifts = gifts.filter(g => g.recipientId === recipient.id);
+                      const occasions = recipientGifts
+                        .map(gift => ({ name: gift.occasion, date: gift.date }))
+                        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                      return (
+                        <Box key={recipient.id} p={4} borderWidth="1px" borderRadius="lg" borderColor={borderColor}>
+                          <Text fontWeight="bold" mb={2}>{recipient.name}</Text>
+                          {occasions.length === 0 ? (
+                            <Tag size="sm" colorScheme="gray">No occasions</Tag>
+                          ) : (
+                            <HStack spacing={1} flexWrap="wrap">
+                              {occasions.map((o, idx) => (
+                                <Tag key={idx} size="sm" colorScheme="green">
+                                  {o.name} ({new Date(o.date).toLocaleDateString()})
+                                </Tag>
+                              ))}
+                            </HStack>
+                          )}
+                        </Box>
+                      );
+                    })}
+                  </SimpleGrid>
+                </Box>
+              )}
             </>
           )}
         </>

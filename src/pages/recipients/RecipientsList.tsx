@@ -31,9 +31,11 @@ import {
 } from '@chakra-ui/react';
 import { useRecipientStore } from '../../store/recipientStore';
 import { AddIcon } from '@chakra-ui/icons';
+import { useGiftStore } from '../../store/giftStore';
 
 const RecipientsList = () => {
   const { recipients, deleteRecipient } = useRecipientStore();
+  const { getGiftsByRecipient } = useGiftStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [recipientToDelete, setRecipientToDelete] = useState<string | null>(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -124,75 +126,95 @@ const RecipientsList = () => {
                 <Th>Name</Th>
                 <Th>Relationship</Th>
                 <Th>Interests</Th>
+                <Th>Occasions</Th>
                 <Th>Actions</Th>
               </Tr>
             </Thead>
             <Tbody>
-              {filteredRecipients.map((recipient) => (
-                <Tr key={recipient.id}>
-                  <Td fontWeight="medium">
-                    <HStack spacing={2}>
-                      {recipient.name}
-                      <Button
-                        as={RouterLink}
-                        to={`/gifts/add/${recipient.id}`}
-                        size="sm"
-                        colorScheme="purple"
-                        leftIcon={<AddIcon />}
-                        variant="ghost"
-                        aria-label="Add Gift"
-                      >
-                        Add Gift
-                      </Button>
-                    </HStack>
-                  </Td>
-                  <Td>{recipient.relationship}</Td>
-                  <Td>
-                    <HStack spacing={2} flexWrap="wrap">
-                      {recipient.interests.slice(0, 3).map((interest, idx) => (
-                        <Tag key={idx} size="sm" colorScheme="blue">
-                          {interest}
-                        </Tag>
-                      ))}
-                      {recipient.interests.length > 3 && (
-                        <Tag size="sm" colorScheme="gray">
-                          +{recipient.interests.length - 3} more
-                        </Tag>
-                      )}
-                    </HStack>
-                  </Td>
-                  <Td>
-                    <HStack spacing={2}>
-                      <Button
-                        as={RouterLink}
-                        to={`/recipients/${recipient.id}`}
-                        size="sm"
-                        colorScheme="blue"
-                        variant="outline"
-                      >
-                        View
-                      </Button>
-                      <Button
-                        as={RouterLink}
-                        to={`/recipients/edit/${recipient.id}`}
-                        size="sm"
-                        colorScheme="teal"
-                        variant="outline"
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        colorScheme="red"
-                        variant="outline"
-                        onClick={() => handleDeleteClick(recipient.id)}
-                      >
-                        Delete
-                      </Button>
-                    </HStack>
-                  </Td>
-                </Tr>
-              ))}
+              {filteredRecipients.map((recipient) => {
+                const gifts = getGiftsByRecipient(recipient.id) || [];
+                const occasions = gifts
+                  .map(gift => ({ name: gift.occasion, date: gift.date }))
+                  .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                return (
+                  <Tr key={recipient.id}>
+                    <Td fontWeight="medium">
+                      <HStack spacing={2}>
+                        {recipient.name}
+                        <Button
+                          as={RouterLink}
+                          to={`/gifts/add/${recipient.id}`}
+                          size="sm"
+                          colorScheme="purple"
+                          leftIcon={<AddIcon />}
+                          variant="ghost"
+                          aria-label="Add Gift"
+                        >
+                          Add Gift
+                        </Button>
+                      </HStack>
+                    </Td>
+                    <Td>{recipient.relationship}</Td>
+                    <Td>
+                      <HStack spacing={2} flexWrap="wrap">
+                        {recipient.interests.slice(0, 3).map((interest, idx) => (
+                          <Tag key={idx} size="sm" colorScheme="blue">
+                            {interest}
+                          </Tag>
+                        ))}
+                        {recipient.interests.length > 3 && (
+                          <Tag size="sm" colorScheme="gray">
+                            +{recipient.interests.length - 3} more
+                          </Tag>
+                        )}
+                      </HStack>
+                    </Td>
+                    <Td>
+                      <HStack spacing={1} flexWrap="wrap">
+                        {occasions.length === 0 ? (
+                          <Tag size="sm" colorScheme="gray">None</Tag>
+                        ) : (
+                          occasions.map((o, idx) => (
+                            <Tag key={idx} size="sm" colorScheme="green">
+                              {o.name} ({new Date(o.date).toLocaleDateString()})
+                            </Tag>
+                          ))
+                        )}
+                      </HStack>
+                    </Td>
+                    <Td>
+                      <HStack spacing={2}>
+                        <Button
+                          as={RouterLink}
+                          to={`/recipients/${recipient.id}`}
+                          size="sm"
+                          colorScheme="blue"
+                          variant="outline"
+                        >
+                          View
+                        </Button>
+                        <Button
+                          as={RouterLink}
+                          to={`/recipients/edit/${recipient.id}`}
+                          size="sm"
+                          colorScheme="teal"
+                          variant="outline"
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          colorScheme="red"
+                          variant="outline"
+                          onClick={() => handleDeleteClick(recipient.id)}
+                        >
+                          Delete
+                        </Button>
+                      </HStack>
+                    </Td>
+                  </Tr>
+                );
+              })}
             </Tbody>
           </Table>
         </Box>
