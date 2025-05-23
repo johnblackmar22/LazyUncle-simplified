@@ -30,9 +30,11 @@ import {
   Icon,
 } from '@chakra-ui/react';
 import { useRecipientStore } from '../../store/recipientStore';
+import { useOccasionStore } from '../../store/occasionStore';
 
 const RecipientsList = () => {
   const { recipients, deleteRecipient } = useRecipientStore();
+  const { occasions, fetchOccasions } = useOccasionStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [recipientToDelete, setRecipientToDelete] = useState<string | null>(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -57,6 +59,11 @@ const RecipientsList = () => {
   
   const boxBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
+
+  React.useEffect(() => {
+    recipients.forEach(r => fetchOccasions(r.id));
+    // eslint-disable-next-line
+  }, [recipients]);
 
   return (
     <Container maxW="container.xl" py={5}>
@@ -123,6 +130,7 @@ const RecipientsList = () => {
                 <Th>Name</Th>
                 <Th>Relationship</Th>
                 <Th>Interests</Th>
+                <Th>Occasions</Th>
                 <Th>Actions</Th>
               </Tr>
             </Thead>
@@ -144,6 +152,22 @@ const RecipientsList = () => {
                         </Tag>
                       )}
                     </HStack>
+                  </Td>
+                  <Td>
+                    {occasions && occasions[recipient.id] && occasions[recipient.id].length > 0 ? (
+                      <HStack spacing={1} flexWrap="wrap">
+                        {occasions[recipient.id].slice(0, 2).map((occasion, idx) => (
+                          <Tag key={occasion.id} size="sm" colorScheme="purple">{occasion.name}</Tag>
+                        ))}
+                        {occasions[recipient.id].length > 2 && (
+                          <Tag size="sm" colorScheme="gray">
+                            +{occasions[recipient.id].length - 2} more
+                          </Tag>
+                        )}
+                      </HStack>
+                    ) : (
+                      <Text color="gray.400" fontSize="sm">None</Text>
+                    )}
                   </Td>
                   <Td>
                     <HStack spacing={2}>
