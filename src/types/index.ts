@@ -54,6 +54,7 @@ export interface Recipient {
   };
   anniversary?: string; // Format: 'YYYY-MM-DD'
   autoSendPreferences?: AutoSendPreferences;
+  occasionIds?: string[]; // List of occasion ids for this recipient
   createdAt: Date | number;
   updatedAt: Date | number;
 }
@@ -82,7 +83,19 @@ export interface GiftSuggestion {
   imageUrl?: string;
 }
 
-// Gift types - simplified
+// Occasion type - new first-class entity
+export interface Occasion {
+  id: string;
+  recipientId: string;
+  name: string; // e.g., 'Birthday', 'Anniversary', 'Graduation', etc.
+  date: string; // Format: 'YYYY-MM-DD'
+  type: 'birthday' | 'anniversary' | 'custom';
+  notes?: string;
+  createdAt: Date | number;
+  updatedAt: Date | number;
+}
+
+// Gift types - updated to use occasionId
 export interface Gift {
   id: string;
   recipientId: string;
@@ -91,7 +104,7 @@ export interface Gift {
   description?: string;
   price: number;
   category: string;
-  occasion: string;
+  occasionId: string; // New: link to Occasion entity
   date: Date;
   status: 'planned' | 'ordered' | 'shipped' | 'delivered' | 'given' | 'archived' | 'idea' | 'purchased';
   imageUrl?: string;

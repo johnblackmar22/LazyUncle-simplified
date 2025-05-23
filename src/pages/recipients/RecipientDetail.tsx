@@ -30,6 +30,7 @@ import {
 } from '@chakra-ui/react';
 import { useRecipientStore } from '../../store/recipientStore';
 import { useGiftStore } from '../../store/giftStore';
+import { useOccasionStore } from '../../store/occasionStore';
 
 const RecipientDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -38,11 +39,20 @@ const RecipientDetail = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const cancelRef = React.useRef(null);
   
-  const { recipients, getRecipientById, deleteRecipient } = useRecipientStore();
+  const { recipients, deleteRecipient } = useRecipientStore();
   const { gifts, getGiftsByRecipient } = useGiftStore();
+  const { occasions, fetchOccasions, addOccasion, deleteOccasion } = useOccasionStore();
+  const [newOccasion, setNewOccasion] = useState<{ name: string; date: string; type: 'birthday' | 'anniversary' | 'custom'; notes: string }>({ name: '', date: '', type: 'custom', notes: '' });
+  const [adding, setAdding] = useState(false);
   
-  const recipient = id ? getRecipientById(id) : undefined;
+  const recipient = id ? recipients.find(r => r.id === id) : undefined;
   const recipientGifts = id ? getGiftsByRecipient(id) : [];
+  
+  useEffect(() => {
+    if (id) fetchOccasions(id);
+  }, [id, fetchOccasions]);
+  
+  const recipientOccasions = id && occasions[id] ? occasions[id] : [];
   
   // Redirect if recipient not found
   useEffect(() => {
@@ -71,6 +81,19 @@ const RecipientDetail = () => {
       navigate('/recipients');
     }
     onClose();
+  };
+  
+  const handleAddOccasion = async () => {
+    if (!id || !newOccasion.name || !newOccasion.date) return;
+    setAdding(true);
+    await addOccasion(id, newOccasion);
+    setNewOccasion({ name: '', date: '', type: 'custom', notes: '' });
+    setAdding(false);
+  };
+  
+  const handleDeleteOccasion = async (occasionId: string) => {
+    if (!id) return;
+    await deleteOccasion(occasionId, id);
   };
   
   const boxBg = useColorModeValue('white', 'gray.800');
@@ -132,7 +155,7 @@ const RecipientDetail = () => {
                 <Box>
                   <Text fontWeight="bold">Interests</Text>
                   <Flex wrap="wrap" gap={2} mt={1}>
-                    {recipient.interests.map((interest, index) => (
+                    {recipient.interests.map((interest: string, index: number) => (
                       <Tag key={index} colorScheme="blue">
                         {interest}
                       </Tag>
@@ -140,31 +163,8 @@ const RecipientDetail = () => {
                   </Flex>
                 </Box>
               )}
-              
-              {recipient.notes && (
-                <Box>
-                  <Text fontWeight="bold">Notes</Text>
-                  <Text>{recipient.notes}</Text>
-                </Box>
-              )}
             </Stack>
           </Box>
-          
-          {recipient.address && (
-            <Box>
-              <Heading as="h3" size="md" mb={3}>
-                Address
-              </Heading>
-              <Stack spacing={1}>
-                <Text>{recipient.address.line1}</Text>
-                {recipient.address.line2 && <Text>{recipient.address.line2}</Text>}
-                <Text>
-                  {recipient.address.city}, {recipient.address.state} {recipient.address.postalCode}
-                </Text>
-                <Text>{recipient.address.country}</Text>
-              </Stack>
-            </Box>
-          )}
         </SimpleGrid>
       </Box>
       
@@ -221,7 +221,9 @@ const RecipientDetail = () => {
                       <Box>
                         <Heading as="h4" size="sm">{gift.name}</Heading>
                         <Text fontSize="sm" color="gray.500">
-                          {new Date(gift.date).toLocaleDateString()} • {gift.occasion}
+                          {new Date(gift.date).toLocaleDateString()} • {
+                            recipientOccasions.find(o => o.id === gift.occasionId)?.name || 'Unknown Occasion'
+                          }
                         </Text>
                         {gift.description && (
                           <Text mt={2}>{gift.description}</Text>
@@ -253,7 +255,60 @@ const RecipientDetail = () => {
               borderColor={borderColor}
               textAlign="center"
             >
-              <Text>Important dates feature coming soon!</Text>
+              <Heading as="h4" size="md" mb={4}>Occasions for {recipient.name}</Heading>
+              {recipientOccasions.length === 0 ? (
+                <Text mb={4}>No occasions added yet.</Text>
+              ) : (
+                <Stack spacing={3} mb={4}>
+                  {recipientOccasions.map(occasion => (
+                    <Box key={occasion.id} p={3} borderWidth="1px" borderRadius="md" display="flex" alignItems="center" justifyContent="space-between">
+                      <Box textAlign="left">
+                        <Text fontWeight="bold">{occasion.name} <Badge ml={2}>{occasion.type}</Badge></Text>
+                        <Text fontSize="sm">{new Date(occasion.date).toLocaleDateString()}</Text>
+                        {occasion.notes && <Text fontSize="sm" color="gray.500">{occasion.notes}</Text>}
+                      </Box>
+                      <Button size="xs" colorScheme="red" onClick={() => handleDeleteOccasion(occasion.id)}>Delete</Button>
+                    </Box>
+                  ))}
+                </Stack>
+              )}
+              <Box mt={6} textAlign="left">
+                <Heading as="h5" size="sm" mb={2}>Add New Occasion</Heading>
+                <SimpleGrid columns={{ base: 1, md: 4 }} spacing={2} mb={2}>
+                  <input
+                    type="text"
+                    placeholder="Occasion Name"
+                    value={newOccasion.name}
+                    onChange={e => setNewOccasion({ ...newOccasion, name: e.target.value })}
+                    className="border rounded p-2"
+                  />
+                  <input
+                    type="date"
+                    value={newOccasion.date}
+                    onChange={e => setNewOccasion({ ...newOccasion, date: e.target.value })}
+                    className="border rounded p-2"
+                  />
+                  <select
+                    value={newOccasion.type}
+                    onChange={e => setNewOccasion({ ...newOccasion, type: e.target.value as 'birthday' | 'anniversary' | 'custom' })}
+                    className="border rounded p-2"
+                  >
+                    <option value="birthday">Birthday</option>
+                    <option value="anniversary">Anniversary</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="Notes (optional)"
+                    value={newOccasion.notes}
+                    onChange={e => setNewOccasion({ ...newOccasion, notes: e.target.value })}
+                    className="border rounded p-2"
+                  />
+                </SimpleGrid>
+                <Button colorScheme="blue" size="sm" onClick={handleAddOccasion} isLoading={adding} mt={2}>
+                  Add Occasion
+                </Button>
+              </Box>
             </Box>
           </TabPanel>
         </TabPanels>
