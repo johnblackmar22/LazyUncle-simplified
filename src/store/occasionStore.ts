@@ -83,6 +83,7 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
       const newOccasion = {
         ...occasionData,
         recipientId,
+        userId: user.id,
         createdAt: timestamp,
         updatedAt: timestamp,
       };
