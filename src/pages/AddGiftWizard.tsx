@@ -27,6 +27,7 @@ import {
 } from '@chakra-ui/react';
 import { useGiftStore } from '../store/giftStore';
 import type { GiftSuggestion } from '../types';
+import { useRecipientStore } from '../store/recipientStore';
 
 const OCCASIONS = [
   { label: 'Birthday', value: 'Birthday' },
@@ -99,6 +100,13 @@ const AddGiftWizard: React.FC = () => {
   const navigate = useNavigate();
   const toast = useToast();
   const { createGift } = useGiftStore();
+  const { recipients, updateRecipient } = useRecipientStore();
+
+  // Find the current recipient
+  const recipient = recipients.find(r => r.id === recipientId);
+  const [interests, setInterests] = useState<string[]>(recipient?.interests || []);
+  const [newInterest, setNewInterest] = useState('');
+  const [recurring, setRecurring] = useState(false);
 
   // Form state
   const [occasion, setOccasion] = useState('Birthday');
@@ -154,6 +162,7 @@ const AddGiftWizard: React.FC = () => {
         occasionId: occasion === 'Other' ? otherOccasion : occasion,
         date: new Date(date),
         status: 'planned',
+        recurring,
       });
       toast({
         title: 'Gift added',
@@ -221,24 +230,40 @@ const AddGiftWizard: React.FC = () => {
                 </NumberInput>
               </Box>
               <Box>
-                <Heading size="md" mb={2}>Gift Recommendation</Heading>
-                {recommendations.length > 0 ? (
-                  <Box p={4} borderWidth="1px" borderRadius="md" borderColor={borderColor} bg={bgColor}>
-                    <Heading as="h4" size="sm" mb={2}>{recommendations[0].name}</Heading>
-                    <Text mb={2}>{recommendations[0].description}</Text>
-                    <Text fontWeight="bold" mb={2}>${recommendations[0].price.toFixed(2)}</Text>
-                    <HStack>
-                      <Button colorScheme="blue" size="sm" onClick={() => handleAccept(recommendations[0])}>
-                        Accept
-                      </Button>
-                      <Button colorScheme="gray" size="sm" onClick={() => handleReject(recommendations[0].id)}>
-                        Reject
-                      </Button>
-                    </HStack>
-                  </Box>
-                ) : (
-                  <Text>No more recommendations available.</Text>
-                )}
+                <Text mb={1}>Recipient Interests</Text>
+                <HStack spacing={2} mb={2} flexWrap="wrap">
+                  {interests.length > 0 ? interests.map((interest, idx) => (
+                    <Box key={idx} px={2} py={1} bg="gray.200" borderRadius="md" display="flex" alignItems="center">
+                      <Text mr={2}>{interest}</Text>
+                      <Button size="xs" colorScheme="red" onClick={() => setInterests(interests.filter(i => i !== interest))}>Remove</Button>
+                    </Box>
+                  )) : <Text color="gray.500">No interests added yet.</Text>}
+                </HStack>
+                <HStack>
+                  <Input
+                    value={newInterest}
+                    onChange={e => setNewInterest(e.target.value)}
+                    placeholder="Add an interest (e.g., Cooking, Reading)"
+                    size="sm"
+                  />
+                  <Button size="sm" colorScheme="blue" onClick={() => {
+                    if (newInterest.trim() && !interests.includes(newInterest.trim())) {
+                      setInterests([...interests, newInterest.trim()]);
+                      setNewInterest('');
+                    }
+                  }}>Add</Button>
+                </HStack>
+                <Button mt={2} size="xs" colorScheme="green" onClick={async () => {
+                  if (recipient) await updateRecipient(recipient.id, { interests });
+                  toast({ title: 'Interests updated', status: 'success', duration: 2000 });
+                }}>Save Interests</Button>
+              </Box>
+              <Box>
+                <Text mb={1}>Recurring Gift</Text>
+                <HStack>
+                  <input type="checkbox" id="recurring" checked={recurring} onChange={e => setRecurring(e.target.checked)} />
+                  <label htmlFor="recurring">Deliver this gift every year (recurring)</label>
+                </HStack>
               </Box>
             </VStack>
           </Box>

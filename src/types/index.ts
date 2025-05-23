@@ -112,4 +112,5 @@ export interface Gift {
   createdAt: Date | number;
   updatedAt: Date | number;
   autoSend?: boolean; // For test compatibility
+  recurring?: boolean; // Deliver this gift every year
 } 
