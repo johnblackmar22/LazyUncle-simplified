@@ -43,7 +43,7 @@ export const RecipientDetailPage: React.FC = () => {
     fetchRecipients, 
     deleteRecipient 
   } = useRecipientStore();
-  const { createGift } = useGiftStore();
+  const { createGift, recipientGifts, fetchGiftsByRecipient } = useGiftStore();
   const { occasions, fetchOccasions } = useOccasionStore();
   
   const [currentRecipient, setCurrentRecipient] = useState<Recipient | null>(null);
@@ -77,8 +77,11 @@ export const RecipientDetailPage: React.FC = () => {
 
   useEffect(() => {
     fetchRecipients();
-    if (id) fetchOccasions(id);
-  }, [fetchRecipients, fetchOccasions, id]);
+    if (id) {
+      fetchOccasions(id);
+      fetchGiftsByRecipient(id);
+    }
+  }, [fetchRecipients, fetchOccasions, fetchGiftsByRecipient, id]);
   
   // Find the current recipient when recipients change or ID changes
   useEffect(() => {
@@ -324,21 +327,25 @@ export const RecipientDetailPage: React.FC = () => {
 
           <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
             <CardHeader pb={0}>
-              <Heading size="md">Occasions</Heading>
+              <Heading size="md">Gift Occasions</Heading>
             </CardHeader>
             <CardBody>
-              {id && occasions && Array.isArray(occasions[id]) && occasions[id].length > 0 ? (
+              {id && recipientGifts && recipientGifts[id] && recipientGifts[id].length > 0 ? (
                 <VStack align="start" spacing={2}>
-                  {occasions[id].map((occasion: any) => (
-                    <Box key={occasion.id} p={2} borderWidth="1px" borderRadius="md" w="100%">
-                      <Text fontWeight="bold">{occasion.name} <Badge ml={2}>{occasion.type}</Badge></Text>
-                      <Text fontSize="sm">{new Date(occasion.date).toLocaleDateString()}</Text>
-                      {occasion.notes && <Text fontSize="sm" color="gray.500">{occasion.notes}</Text>}
+                  {recipientGifts[id].map((gift: any) => (
+                    <Box key={gift.id} p={2} borderWidth="1px" borderRadius="md" w="100%">
+                      <Text fontWeight="bold">{gift.name}</Text>
+                      <Text fontSize="sm">
+                        {occasions && occasions[id] && occasions[id].length > 0
+                          ? (occasions[id].find((o: any) => o.id === gift.occasionId)?.name || 'Unknown Occasion')
+                          : 'No Occasion'}
+                        {' '}• {new Date(gift.date).toLocaleDateString()}
+                      </Text>
                     </Box>
                   ))}
                 </VStack>
               ) : (
-                <Text color="gray.500">No occasions added yet.</Text>
+                <Text color="gray.500">No gift occasions yet.</Text>
               )}
             </CardBody>
           </Card>
