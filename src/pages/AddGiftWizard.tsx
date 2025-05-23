@@ -23,6 +23,7 @@ import {
   ModalBody,
   ModalFooter,
   ModalCloseButton,
+  Select,
 } from '@chakra-ui/react';
 import { useGiftStore } from '../store/giftStore';
 import type { GiftSuggestion } from '../types';
@@ -149,7 +150,8 @@ const AddGiftWizard: React.FC = () => {
         description: acceptedGift.description,
         price: acceptedGift.price,
         category: acceptedGift.category,
-        occasion: occasion === 'Other' ? otherOccasion : occasion,
+        // TODO: Replace with real occasionId when available
+        occasionId: occasion === 'Other' ? otherOccasion : occasion,
         date: new Date(date),
         status: 'planned',
       });
@@ -188,13 +190,11 @@ const AddGiftWizard: React.FC = () => {
             <VStack spacing={4} align="stretch">
               <Box>
                 <Text mb={1}>Occasion</Text>
-                <RadioGroup value={occasion} onChange={handleOccasionChange}>
-                  <HStack spacing={4}>
-                    {OCCASIONS.map(opt => (
-                      <Radio key={opt.value} value={opt.value}>{opt.label}</Radio>
-                    ))}
-                  </HStack>
-                </RadioGroup>
+                <Select value={occasion} onChange={e => handleOccasionChange(e.target.value)}>
+                  {OCCASIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </Select>
                 {occasion === 'Other' && (
                   <Input
                     mt={2}
