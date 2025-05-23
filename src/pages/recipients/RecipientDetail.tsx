@@ -86,7 +86,35 @@ const RecipientDetail = () => {
   const handleAddOccasion = async () => {
     if (!id || !newOccasion.name || !newOccasion.date) return;
     setAdding(true);
-    await addOccasion(id, newOccasion);
+    try {
+      console.log('Adding occasion:', { recipientId: id, ...newOccasion });
+      const result = await addOccasion(id, newOccasion);
+      if (!result) {
+        toast({
+          title: 'Failed to add occasion',
+          description: 'No occasion was created. Check your connection and permissions.',
+          status: 'error',
+          duration: 4000,
+          isClosable: true,
+        });
+      } else {
+        toast({
+          title: 'Occasion added',
+          status: 'success',
+          duration: 2000,
+          isClosable: true,
+        });
+      }
+    } catch (error) {
+      console.error('Error adding occasion:', error);
+      toast({
+        title: 'Error adding occasion',
+        description: (error as Error).message,
+        status: 'error',
+        duration: 4000,
+        isClosable: true,
+      });
+    }
     setNewOccasion({ name: '', date: '', type: 'custom', notes: '' });
     setAdding(false);
   };
