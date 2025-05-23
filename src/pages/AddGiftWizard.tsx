@@ -246,17 +246,16 @@ const AddGiftWizard: React.FC = () => {
                     placeholder="Add an interest (e.g., Cooking, Reading)"
                     size="sm"
                   />
-                  <Button size="sm" colorScheme="blue" onClick={() => {
+                  <Button size="sm" colorScheme="blue" onClick={async () => {
                     if (newInterest.trim() && !interests.includes(newInterest.trim())) {
-                      setInterests([...interests, newInterest.trim()]);
+                      const updated = [...interests, newInterest.trim()];
+                      setInterests(updated);
                       setNewInterest('');
+                      if (recipient) await updateRecipient(recipient.id, { interests: updated });
+                      toast({ title: 'Interest added', status: 'success', duration: 2000 });
                     }
                   }}>Add</Button>
                 </HStack>
-                <Button mt={2} size="xs" colorScheme="green" onClick={async () => {
-                  if (recipient) await updateRecipient(recipient.id, { interests });
-                  toast({ title: 'Interests updated', status: 'success', duration: 2000 });
-                }}>Save Interests</Button>
               </Box>
               <Box>
                 <Text mb={1}>Recurring Gift</Text>
@@ -287,6 +286,9 @@ const AddGiftWizard: React.FC = () => {
               </ModalContent>
             </Modal>
           )}
+          <Button mt={6} colorScheme="green" onClick={() => navigate(`/recipients/${recipientId}`)}>
+            Save & Close
+          </Button>
         </VStack>
       </Container>
     </Box>

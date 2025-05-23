@@ -30,6 +30,7 @@ import type { Recipient } from '../types';
 import { showErrorToast } from '../utils/toastUtils';
 import { safeFormatDate } from '../utils/dateUtils';
 import { useGiftStore } from '../store/giftStore';
+import { useOccasionStore } from '../store/occasionStore';
 
 export const RecipientDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -43,6 +44,7 @@ export const RecipientDetailPage: React.FC = () => {
     deleteRecipient 
   } = useRecipientStore();
   const { createGift } = useGiftStore();
+  const { occasions, fetchOccasions } = useOccasionStore();
   
   const [currentRecipient, setCurrentRecipient] = useState<Recipient | null>(null);
   
@@ -75,7 +77,8 @@ export const RecipientDetailPage: React.FC = () => {
 
   useEffect(() => {
     fetchRecipients();
-  }, [fetchRecipients]);
+    if (id) fetchOccasions(id);
+  }, [fetchRecipients, fetchOccasions, id]);
   
   // Find the current recipient when recipients change or ID changes
   useEffect(() => {
@@ -145,37 +148,6 @@ export const RecipientDetailPage: React.FC = () => {
     } catch (error) {
       console.error('Error calculating days until birthday:', error);
       return null;
-    }
-  };
-
-  const handleAcceptRecommendation = async (rec: any) => {
-    if (!currentRecipient) return;
-    try {
-      await createGift({
-        recipientId: currentRecipient.id,
-        name: rec.name,
-        description: rec.description,
-        price: rec.price,
-        category: rec.category,
-        occasion: 'Birthday',
-        date: new Date(),
-        status: 'planned',
-      });
-      toast({
-        title: 'Gift added',
-        description: `${rec.name} has been added as a gift for ${currentRecipient.name}.`,
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
-    } catch (err) {
-      toast({
-        title: 'Error adding gift',
-        description: (err as Error).message,
-        status: 'error',
-        duration: 4000,
-        isClosable: true,
-      });
     }
   };
 
@@ -338,21 +310,22 @@ export const RecipientDetailPage: React.FC = () => {
 
           <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
             <CardHeader pb={0}>
-              <Heading size="md">Gift Recommendations (Demo)</Heading>
+              <Heading size="md">Occasions</Heading>
             </CardHeader>
             <CardBody>
-              <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
-                {recommendations.map(rec => (
-                  <Box key={rec.id} p={4} borderWidth="1px" borderRadius="md" borderColor={borderColor} bg={bgColor}>
-                    <Heading as="h4" size="sm" mb={2}>{rec.name}</Heading>
-                    <Text mb={2}>{rec.description}</Text>
-                    <Text fontWeight="bold" mb={2}>${rec.price.toFixed(2)}</Text>
-                    <Button colorScheme="blue" size="sm" onClick={() => handleAcceptRecommendation(rec)}>
-                      Accept
-                    </Button>
-                  </Box>
-                ))}
-              </SimpleGrid>
+              {id && occasions && Array.isArray(occasions[id]) && occasions[id].length > 0 ? (
+                <VStack align="start" spacing={2}>
+                  {occasions[id].map((occasion: any) => (
+                    <Box key={occasion.id} p={2} borderWidth="1px" borderRadius="md" w="100%">
+                      <Text fontWeight="bold">{occasion.name} <Badge ml={2}>{occasion.type}</Badge></Text>
+                      <Text fontSize="sm">{new Date(occasion.date).toLocaleDateString()}</Text>
+                      {occasion.notes && <Text fontSize="sm" color="gray.500">{occasion.notes}</Text>}
+                    </Box>
+                  ))}
+                </VStack>
+              ) : (
+                <Text color="gray.500">No occasions added yet.</Text>
+              )}
             </CardBody>
           </Card>
         </VStack>
