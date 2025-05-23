@@ -238,7 +238,21 @@ export const RecipientDetailPage: React.FC = () => {
             <CardBody>
               {currentRecipient.birthdate ? (
                 <Flex justify="space-between" align="center">
-                  <Text>{safeFormatDate(currentRecipient.birthdate)}</Text>
+                  <Box>
+                    <Text>{safeFormatDate(currentRecipient.birthdate)}</Text>
+                    <Badge colorScheme="purple" mt={2}>
+                      Age: {(() => {
+                        const [year, month, day] = currentRecipient.birthdate.split('-').map(Number);
+                        const today = new Date();
+                        let age = today.getFullYear() - year;
+                        const m = today.getMonth() - (month - 1);
+                        if (m < 0 || (m === 0 && today.getDate() < day)) {
+                          age--;
+                        }
+                        return age;
+                      })()}
+                    </Badge>
+                  </Box>
                   {getDaysUntilBirthday(currentRecipient.birthdate) !== null && (
                     <Badge 
                       colorScheme={getDaysUntilBirthday(currentRecipient.birthdate)! <= 7 ? "red" : 
