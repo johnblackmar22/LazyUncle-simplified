@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Button, Heading, Text, VStack, Progress, useToast, Input, FormControl, FormLabel, Select, Checkbox, Flex, Image, Tooltip, FormErrorMessage } from '@chakra-ui/react';
 import { useRecipientStore } from '../store/recipientStore';
-import { useGiftStore } from '../store/giftStore';
-import { getGiftRecommendations } from '../services/giftRecommendationEngine';
-import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { isDemoMode, initializeDemoData } from '../services/demoData';
 import { DEMO_MODE } from '../services/firebase';
@@ -12,7 +9,6 @@ const steps = [
   'Welcome',
   'Add Recipient',
   'Set Budget & Occasion',
-  'Gift Recommendation',
   'Subscribe',
   'Confirmation',
 ];
@@ -35,17 +31,10 @@ const OnboardingWizard: React.FC = () => {
     interests: [] as string[],
   });
   const [interestInput, setInterestInput] = useState('');
-  const [budget, setBudget] = useState('50');
-  const [occasion, setOccasion] = useState('Birthday');
   const [showBirthdayGift, setShowBirthdayGift] = useState(true);
-  const [recommendations, setRecommendations] = useState<any[]>([]);
-  const [selectedGiftIdx, setSelectedGiftIdx] = useState(0);
-  const [approved, setApproved] = useState(false);
   const toast = useToast();
   const { addRecipient } = useRecipientStore();
-  const { createGift } = useGiftStore();
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
   const [errors, setErrors] = useState<{ name?: string; relationship?: string; budget?: string; occasion?: string }>({});
   const [subscribed, setSubscribed] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState('basic');
@@ -84,43 +73,6 @@ const OnboardingWizard: React.FC = () => {
         return;
       }
     }
-    if (step === 2) {
-      // Validate budget and occasion
-      const newErrors: { budget?: string; occasion?: string } = {};
-      if (!budget || isNaN(Number(budget)) || Number(budget) < 5) newErrors.budget = 'Budget must be at least $5';
-      if (!occasion) newErrors.occasion = 'Occasion is required';
-      setErrors(newErrors);
-      if (Object.keys(newErrors).length > 0) {
-        toast({
-          title: 'Please fill in all required fields',
-          status: 'warning',
-          duration: 3000,
-          isClosable: true,
-        });
-        return;
-      }
-      // Generate recommendations
-      setLoading(true);
-      try {
-        const recs = getGiftRecommendations(
-          { ...recipient },
-          occasion,
-          Number(budget)
-        );
-        setRecommendations(recs);
-        setSelectedGiftIdx(0);
-      } catch (error) {
-        console.error('Error generating recommendations:', error);
-        toast({
-          title: 'Error generating recommendations',
-          status: 'error',
-          duration: 3000,
-          isClosable: true,
-        });
-      } finally {
-        setLoading(false);
-      }
-    }
     setStep((s) => Math.min(s + 1, steps.length - 1));
   };
   
@@ -136,85 +88,6 @@ const OnboardingWizard: React.FC = () => {
   
   const removeInterest = (i: string) => {
     setRecipient(r => ({ ...r, interests: r.interests.filter(x => x !== i) }));
-  };
-
-  // Approve gift and persist data
-  const handleApproveGift = async () => {
-    setLoading(true);
-    try {
-      // Ensure demo mode is initialized for saving
-      if (isDemoMode() || DEMO_MODE) {
-        console.log('Saving in demo mode');
-        initializeDemoData();
-      }
-      
-      // Save recipient
-      const birthdateObj = recipient.birthdate ? new Date(recipient.birthdate) : undefined;
-      
-      // Ensure price is valid
-      const giftPrice = typeof recommendations[selectedGiftIdx]?.price === 'number' 
-        ? recommendations[selectedGiftIdx].price 
-        : Number(recommendations[selectedGiftIdx]?.estimatedPrice || budget);
-      
-      console.log('Adding recipient:', recipient);
-      const newRecipient = await addRecipient({
-        name: recipient.name,
-        relationship: recipient.relationship,
-        birthdate: birthdateObj,
-        interests: recipient.interests,
-        giftPreferences: {
-          priceRange: { min: 0, max: Number(budget) }
-        }
-      });
-      
-      if (!newRecipient) {
-        console.error('Failed to create recipient - returned null/undefined');
-        throw new Error("Failed to create recipient");
-      }
-      
-      console.log('Recipient created:', newRecipient);
-      
-      // Save gift if we have a recommendation
-      if (newRecipient && recommendations[selectedGiftIdx]) {
-        const gift = {
-          recipientId: newRecipient.id,
-          name: recommendations[selectedGiftIdx].name,
-          description: recommendations[selectedGiftIdx].description || 'A thoughtful gift',
-          price: giftPrice,
-          category: recommendations[selectedGiftIdx].category || 'Other',
-          occasion,
-          date: birthdateObj || new Date(),
-          status: 'planned' as const,
-          imageUrl: recommendations[selectedGiftIdx].imageUrl || '',
-          notes: 'Auto-send enabled',
-        };
-        
-        console.log('Creating gift:', gift);
-        const newGift = await createGift(gift);
-        console.log('Gift created:', newGift);
-      }
-      
-      setApproved(true);
-      toast({
-        title: 'Success!',
-        description: 'Recipient and gift have been saved.',
-        status: 'success',
-        duration: 4000,
-        isClosable: true,
-      });
-      setStep(4);
-    } catch (err) {
-      console.error('Error in handleApproveGift:', err);
-      toast({
-        title: 'Error saving data',
-        description: 'There was an error saving your information. Please try again.',
-        status: 'error',
-        duration: 4000,
-        isClosable: true,
-      });
-    } finally {
-      setLoading(false);
-    }
   };
 
   // Step UIs
@@ -280,55 +153,6 @@ const OnboardingWizard: React.FC = () => {
         )}
         {step === 2 && (
           <VStack spacing={6} align="stretch">
-            <Heading size="md">Set Budget & Occasion</Heading>
-            <FormControl isRequired isInvalid={!!errors.budget}>
-              <FormLabel>How much do you want to spend per gift? <Tooltip label="We'll recommend gifts within this budget" aria-label="Budget help">?</Tooltip></FormLabel>
-              <Input type="number" min={5} aria-label="Gift Budget" value={budget} onChange={e => setBudget(e.target.value)} />
-              {errors.budget && <FormErrorMessage>{errors.budget}</FormErrorMessage>}
-            </FormControl>
-            <FormControl isRequired isInvalid={!!errors.occasion}>
-              <FormLabel>What occasion should we remember? <Tooltip label="We'll remind you and recommend gifts for this occasion" aria-label="Occasion help">?</Tooltip></FormLabel>
-              <Select aria-label="Gift Occasion" value={occasion} onChange={e => setOccasion(e.target.value)}>
-                {occasionOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-              </Select>
-              {errors.occasion && <FormErrorMessage>{errors.occasion}</FormErrorMessage>}
-            </FormControl>
-            <Checkbox isChecked={showBirthdayGift} onChange={e => setShowBirthdayGift(e.target.checked)} aria-label="Auto-send birthday gift">
-              Auto-send a gift for their birthday
-            </Checkbox>
-            <Flex justify="space-between">
-              <Button variant="ghost" onClick={handleBack}>Back</Button>
-              <Button colorScheme="blue" onClick={handleNext} isLoading={loading}>Next</Button>
-            </Flex>
-          </VStack>
-        )}
-        {step === 3 && (
-          <VStack spacing={6} align="stretch">
-            <Heading size="md">Gift Recommendation</Heading>
-            {loading ? (
-              <Text>Loading recommendations...</Text>
-            ) : recommendations.length === 0 ? (
-              <Text>No recommendations found. Try adjusting interests or budget.</Text>
-            ) : (
-              <Box>
-                <Heading size="sm" mb={2}>{recommendations[selectedGiftIdx].name}</Heading>
-                {recommendations[selectedGiftIdx].imageUrl && (
-                  <Image src={recommendations[selectedGiftIdx].imageUrl} alt={recommendations[selectedGiftIdx].name} maxH="150px" mb={2} />
-                )}
-                <Text mb={2}>{recommendations[selectedGiftIdx].description}</Text>
-                <Text fontWeight="bold">Price: ${recommendations[selectedGiftIdx].price.toFixed(2)}</Text>
-                <Text>Category: {recommendations[selectedGiftIdx].category}</Text>
-                <Flex gap={2} mt={4}>
-                  <Button colorScheme="green" onClick={handleApproveGift} isLoading={loading}>Approve & Schedule</Button>
-                  <Button onClick={() => setSelectedGiftIdx((selectedGiftIdx + 1) % recommendations.length)}>See Another</Button>
-                  <Button variant="ghost" onClick={handleBack}>Back</Button>
-                </Flex>
-              </Box>
-            )}
-          </VStack>
-        )}
-        {step === 4 && (
-          <VStack spacing={6} align="stretch">
             <Heading size="md">Subscribe to Continue</Heading>
             <Text>Choose a subscription plan to activate automatic gifting. You can change or cancel anytime.</Text>
             <FormControl as="fieldset">
@@ -353,14 +177,16 @@ const OnboardingWizard: React.FC = () => {
             </Flex>
           </VStack>
         )}
-        {step === 5 && (
+        {step === 3 && (
           <VStack spacing={6} align="stretch">
             <Heading size="md">All Set!</Heading>
             <Text>Your recipient and gift are set up. We'll handle the rest. You can always edit your preferences later.</Text>
             <Text mt={6} fontSize="lg" color="neutral.700" textAlign="center">
               We'll tee up a personalized gift for your approval one week before it's scheduled to ship. You'll have the option to veto or approve the selection. If we don't hear from you, we'll handle everything for you—no action needed.
             </Text>
-            <Button colorScheme="green" onClick={() => navigate('/dashboard')}>Go to Dashboard</Button>
+            <a href="/dashboard" style={{ textDecoration: 'none' }}>
+              <Button colorScheme="green">Go to Dashboard</Button>
+            </a>
           </VStack>
         )}
         <Box mt={4} textAlign="center">
