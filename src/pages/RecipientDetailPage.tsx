@@ -21,7 +21,19 @@ import {
   VStack,
   Spinner,
   useToast,
-  useColorModeValue
+  useColorModeValue,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalCloseButton,
+  FormControl,
+  FormLabel,
+  Input,
+  Select,
+  Textarea
 } from '@chakra-ui/react';
 import { EditIcon, DeleteIcon, ArrowBackIcon, AddIcon } from '@chakra-ui/icons';
 import { useRecipientStore } from '../store/recipientStore';
@@ -72,6 +84,39 @@ export const RecipientDetailPage: React.FC = () => {
       category: 'Gift Card',
     },
   ]);
+
+  const [isOccasionModalOpen, setOccasionModalOpen] = useState(false);
+  const [occasionForm, setOccasionForm] = useState<{ name: string; date: string; type: 'birthday' | 'anniversary' | 'custom'; notes: string }>({ name: '', date: '', type: 'custom', notes: '' });
+  const [occasionLoading, setOccasionLoading] = useState(false);
+
+  const openOccasionModal = () => setOccasionModalOpen(true);
+  const closeOccasionModal = () => { setOccasionModalOpen(false); setOccasionForm({ name: '', date: '', type: 'custom', notes: '' }); };
+
+  const handleOccasionFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setOccasionForm(f => ({
+      ...f,
+      [name]: name === 'type' ? (value as 'birthday' | 'anniversary' | 'custom') : value
+    }));
+  };
+
+  const handleOccasionSubmit = async () => {
+    if (!id || !occasionForm.name || !occasionForm.date) return;
+    setOccasionLoading(true);
+    try {
+      const result = await addOccasion(id, occasionForm);
+      if (!result) {
+        toast({ title: 'Failed to add occasion', status: 'error', duration: 4000, isClosable: true });
+      } else {
+        toast({ title: 'Occasion added', status: 'success', duration: 2000, isClosable: true });
+        await fetchOccasions(id);
+        closeOccasionModal();
+      }
+    } catch (error) {
+      toast({ title: 'Error adding occasion', description: (error as Error).message, status: 'error', duration: 4000, isClosable: true });
+    }
+    setOccasionLoading(false);
+  };
 
   useEffect(() => {
     fetchRecipients();
@@ -216,11 +261,10 @@ export const RecipientDetailPage: React.FC = () => {
                   onClick={handleDelete}
                 />
                 <Button
-                  as={RouterLink}
-                  to={`/occasions/add/${currentRecipient.id}`}
                   colorScheme="purple"
                   leftIcon={<AddIcon />}
                   w={{ base: 'full', md: 'auto' }}
+                  onClick={openOccasionModal}
                 >
                   Add Occasion
                 </Button>
@@ -312,6 +356,39 @@ export const RecipientDetailPage: React.FC = () => {
           </Card>
         </VStack>
       </Container>
+      <Modal isOpen={isOccasionModalOpen} onClose={closeOccasionModal} isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Add Occasion</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <FormControl isRequired mb={3}>
+              <FormLabel>Name</FormLabel>
+              <Input name="name" value={occasionForm.name} onChange={handleOccasionFormChange} />
+            </FormControl>
+            <FormControl isRequired mb={3}>
+              <FormLabel>Date</FormLabel>
+              <Input name="date" type="date" value={occasionForm.date} onChange={handleOccasionFormChange} />
+            </FormControl>
+            <FormControl mb={3}>
+              <FormLabel>Type</FormLabel>
+              <Select name="type" value={occasionForm.type} onChange={handleOccasionFormChange}>
+                <option value="birthday">Birthday</option>
+                <option value="anniversary">Anniversary</option>
+                <option value="custom">Custom</option>
+              </Select>
+            </FormControl>
+            <FormControl mb={3}>
+              <FormLabel>Notes</FormLabel>
+              <Textarea name="notes" value={occasionForm.notes} onChange={handleOccasionFormChange} />
+            </FormControl>
+          </ModalBody>
+          <ModalFooter>
+            <Button onClick={closeOccasionModal} mr={3} variant="ghost">Cancel</Button>
+            <Button colorScheme="blue" onClick={handleOccasionSubmit} isLoading={occasionLoading}>Add Occasion</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 }; 
