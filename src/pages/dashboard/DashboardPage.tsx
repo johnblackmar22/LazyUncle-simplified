@@ -44,7 +44,21 @@ export default function DashboardPage() {
   const { addOccasion, fetchOccasions } = useOccasionStore();
   const toast = useToast();
   const [occasionModalRecipientId, setOccasionModalRecipientId] = useState<string | null>(null);
-  const [occasionForm, setOccasionForm] = useState<{ name: string; date: string; type: 'birthday' | 'anniversary' | 'custom'; notes: string }>({ name: '', date: '', type: 'custom', notes: '' });
+  const [occasionForm, setOccasionForm] = useState<{
+    type: 'birthday' | 'anniversary' | 'other' | 'christmas';
+    otherName: string;
+    date: string;
+    amount: string;
+    recurring: boolean;
+    notes: string;
+  }>({
+    type: 'other',
+    otherName: '',
+    date: '',
+    amount: '',
+    recurring: false,
+    notes: '',
+  });
   const [occasionLoading, setOccasionLoading] = useState(false);
   
   // Fetch data when component mounts
@@ -83,25 +97,91 @@ export default function DashboardPage() {
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
   const openOccasionModal = (recipientId: string) => {
+    const recipient = recipients.find(r => r.id === recipientId);
+    let date = '';
+    let type: 'birthday' | 'anniversary' | 'other' | 'christmas' = 'other';
+    if (recipient?.birthdate) {
+      date = recipient.birthdate;
+      type = 'birthday';
+    }
     setOccasionModalRecipientId(recipientId);
-    setOccasionForm({ name: '', date: '', type: 'custom', notes: '' });
+    setOccasionForm({
+      type,
+      otherName: '',
+      date,
+      amount: '',
+      recurring: false,
+      notes: '',
+    });
   };
   const closeOccasionModal = () => {
     setOccasionModalRecipientId(null);
-    setOccasionForm({ name: '', date: '', type: 'custom', notes: '' });
+    setOccasionForm({
+      type: 'other',
+      otherName: '',
+      date: '',
+      amount: '',
+      recurring: false,
+      notes: '',
+    });
   };
   const handleOccasionFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type: inputType } = e.target;
     setOccasionForm(f => ({
       ...f,
-      [name]: name === 'type' ? (value as 'birthday' | 'anniversary' | 'custom') : value
+      [name]: inputType === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
     }));
   };
+  const getDateFieldProps = () => {
+    if (!occasionModalRecipientId) return { value: occasionForm.date, disabled: false };
+    const recipient = recipients.find(r => r.id === occasionModalRecipientId);
+    if (occasionForm.type === 'birthday' && recipient?.birthdate) {
+      return { value: recipient.birthdate, disabled: true };
+    }
+    if (occasionForm.type === 'christmas') {
+      const year = new Date().getFullYear();
+      return { value: `${year}-12-25`, disabled: true };
+    }
+    return { value: occasionForm.date, disabled: false };
+  };
   const handleOccasionSubmit = async () => {
-    if (!occasionModalRecipientId || !occasionForm.name || !occasionForm.date) return;
+    if (!occasionModalRecipientId || !occasionForm.type) return;
     setOccasionLoading(true);
     try {
-      const result = await addOccasion(occasionModalRecipientId, occasionForm);
+      const recipient = recipients.find(r => r.id === occasionModalRecipientId);
+      let name = '';
+      let date = occasionForm.date;
+      let type: 'birthday' | 'anniversary' | 'custom' | 'christmas' = occasionForm.type as any;
+      if (occasionForm.type === 'birthday') {
+        name = 'Birthday';
+        date = recipient?.birthdate || '';
+        type = 'birthday';
+      } else if (occasionForm.type === 'christmas') {
+        name = 'Christmas';
+        const year = new Date().getFullYear();
+        date = `${year}-12-25`;
+        type = 'christmas';
+      } else if (occasionForm.type === 'anniversary') {
+        name = 'Anniversary';
+        type = 'anniversary';
+      } else if (occasionForm.type === 'other') {
+        name = occasionForm.otherName || 'Other';
+        type = 'custom';
+      }
+      if (!date) {
+        toast({ title: 'Date is required', status: 'error', duration: 4000, isClosable: true });
+        setOccasionLoading(false);
+        return;
+      }
+      const occasionToSave = {
+        name,
+        type,
+        date,
+        notes: occasionForm.notes,
+        amount: occasionForm.amount,
+        recurring: occasionForm.recurring,
+      };
+      const result = await addOccasion(occasionModalRecipientId, occasionToSave);
       if (!result) {
         toast({ title: 'Failed to add occasion', status: 'error', duration: 4000, isClosable: true });
       } else {
@@ -201,20 +281,44 @@ export default function DashboardPage() {
           <ModalCloseButton />
           <ModalBody>
             <FormControl isRequired mb={3}>
-              <FormLabel>Name</FormLabel>
-              <Input name="name" value={occasionForm.name} onChange={handleOccasionFormChange} />
-            </FormControl>
-            <FormControl isRequired mb={3}>
-              <FormLabel>Date</FormLabel>
-              <Input name="date" type="date" value={occasionForm.date} onChange={handleOccasionFormChange} />
-            </FormControl>
-            <FormControl mb={3}>
-              <FormLabel>Type</FormLabel>
+              <FormLabel>Occasion</FormLabel>
               <Select name="type" value={occasionForm.type} onChange={handleOccasionFormChange}>
                 <option value="birthday">Birthday</option>
                 <option value="anniversary">Anniversary</option>
-                <option value="custom">Custom</option>
+                <option value="christmas">Christmas</option>
+                <option value="other">Other</option>
               </Select>
+            </FormControl>
+            {occasionForm.type === 'other' && (
+              <FormControl isRequired mb={3}>
+                <FormLabel>Occasion Name</FormLabel>
+                <Input name="otherName" value={occasionForm.otherName} onChange={handleOccasionFormChange} placeholder="Enter occasion name" />
+              </FormControl>
+            )}
+            <FormControl isRequired mb={3}>
+              <FormLabel>Date</FormLabel>
+              <Input
+                name="date"
+                type="date"
+                value={getDateFieldProps().value}
+                onChange={handleOccasionFormChange}
+                disabled={getDateFieldProps().disabled}
+              />
+            </FormControl>
+            <FormControl mb={3}>
+              <FormLabel>Amount to Spend</FormLabel>
+              <Input name="amount" type="number" value={occasionForm.amount} onChange={handleOccasionFormChange} />
+            </FormControl>
+            <FormControl mb={3} display="flex" alignItems="center">
+              <FormLabel mb="0">Recurring</FormLabel>
+              <Input
+                name="recurring"
+                type="checkbox"
+                checked={occasionForm.recurring}
+                onChange={handleOccasionFormChange}
+                width="auto"
+                ml={2}
+              />
             </FormControl>
             <FormControl mb={3}>
               <FormLabel>Notes</FormLabel>
