@@ -104,6 +104,8 @@ const RecipientDetail = () => {
           duration: 2000,
           isClosable: true,
         });
+        // Refetch occasions to update UI
+        await fetchOccasions(id);
       }
     } catch (error) {
       console.error('Error adding occasion:', error);
