@@ -42,7 +42,7 @@ export const RecipientDetailPage: React.FC = () => {
     fetchRecipients, 
     deleteRecipient 
   } = useRecipientStore();
-  const { occasions, fetchOccasions } = useOccasionStore();
+  const { occasions, fetchOccasions, addOccasion } = useOccasionStore();
   
   const [currentRecipient, setCurrentRecipient] = useState<Recipient | null>(null);
   
@@ -217,12 +217,12 @@ export const RecipientDetailPage: React.FC = () => {
                 />
                 <Button
                   as={RouterLink}
-                  to={`/gifts/add/${currentRecipient.id}`}
+                  to={`/occasions/add/${currentRecipient.id}`}
                   colorScheme="purple"
                   leftIcon={<AddIcon />}
                   w={{ base: 'full', md: 'auto' }}
                 >
-                  Add Gift
+                  Add Occasion
                 </Button>
               </HStack>
             </Flex>

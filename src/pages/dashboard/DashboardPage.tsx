@@ -131,7 +131,7 @@ export default function DashboardPage() {
                           navigate(`/gifts/add/${recipient.id}`);
                         }}
                       >
-                        Add Gift
+                        Add Occasion
                       </Button>
                     </Box>
                   ))}
