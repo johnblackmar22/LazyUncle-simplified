@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useParams, useNavigate, Link as RouterLink, useLocation } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -42,6 +42,8 @@ import type { Recipient } from '../types';
 import { showErrorToast } from '../utils/toastUtils';
 import { safeFormatDate } from '../utils/dateUtils';
 import { useOccasionStore } from '../store/occasionStore';
+import OccasionForm from '../components/OccasionForm';
+import { FaGift } from 'react-icons/fa';
 
 export const RecipientDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -55,6 +57,7 @@ export const RecipientDetailPage: React.FC = () => {
     deleteRecipient 
   } = useRecipientStore();
   const { occasions, fetchOccasions, addOccasion } = useOccasionStore();
+  const location = useLocation();
   
   const [currentRecipient, setCurrentRecipient] = useState<Recipient | null>(null);
   
@@ -86,44 +89,21 @@ export const RecipientDetailPage: React.FC = () => {
   ]);
 
   const [isOccasionModalOpen, setOccasionModalOpen] = useState(false);
-  const [occasionForm, setOccasionForm] = useState<{ name: string; date: string; type: 'birthday' | 'anniversary' | 'custom'; notes: string }>({ name: '', date: '', type: 'custom', notes: '' });
   const [occasionLoading, setOccasionLoading] = useState(false);
 
   const openOccasionModal = () => setOccasionModalOpen(true);
-  const closeOccasionModal = () => { setOccasionModalOpen(false); setOccasionForm({ name: '', date: '', type: 'custom', notes: '' }); };
-
-  const handleOccasionFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setOccasionForm(f => ({
-      ...f,
-      [name]: name === 'type' ? (value as 'birthday' | 'anniversary' | 'custom') : value
-    }));
-  };
-
-  const handleOccasionSubmit = async () => {
-    if (!id || !occasionForm.name || !occasionForm.date) return;
-    setOccasionLoading(true);
-    try {
-      const result = await addOccasion(id, occasionForm);
-      if (!result) {
-        toast({ title: 'Failed to add occasion', status: 'error', duration: 4000, isClosable: true });
-      } else {
-        toast({ title: 'Occasion added', status: 'success', duration: 2000, isClosable: true });
-        await fetchOccasions(id);
-        closeOccasionModal();
-      }
-    } catch (error) {
-      toast({ title: 'Error adding occasion', description: (error as Error).message, status: 'error', duration: 4000, isClosable: true });
-    }
-    setOccasionLoading(false);
-  };
+  const closeOccasionModal = () => { setOccasionModalOpen(false); };
 
   useEffect(() => {
     fetchRecipients();
     if (id) {
       fetchOccasions(id);
     }
-  }, [fetchRecipients, fetchOccasions, id]);
+    // Open modal if addOccasion query param is present
+    if (location.search.includes('addOccasion=true')) {
+      setOccasionModalOpen(true);
+    }
+  }, [fetchRecipients, fetchOccasions, id, location.search]);
   
   // Find the current recipient when recipients change or ID changes
   useEffect(() => {
@@ -152,47 +132,39 @@ export const RecipientDetailPage: React.FC = () => {
     }
   };
   
-  // Format birthdate to readable format
-  const formatBirthdate = (date: string | undefined) => {
+  // Helper to format birthday as Month Day
+  const formatBirthdayMonthDay = (date: string | undefined) => {
     if (!date) return 'Not set';
     try {
-      const [year, month, day] = date.split('-').map(Number);
-      const dateObj = new Date(year, month - 1, day);
-      const age = new Date().getFullYear() - year - (new Date() < new Date(new Date().getFullYear(), month - 1, day) ? 1 : 0);
-      return `${dateObj.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })} (${age} years old)`;
+      const [, month, day] = date.split('-');
+      const dateObj = new Date(2000, Number(month) - 1, Number(day));
+      return dateObj.toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
     } catch {
       return date;
     }
   };
-  
-  // Calculate days until birthdate
-  const getDaysUntilBirthday = (birthdate: Date | string | number | undefined) => {
-    if (!birthdate) return null;
-    
+  // Helper to calculate age
+  const calculateAge = (date: string | undefined) => {
+    if (!date) return '';
+    const [year, month, day] = date.split('-').map(Number);
+    const today = new Date();
+    let age = today.getFullYear() - year;
+    if (
+      today.getMonth() + 1 < month ||
+      (today.getMonth() + 1 === month && today.getDate() < day)
+    ) {
+      age--;
+    }
+    return age;
+  };
+  // Helper to format MM-DD
+  const formatMonthDay = (date: string) => {
     try {
-      const birthdateObj = birthdate instanceof Date ? birthdate : new Date(birthdate);
-      const today = new Date();
-      
-      // Create this year's birthday
-      const thisYearBirthday = new Date(
-        today.getFullYear(),
-        birthdateObj.getMonth(),
-        birthdateObj.getDate()
-      );
-      
-      // If this year's birthday has passed, use next year's
-      if (today > thisYearBirthday) {
-        thisYearBirthday.setFullYear(today.getFullYear() + 1);
-      }
-      
-      // Calculate days difference
-      const diffTime = Math.abs(thisYearBirthday.getTime() - today.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
-      return diffDays;
-    } catch (error) {
-      console.error('Error calculating days until birthday:', error);
-      return null;
+      const [, month, day] = date.split('-');
+      const dateObj = new Date(2000, Number(month) - 1, Number(day));
+      return dateObj.toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
+    } catch {
+      return date;
     }
   };
 
@@ -280,35 +252,10 @@ export const RecipientDetailPage: React.FC = () => {
               <Heading size="md">Birthday</Heading>
             </CardHeader>
             <CardBody>
-              {currentRecipient.birthdate ? (
-                <Flex justify="space-between" align="center">
-                  <Box>
-                    <Text>{safeFormatDate(currentRecipient.birthdate)}</Text>
-                    <Badge colorScheme="purple" mt={2}>
-                      Age: {(() => {
-                        const [year, month, day] = currentRecipient.birthdate.split('-').map(Number);
-                        const today = new Date();
-                        let age = today.getFullYear() - year;
-                        const m = today.getMonth() - (month - 1);
-                        if (m < 0 || (m === 0 && today.getDate() < day)) {
-                          age--;
-                        }
-                        return age;
-                      })()}
-                    </Badge>
-                  </Box>
-                  {getDaysUntilBirthday(currentRecipient.birthdate) !== null && (
-                    <Badge 
-                      colorScheme={getDaysUntilBirthday(currentRecipient.birthdate)! <= 7 ? "red" : 
-                                getDaysUntilBirthday(currentRecipient.birthdate)! <= 30 ? "orange" : "blue"}
-                    >
-                      {getDaysUntilBirthday(currentRecipient.birthdate) === 0 
-                        ? "Today!" 
-                        : getDaysUntilBirthday(currentRecipient.birthdate) === 1 
-                          ? "Tomorrow!" 
-                          : `${getDaysUntilBirthday(currentRecipient.birthdate)} days`}
-                    </Badge>
-                  )}
+              {typeof currentRecipient.birthdate === 'string' && currentRecipient.birthdate ? (
+                <Flex align="center" gap={2}>
+                  <Text>{formatBirthdayMonthDay(currentRecipient.birthdate as string)}</Text>
+                  <Text color="gray.500">({calculateAge(currentRecipient.birthdate as string)} years old)</Text>
                 </Flex>
               ) : (
                 <Text color="gray.500">No birthdate set.</Text>
@@ -343,10 +290,11 @@ export const RecipientDetailPage: React.FC = () => {
               {id && occasions && occasions[id] && occasions[id].length > 0 ? (
                 <VStack align="start" spacing={2}>
                   {occasions[id].map((occasion: any) => (
-                    <Box key={occasion.id} p={2} borderWidth="1px" borderRadius="md" w="100%">
+                    <Flex key={occasion.id} align="center" gap={2}>
+                      <FaGift color="purple" />
                       <Text fontWeight="bold">{occasion.name}</Text>
-                      <Text fontSize="sm">{new Date(occasion.date).toLocaleDateString()}</Text>
-                    </Box>
+                      <Text fontSize="sm">{formatMonthDay(occasion.date)}</Text>
+                    </Flex>
                   ))}
                 </VStack>
               ) : (
@@ -362,31 +310,26 @@ export const RecipientDetailPage: React.FC = () => {
           <ModalHeader>Add Occasion</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <FormControl isRequired mb={3}>
-              <FormLabel>Name</FormLabel>
-              <Input name="name" value={occasionForm.name} onChange={handleOccasionFormChange} />
-            </FormControl>
-            <FormControl isRequired mb={3}>
-              <FormLabel>Date</FormLabel>
-              <Input name="date" type="date" value={occasionForm.date} onChange={handleOccasionFormChange} />
-            </FormControl>
-            <FormControl mb={3}>
-              <FormLabel>Type</FormLabel>
-              <Select name="type" value={occasionForm.type} onChange={handleOccasionFormChange}>
-                <option value="birthday">Birthday</option>
-                <option value="anniversary">Anniversary</option>
-                <option value="custom">Custom</option>
-              </Select>
-            </FormControl>
-            <FormControl mb={3}>
-              <FormLabel>Notes</FormLabel>
-              <Textarea name="notes" value={occasionForm.notes} onChange={handleOccasionFormChange} />
-            </FormControl>
+            {currentRecipient && (
+              <OccasionForm
+                recipient={currentRecipient}
+                loading={occasionLoading}
+                onSubmit={async (occasionData) => {
+                  setOccasionLoading(true);
+                  const result = await addOccasion(id || '', occasionData);
+                  if (!result) {
+                    toast({ title: 'Failed to add occasion', status: 'error', duration: 4000, isClosable: true });
+                  } else {
+                    toast({ title: 'Occasion added', status: 'success', duration: 2000, isClosable: true });
+                    await fetchOccasions(id || '');
+                    closeOccasionModal();
+                  }
+                  setOccasionLoading(false);
+                }}
+                onCancel={closeOccasionModal}
+              />
+            )}
           </ModalBody>
-          <ModalFooter>
-            <Button onClick={closeOccasionModal} mr={3} variant="ghost">Cancel</Button>
-            <Button colorScheme="blue" onClick={handleOccasionSubmit} isLoading={occasionLoading}>Add Occasion</Button>
-          </ModalFooter>
         </ModalContent>
       </Modal>
     </Box>

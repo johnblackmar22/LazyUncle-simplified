@@ -258,10 +258,9 @@ export default function DashboardPage() {
                         mt={4}
                         colorScheme="blue"
                         size="sm"
-                        onClick={e => {
-                          e.stopPropagation();
-                          openOccasionModal(recipient.id);
-                        }}
+                        as={RouterLink}
+                        to={`/recipients/${recipient.id}?addOccasion=true`}
+                        onClick={e => e.stopPropagation()}
                       >
                         Add Occasion
                       </Button>
@@ -273,64 +272,6 @@ export default function DashboardPage() {
           )}
         </>
       )}
-
-      <Modal isOpen={!!occasionModalRecipientId} onClose={closeOccasionModal} isCentered>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Add Occasion</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <FormControl isRequired mb={3}>
-              <FormLabel>Occasion</FormLabel>
-              <Select name="type" value={occasionForm.type} onChange={handleOccasionFormChange}>
-                <option value="birthday">Birthday</option>
-                <option value="anniversary">Anniversary</option>
-                <option value="christmas">Christmas</option>
-                <option value="other">Other</option>
-              </Select>
-            </FormControl>
-            {occasionForm.type === 'other' && (
-              <FormControl isRequired mb={3}>
-                <FormLabel>Occasion Name</FormLabel>
-                <Input name="otherName" value={occasionForm.otherName} onChange={handleOccasionFormChange} placeholder="Enter occasion name" />
-              </FormControl>
-            )}
-            <FormControl isRequired mb={3}>
-              <FormLabel>Date</FormLabel>
-              <Input
-                name="date"
-                type="date"
-                value={getDateFieldProps().value}
-                onChange={handleOccasionFormChange}
-                disabled={getDateFieldProps().disabled}
-              />
-            </FormControl>
-            <FormControl mb={3}>
-              <FormLabel>Amount to Spend</FormLabel>
-              <Input name="amount" type="number" value={occasionForm.amount} onChange={handleOccasionFormChange} />
-            </FormControl>
-            <FormControl mb={3} display="flex" alignItems="center">
-              <FormLabel mb="0">Recurring</FormLabel>
-              <Input
-                name="recurring"
-                type="checkbox"
-                checked={occasionForm.recurring}
-                onChange={handleOccasionFormChange}
-                width="auto"
-                ml={2}
-              />
-            </FormControl>
-            <FormControl mb={3}>
-              <FormLabel>Notes</FormLabel>
-              <Textarea name="notes" value={occasionForm.notes} onChange={handleOccasionFormChange} />
-            </FormControl>
-          </ModalBody>
-          <ModalFooter>
-            <Button onClick={closeOccasionModal} mr={3} variant="ghost">Cancel</Button>
-            <Button colorScheme="blue" onClick={handleOccasionSubmit} isLoading={occasionLoading}>Add Occasion</Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
     </Stack>
   );
 } 
