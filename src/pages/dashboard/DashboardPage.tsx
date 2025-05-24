@@ -16,10 +16,24 @@ import {
   Badge,
   Avatar,
   HStack,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalCloseButton,
+  FormControl,
+  FormLabel,
+  Input,
+  Select,
+  Textarea,
+  useToast,
 } from '@chakra-ui/react';
 import { useRecipientStore } from '../../store/recipientStore';
 import { useAuthStore } from '../../store/authStore';
 import { initializeDemoData } from '../../services/demoData';
+import { useOccasionStore } from '../../store/occasionStore';
 
 export default function DashboardPage() {
   // Get state and actions from stores
@@ -27,6 +41,11 @@ export default function DashboardPage() {
   const { demoMode } = useAuthStore();
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const { addOccasion, fetchOccasions } = useOccasionStore();
+  const toast = useToast();
+  const [occasionModalRecipientId, setOccasionModalRecipientId] = useState<string | null>(null);
+  const [occasionForm, setOccasionForm] = useState<{ name: string; date: string; type: 'birthday' | 'anniversary' | 'custom'; notes: string }>({ name: '', date: '', type: 'custom', notes: '' });
+  const [occasionLoading, setOccasionLoading] = useState(false);
   
   // Fetch data when component mounts
   useEffect(() => {
@@ -62,6 +81,39 @@ export default function DashboardPage() {
   
   const boxBg = useColorModeValue('white', 'gray.700');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
+
+  const openOccasionModal = (recipientId: string) => {
+    setOccasionModalRecipientId(recipientId);
+    setOccasionForm({ name: '', date: '', type: 'custom', notes: '' });
+  };
+  const closeOccasionModal = () => {
+    setOccasionModalRecipientId(null);
+    setOccasionForm({ name: '', date: '', type: 'custom', notes: '' });
+  };
+  const handleOccasionFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setOccasionForm(f => ({
+      ...f,
+      [name]: name === 'type' ? (value as 'birthday' | 'anniversary' | 'custom') : value
+    }));
+  };
+  const handleOccasionSubmit = async () => {
+    if (!occasionModalRecipientId || !occasionForm.name || !occasionForm.date) return;
+    setOccasionLoading(true);
+    try {
+      const result = await addOccasion(occasionModalRecipientId, occasionForm);
+      if (!result) {
+        toast({ title: 'Failed to add occasion', status: 'error', duration: 4000, isClosable: true });
+      } else {
+        toast({ title: 'Occasion added', status: 'success', duration: 2000, isClosable: true });
+        await fetchOccasions(occasionModalRecipientId);
+        closeOccasionModal();
+      }
+    } catch (error) {
+      toast({ title: 'Error adding occasion', description: (error as Error).message, status: 'error', duration: 4000, isClosable: true });
+    }
+    setOccasionLoading(false);
+  };
 
   return (
     <Stack spacing={8}>
@@ -128,7 +180,7 @@ export default function DashboardPage() {
                         size="sm"
                         onClick={e => {
                           e.stopPropagation();
-                          navigate(`/gifts/add/${recipient.id}`);
+                          openOccasionModal(recipient.id);
                         }}
                       >
                         Add Occasion
@@ -141,6 +193,40 @@ export default function DashboardPage() {
           )}
         </>
       )}
+
+      <Modal isOpen={!!occasionModalRecipientId} onClose={closeOccasionModal} isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Add Occasion</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <FormControl isRequired mb={3}>
+              <FormLabel>Name</FormLabel>
+              <Input name="name" value={occasionForm.name} onChange={handleOccasionFormChange} />
+            </FormControl>
+            <FormControl isRequired mb={3}>
+              <FormLabel>Date</FormLabel>
+              <Input name="date" type="date" value={occasionForm.date} onChange={handleOccasionFormChange} />
+            </FormControl>
+            <FormControl mb={3}>
+              <FormLabel>Type</FormLabel>
+              <Select name="type" value={occasionForm.type} onChange={handleOccasionFormChange}>
+                <option value="birthday">Birthday</option>
+                <option value="anniversary">Anniversary</option>
+                <option value="custom">Custom</option>
+              </Select>
+            </FormControl>
+            <FormControl mb={3}>
+              <FormLabel>Notes</FormLabel>
+              <Textarea name="notes" value={occasionForm.notes} onChange={handleOccasionFormChange} />
+            </FormControl>
+          </ModalBody>
+          <ModalFooter>
+            <Button onClick={closeOccasionModal} mr={3} variant="ghost">Cancel</Button>
+            <Button colorScheme="blue" onClick={handleOccasionSubmit} isLoading={occasionLoading}>Add Occasion</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Stack>
   );
 } 
