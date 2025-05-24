@@ -99,9 +99,7 @@ const AddGiftPage: React.FC = () => {
         // If recipient has birthdate, set up birthday gift
         if (selectedRecipient.birthdate && !name) {
           // Format the birthdate to get month and day
-          const birthdateObj = selectedRecipient.birthdate instanceof Date 
-            ? selectedRecipient.birthdate 
-            : new Date(selectedRecipient.birthdate);
+          const birthdateObj = new Date(selectedRecipient.birthdate);
           
           // Set default values for a birthday gift
           setName(`Gift for ${selectedRecipient.name}`);
@@ -156,9 +154,6 @@ const AddGiftPage: React.FC = () => {
     }
   }, [selectedRecipientId, fetchGiftsByRecipient, recipientGifts]);
   
-  // Check if at or above gift limit
-  const atGiftLimit = !demoMode && plan && plan.giftLimit !== Infinity && currentYearGiftCount >= plan.giftLimit;
-  
   const handleAddInterest = () => {
     if (interest.trim() !== '' && !interests.includes(interest.trim())) {
       setInterests([...interests, interest.trim()]);
@@ -183,37 +178,14 @@ const AddGiftPage: React.FC = () => {
     if (isNameInvalid || isRecipientInvalid) {
       return;
     }
-    if (atGiftLimit) {
-      setPaywallOpen(true);
-      return;
-    }
     
-    try {
-      const newGift = await createGift({
-        recipientId: selectedRecipientId,
-        name,
-        description: `Interests: ${interests.join(', ')}`,
-        price: price ? parseFloat(price) : 0,
-        status: 'planned',
-        occasion: 'Birthday',
-        date: reminderDate ? new Date(reminderDate) : new Date(),
-        imageUrl: '',
-        notes: autoSend ? 'Auto-send enabled' : '',
-        category: interests[0] || 'Other'
-      });
-      
-      toast({
-        title: 'Gift added',
-        description: `${name} has been added to your gifts.`,
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
-      
-      navigate(`/gifts/${newGift.id}`);
-    } catch (err) {
-      showErrorToast(toast, err, { title: 'Error adding gift' });
-    }
+    // Gift creation is disabled for now
+    toast({
+      title: 'Gift creation is currently disabled.',
+      status: 'info',
+      duration: 3000,
+      isClosable: true,
+    });
   };
   
   if (recipientsLoading) {
@@ -371,7 +343,6 @@ const AddGiftPage: React.FC = () => {
                   width="full"
                   size="lg"
                   mt={4}
-                  disabled={atGiftLimit}
                   onClick={handleSubmit}
                 >
                   Add Gift
@@ -379,32 +350,6 @@ const AddGiftPage: React.FC = () => {
               </VStack>
             </form>
           </Box>
-          <AlertDialog
-            isOpen={isPaywallOpen}
-            leastDestructiveRef={cancelRef}
-            onClose={() => setPaywallOpen(false)}
-          >
-            <AlertDialogOverlay>
-              <AlertDialogContent>
-                <AlertDialogHeader fontSize="lg" fontWeight="bold">
-                  Upgrade Required
-                </AlertDialogHeader>
-                <AlertDialogBody>
-                  {plan && plan.giftLimit !== Infinity
-                    ? `The Free plan allows only ${plan.giftLimit} gifts per recipient per year. Upgrade to Pro for unlimited gifts and more features!`
-                    : 'Upgrade to Pro for unlimited gifts and more features!'}
-                </AlertDialogBody>
-                <AlertDialogFooter>
-                  <Button ref={cancelRef} onClick={() => setPaywallOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button colorScheme="blue" ml={3} as={RouterLink} to="/subscription/plans">
-                    Upgrade Now
-                  </Button>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialogOverlay>
-          </AlertDialog>
         </VStack>
       </Container>
     </Box>

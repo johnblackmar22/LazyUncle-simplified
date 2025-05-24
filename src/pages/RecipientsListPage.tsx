@@ -49,8 +49,7 @@ const RecipientsListPage: React.FC = () => {
   const { user, demoMode } = useAuthStore();
   const planId = user?.planId || 'free';
   const plan = getPlanById(planId);
-  const atRecipientLimit = !demoMode && plan && plan.recipientLimit !== Infinity && recipients.length >= plan.recipientLimit;
-  
+
   const [searchQuery, setSearchQuery] = useState('');
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   
@@ -121,15 +120,14 @@ const RecipientsListPage: React.FC = () => {
       <Flex justify="space-between" align="center" mb={8}>
         <Heading size="xl">Recipients</Heading>
         <Tooltip
-          label={atRecipientLimit ? 'Upgrade to Pro for unlimited recipients' : ''}
-          isDisabled={!atRecipientLimit}
+          label={''}
+          isDisabled={true}
         >
           <Button
             as={RouterLink}
             to="/recipients/add"
             colorScheme="blue"
             leftIcon={<AddIcon />}
-            isDisabled={atRecipientLimit}
           >
             Add Recipient
           </Button>

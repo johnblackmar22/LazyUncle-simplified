@@ -330,17 +330,12 @@ export const RecipientDetailPage: React.FC = () => {
               <Heading size="md">Gift Occasions</Heading>
             </CardHeader>
             <CardBody>
-              {id && recipientGifts && recipientGifts[id] && recipientGifts[id].length > 0 ? (
+              {id && occasions && occasions[id] && occasions[id].length > 0 ? (
                 <VStack align="start" spacing={2}>
-                  {recipientGifts[id].map((gift: any) => (
-                    <Box key={gift.id} p={2} borderWidth="1px" borderRadius="md" w="100%">
-                      <Text fontWeight="bold">{gift.name}</Text>
-                      <Text fontSize="sm">
-                        {occasions && occasions[id] && occasions[id].length > 0
-                          ? (occasions[id].find((o: any) => o.id === gift.occasionId)?.name || 'Unknown Occasion')
-                          : 'No Occasion'}
-                        {' '}• {new Date(gift.date).toLocaleDateString()}
-                      </Text>
+                  {occasions[id].map((occasion: any) => (
+                    <Box key={occasion.id} p={2} borderWidth="1px" borderRadius="md" w="100%">
+                      <Text fontWeight="bold">{occasion.name}</Text>
+                      <Text fontSize="sm">{new Date(occasion.date).toLocaleDateString()}</Text>
                     </Box>
                   ))}
                 </VStack>

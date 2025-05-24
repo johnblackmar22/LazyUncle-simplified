@@ -35,7 +35,7 @@ const AddRecipientPage: React.FC = () => {
   const toast = useToast();
   const navigate = useNavigate();
   const { addRecipient, recipients } = useRecipientStore();
-  const { user, demoMode } = useAuthStore();
+  const { user } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [isPaywallOpen, setPaywallOpen] = useState(false);
   const cancelRef = React.useRef(null);
@@ -65,14 +65,6 @@ const AddRecipientPage: React.FC = () => {
   // Submit handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Enforce recipient limit for free plan (except in demo mode)
-    const planId = user?.planId || 'free';
-    const plan = getPlanById(planId);
-    if (!demoMode && plan && plan.recipientLimit !== Infinity && recipients.length >= plan.recipientLimit) {
-      setPaywallOpen(true);
-      return;
-    }
     
     if (!recipient.name.trim() || !recipient.relationship.trim()) {
       toast({
