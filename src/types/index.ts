@@ -69,20 +69,6 @@ export interface Address {
   country: string;
 }
 
-// GiftSuggestion type for recommendations
-export interface GiftSuggestion {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  category: string;
-  ageRange?: string;
-  gender?: string;
-  interests?: string[];
-  occasion?: string;
-  imageUrl?: string;
-}
-
 // Occasion type - new first-class entity
 export interface Occasion {
   id: string;

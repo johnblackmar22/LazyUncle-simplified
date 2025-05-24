@@ -29,7 +29,6 @@ import { format } from 'date-fns';
 import type { Recipient } from '../types';
 import { showErrorToast } from '../utils/toastUtils';
 import { safeFormatDate } from '../utils/dateUtils';
-import { useGiftStore } from '../store/giftStore';
 import { useOccasionStore } from '../store/occasionStore';
 
 export const RecipientDetailPage: React.FC = () => {
@@ -43,7 +42,6 @@ export const RecipientDetailPage: React.FC = () => {
     fetchRecipients, 
     deleteRecipient 
   } = useRecipientStore();
-  const { createGift, recipientGifts, fetchGiftsByRecipient } = useGiftStore();
   const { occasions, fetchOccasions } = useOccasionStore();
   
   const [currentRecipient, setCurrentRecipient] = useState<Recipient | null>(null);
@@ -79,9 +77,8 @@ export const RecipientDetailPage: React.FC = () => {
     fetchRecipients();
     if (id) {
       fetchOccasions(id);
-      fetchGiftsByRecipient(id);
     }
-  }, [fetchRecipients, fetchOccasions, fetchGiftsByRecipient, id]);
+  }, [fetchRecipients, fetchOccasions, id]);
   
   // Find the current recipient when recipients change or ID changes
   useEffect(() => {
@@ -293,37 +290,6 @@ export const RecipientDetailPage: React.FC = () => {
               )}
             </CardBody>
           </Card>
-
-          {currentRecipient.giftPreferences && (
-            <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
-              <CardHeader pb={0}>
-                <Heading size="md">Gift Preferences</Heading>
-              </CardHeader>
-              <CardBody>
-                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                  {currentRecipient.giftPreferences.priceRange && (
-                    <Box>
-                      <Text fontWeight="bold">Price Range</Text>
-                      <Text>${currentRecipient.giftPreferences.priceRange.min} - ${currentRecipient.giftPreferences.priceRange.max}</Text>
-                    </Box>
-                  )}
-                  
-                  {currentRecipient.giftPreferences.categories && currentRecipient.giftPreferences.categories.length > 0 && (
-                    <Box>
-                      <Text fontWeight="bold">Preferred Categories</Text>
-                      <Flex gap={1} flexWrap="wrap" mt={1}>
-                        {currentRecipient.giftPreferences.categories.map((category, index) => (
-                          <Badge key={index} colorScheme="blue" variant="subtle">
-                            {category}
-                          </Badge>
-                        ))}
-                      </Flex>
-                    </Box>
-                  )}
-                </SimpleGrid>
-              </CardBody>
-            </Card>
-          )}
 
           <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
             <CardHeader pb={0}>

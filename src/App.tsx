@@ -9,10 +9,6 @@ import RecipientsListPage from './pages/RecipientsListPage';
 import AddRecipientPage from './pages/AddRecipientPage';
 import { RecipientDetailPage } from './pages/RecipientDetailPage';
 import EditRecipientPage from './pages/EditRecipientPage';
-import GiftsListPage from './pages/GiftsListPage';
-import GiftDetailPage from './pages/GiftDetailPage';
-import AddGiftPage from './pages/AddGiftPage';
-import EditGiftPage from './pages/EditGiftPage';
 import SettingsPage from './pages/SettingsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
@@ -23,7 +19,6 @@ import CheckoutPage from './pages/CheckoutPage';
 import { Navbar } from './components/Navbar';
 import { isDemoMode } from './services/demoData';
 import { DEMO_MODE } from './services/firebase';
-import AddGiftWizard from './pages/AddGiftWizard';
 
 function App() {
   const { initialized, user, demoMode } = useAuthStore();
@@ -90,12 +85,6 @@ function App() {
             <Route path="/recipients/add" element={<AddRecipientPage />} />
             <Route path="/recipients/:id" element={<RecipientDetailPage />} />
             <Route path="/recipients/:id/edit" element={<EditRecipientPage />} />
-            {/* Gift routes */}
-            <Route path="/gifts" element={<GiftsListPage />} />
-            <Route path="/gifts/:id" element={<GiftDetailPage />} />
-            <Route path="/gifts/add" element={<AddGiftPage />} />
-            <Route path="/gifts/add/:recipientId" element={<AddGiftWizard />} />
-            <Route path="/gifts/:id/edit" element={<EditGiftPage />} />
             {/* Settings route */}
             <Route path="/settings" element={<SettingsPage />} />
           </Route>

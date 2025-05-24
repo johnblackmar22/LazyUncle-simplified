@@ -18,18 +18,13 @@ import {
   HStack,
 } from '@chakra-ui/react';
 import { useRecipientStore } from '../../store/recipientStore';
-import { useGiftStore } from '../../store/giftStore';
-import { differenceInDays, format, isBefore, addDays, isValid } from 'date-fns';
-import type { Gift } from '../../types';
 import { useAuthStore } from '../../store/authStore';
 import { initializeDemoData } from '../../services/demoData';
 
 export default function DashboardPage() {
   // Get state and actions from stores
   const { recipients, fetchRecipients } = useRecipientStore();
-  const { gifts, fetchGifts } = useGiftStore();
   const { demoMode } = useAuthStore();
-  const [upcomingGifts, setUpcomingGifts] = useState<Gift[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   
@@ -42,78 +37,27 @@ export default function DashboardPage() {
       if (demoMode) {
         // Check if demo data is missing and re-initialize if needed
         const recipients = JSON.parse(localStorage.getItem('recipients') || '[]');
-        const gifts = JSON.parse(localStorage.getItem('gifts') || '[]');
-        if (!recipients.length || !gifts.length) {
+        if (!recipients.length) {
           initializeDemoData();
         }
       }
       
       await fetchRecipients();
-      await fetchGifts();
       
       setIsLoading(false);
     };
     
     loadData();
-  }, [fetchRecipients, fetchGifts, demoMode]);
+  }, [fetchRecipients, demoMode]);
   
   // Add this useEffect to always fetch recipients when dashboard mounts or regains focus
   useEffect(() => {
     fetchRecipients();
   }, [fetchRecipients]);
   
-  // Helper function to safely parse dates from various formats
-  const parseDate = (dateValue: any): Date => {
-    if (!dateValue) return new Date();
-    
-    // If it's already a Date object
-    if (dateValue instanceof Date) return dateValue;
-    
-    // If it's a timestamp number
-    if (typeof dateValue === 'number') return new Date(dateValue);
-    
-    // If it's an ISO string or other string format
-    if (typeof dateValue === 'string') {
-      const parsed = new Date(dateValue);
-      return isValid(parsed) ? parsed : new Date();
-    }
-    
-    // Default fallback
-    return new Date();
-  };
-  
-  // Filter gifts to find upcoming ones (next 30 days)
-  useEffect(() => {
-    if (gifts.length > 0 && recipients.length > 0) {
-      const now = new Date();
-      const thirtyDaysFromNow = addDays(now, 30);
-      
-      // Create a map of recipients by ID for faster lookup
-      const recipientMap = new Map();
-      recipients.forEach(recipient => {
-        recipientMap.set(recipient.id, recipient);
-      });
-      
-      const upcoming = gifts.filter(gift => {
-        const giftDate = parseDate(gift.date);
-        const isUpcoming = !isBefore(giftDate, now) && isBefore(giftDate, thirtyDaysFromNow);
-        
-        return isUpcoming;
-      }).sort((a, b) => {
-        const dateA = parseDate(a.date);
-        const dateB = parseDate(b.date);
-        return dateA.getTime() - dateB.getTime();
-      });
-      
-      setUpcomingGifts(upcoming);
-    }
-  }, [gifts, recipients]);
-  
   // Calculate stats
   const stats = {
     totalRecipients: recipients.length,
-    totalGifts: gifts.length,
-    upcomingGifts: upcomingGifts.length
   };
   
   const boxBg = useColorModeValue('white', 'gray.700');
@@ -157,49 +101,6 @@ export default function DashboardPage() {
             </Box>
           ) : (
             <>
-              <Box mb={8}>
-                <Heading as="h2" size="md" mb={4}>Upcoming Gifts</Heading>
-                {upcomingGifts.length > 0 ? (
-                  <Stack spacing={4}>
-                    {(() => {
-                      const recipientMap = new Map();
-                      recipients.forEach(recipient => {
-                        recipientMap.set(recipient.id, recipient);
-                      });
-                      return upcomingGifts.map(gift => {
-                        const recipient = recipientMap.get(gift.recipientId);
-                        const giftDate = parseDate(gift.date);
-                        const daysUntil = differenceInDays(giftDate, new Date());
-                        return (
-                          <Box key={gift.id} p={4} borderWidth="1px" borderRadius="lg" borderColor={borderColor}>
-                            <Flex justify="space-between" align="center">
-                              <HStack spacing={4}>
-                                <Avatar size="md" name={recipient?.name || 'Gift Recipient'} />
-                                <Box>
-                                  <Heading as="h3" size="sm">{gift.name}</Heading>
-                                  <Text color="gray.500">
-                                    For: {recipient?.name || 'Gift Recipient'} • {gift.occasion}
-                                  </Text>
-                                  <Text fontSize="sm" mt={1}>
-                                    {format(giftDate, 'MMM d, yyyy')}
-                                  </Text>
-                                </Box>
-                              </HStack>
-                              <Badge colorScheme={daysUntil <= 7 ? 'red' : daysUntil <= 14 ? 'orange' : 'green'}>
-                                {daysUntil === 0 ? 'Today' : daysUntil === 1 ? 'Tomorrow' : `${daysUntil} days`}
-                              </Badge>
-                            </Flex>
-                          </Box>
-                        );
-                      });
-                    })()}
-                  </Stack>
-                ) : (
-                  <Text color="gray.500" textAlign="center" py={10}>
-                    No upcoming gifts in the next 30 days.
-                  </Text>
-                )}
-              </Box>
               <Box>
                 <Heading as="h2" size="md" mb={4}>Recipients</Heading>
                 <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
