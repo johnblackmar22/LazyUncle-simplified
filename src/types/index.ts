@@ -75,7 +75,7 @@ export interface Occasion {
   recipientId: string;
   name: string; // e.g., 'Birthday', 'Anniversary', 'Graduation', etc.
   date: string; // Format: 'YYYY-MM-DD'
-  type: 'birthday' | 'anniversary' | 'custom';
+  type: 'birthday' | 'anniversary' | 'custom' | 'christmas';
   notes?: string;
   createdAt: Date | number;
   updatedAt: Date | number;
