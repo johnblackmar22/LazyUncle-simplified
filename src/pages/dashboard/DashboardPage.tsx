@@ -34,14 +34,15 @@ import { useRecipientStore } from '../../store/recipientStore';
 import { useAuthStore } from '../../store/authStore';
 import { initializeDemoData } from '../../services/demoData';
 import { useOccasionStore } from '../../store/occasionStore';
+import { FaGift } from 'react-icons/fa';
 
 export default function DashboardPage() {
   // Get state and actions from stores
   const { recipients, fetchRecipients } = useRecipientStore();
   const { demoMode } = useAuthStore();
+  const { occasions, addOccasion, fetchOccasions } = useOccasionStore();
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
-  const { addOccasion, fetchOccasions } = useOccasionStore();
   const toast = useToast();
   const [occasionModalRecipientId, setOccasionModalRecipientId] = useState<string | null>(null);
   const [occasionForm, setOccasionForm] = useState<{
@@ -195,6 +196,21 @@ export default function DashboardPage() {
     setOccasionLoading(false);
   };
 
+  // Helper to calculate age
+  const calculateAge = (date: string | undefined) => {
+    if (!date) return '';
+    const [year, month, day] = date.split('-').map(Number);
+    const today = new Date();
+    let age = today.getFullYear() - year;
+    if (
+      today.getMonth() + 1 < month ||
+      (today.getMonth() + 1 === month && today.getDate() < day)
+    ) {
+      age--;
+    }
+    return age;
+  };
+
   return (
     <Stack spacing={8}>
       <Flex justify="space-between" align="center">
@@ -247,13 +263,28 @@ export default function DashboardPage() {
                       _hover={{ boxShadow: 'md', bg: 'gray.50' }}
                       onClick={() => navigate(`/recipients/${recipient.id}`)}
                     >
-                      <Flex align="center" gap={4}>
+                      <Flex align="center" gap={4} mb={2}>
                         <Avatar size="md" name={recipient.name} />
                         <Box>
                           <Text fontWeight="bold">{recipient.name}</Text>
                           <Text color="gray.500">{recipient.relationship}</Text>
+                          {recipient.birthdate && (
+                            <Text fontSize="sm" color="gray.600">
+                              Age: {calculateAge(recipient.birthdate)}
+                            </Text>
+                          )}
                         </Box>
                       </Flex>
+                      {/* Gift Occasions */}
+                      {occasions && occasions[recipient.id] && occasions[recipient.id].length > 0 && (
+                        <Flex align="center" gap={1} mt={1} flexWrap="wrap">
+                          {occasions[recipient.id].map((occasion, idx) => (
+                            <Badge key={occasion.id} colorScheme="purple" fontSize="0.8em" display="flex" alignItems="center" mr={1} mb={1}>
+                              <FaGift style={{ marginRight: 4 }} /> {occasion.name}
+                            </Badge>
+                          ))}
+                        </Flex>
+                      )}
                       <Button
                         mt={4}
                         colorScheme="blue"
