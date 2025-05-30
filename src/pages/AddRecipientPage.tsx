@@ -19,13 +19,24 @@ import {
   AlertDialogContent,
   AlertDialogOverlay,
   HStack,
-  Textarea
+  Textarea,
+  Card,
+  CardHeader,
+  CardBody,
+  CardFooter,
+  IconButton,
+  Badge,
+  useColorModeValue,
+  Divider,
+  Icon,
 } from '@chakra-ui/react';
 import { useRecipientStore } from '../store/recipientStore';
 import { useAuthStore } from '../store/authStore';
 import { getPlanById } from '../services/subscription/plans';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { months, days, years } from '../utils/dateUtils';
+import { ArrowBackIcon, AddIcon } from '@chakra-ui/icons';
+import { FaUser, FaHeart } from 'react-icons/fa';
 
 const relationshipOptions = [
   'Nephew', 'Niece', 'Wife', 'Husband', 'Brother', 'Sister', 'Mom', 'Dad', 'Friend', 'Colleague', 'Other'
@@ -55,6 +66,15 @@ const AddRecipientPage: React.FC = () => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [description, setDescription] = useState('');
+
+  const bgColor = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
+
+  // Helper function to get diverse colors for interests
+  const getInterestColor = (index: number) => {
+    const colors = ['purple', 'teal', 'blue', 'orange', 'pink', 'cyan', 'red', 'yellow'];
+    return colors[index % colors.length];
+  };
 
   // Add/Remove Interests
   const addInterest = () => {
@@ -117,83 +137,202 @@ const AddRecipientPage: React.FC = () => {
   };
 
   return (
-    <Container maxW="container.md" py={4}>
+    <Container maxW="container.md" mt={4}>
       <VStack spacing={6} align="stretch">
+        {/* Header with back navigation */}
         <Box>
-          <Heading>Add Recipient</Heading>
-          <form onSubmit={handleSubmit}>
-            <VStack spacing={6} align="stretch" mt={4}>
-              <FormControl isRequired>
-                <FormLabel>First Name</FormLabel>
-                <Input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Their first name" />
-              </FormControl>
-              <FormControl isRequired>
-                <FormLabel>Last Name</FormLabel>
-                <Input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Their last name" />
-              </FormControl>
-              <FormControl isRequired>
-                <FormLabel>Relationship</FormLabel>
-                <Select value={recipient.relationship} onChange={e => setRecipient(r => ({ ...r, relationship: e.target.value }))} placeholder="Select relationship">
-                  {relationshipOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                </Select>
-              </FormControl>
-              <FormControl>
-                <FormLabel>Birthdate (Optional)</FormLabel>
-                <Text fontSize="sm" color="gray.600" mb={2}>
-                  This helps us recommend age-appropriate gifts and remember important dates.
-                </Text>
-                <HStack>
-                  <Select placeholder="Month" value={birthMonth} onChange={e => setBirthMonth(e.target.value)}>{months.map((m: string, i: number) => <option key={i} value={String(i+1).padStart(2, '0')}>{m}</option>)}</Select>
-                  <Select placeholder="Day" value={birthDay} onChange={e => setBirthDay(e.target.value)}>{days.map((d: number) => <option key={d} value={String(d).padStart(2, '0')}>{d}</option>)}</Select>
-                  <Select placeholder="Year" value={birthYear} onChange={e => setBirthYear(e.target.value)}>{years.map((y: number) => <option key={y} value={y}>{y}</option>)}</Select>
-                </HStack>
-              </FormControl>
-              <FormControl>
-                <FormLabel>Interests</FormLabel>
-                <Flex gap={2} mb={2}>
-                  <Input value={interestInput} onChange={e => setInterestInput(e.target.value)} placeholder="Add interest" onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addInterest(); } }} />
-                  <Button onClick={addInterest} leftIcon={<span>+</span>}>Add</Button>
-                </Flex>
-                <Flex gap={2} flexWrap="wrap">
-                  {recipient.interests.map(i => (
-                    <Button key={i} size="sm" colorScheme="blue" variant="outline" onClick={() => removeInterest(i)}>{i} ×</Button>
-                  ))}
-                </Flex>
-                <Flex gap={2} mt={2} flexWrap="wrap">
-                  {suggestedInterests
-                    .filter(si => !recipient.interests.includes(si))
-                    .map(si => (
-                      <Button 
-                        key={si} 
-                        size="xs" 
-                        variant="outline" 
-                        colorScheme="gray" 
-                        onClick={() => setRecipient(r => ({ ...r, interests: [...r.interests, si] }))}
-                      >
-                        {si}
-                      </Button>
-                    ))}
-                </Flex>
-              </FormControl>
-              <FormControl>
-                <FormLabel>Tell us about them (Optional)</FormLabel>
-                <Text fontSize="sm" color="gray.600" mb={2}>
-                  Share a few sentences about this person and your relationship with them. This helps us understand their personality and recommend more thoughtful, personalized gifts.
-                </Text>
-                <Textarea 
-                  value={description} 
-                  onChange={e => setDescription(e.target.value)} 
-                  placeholder="For example: 'My brother loves outdoor adventures and craft beer. He's always been the adventurous one in our family and enjoys trying new things...'"
-                  rows={4}
-                />
-              </FormControl>
-              <Flex justify="space-between">
-                <Button variant="ghost" as={RouterLink} to="/recipients">Cancel</Button>
-                <Button colorScheme="blue" type="submit" isLoading={loading}>Save Recipient</Button>
-              </Flex>
-            </VStack>
-          </form>
+          <IconButton
+            as={RouterLink}
+            to="/recipients"
+            aria-label="Go back"
+            icon={<ArrowBackIcon />}
+            variant="ghost"
+            mb={4}
+          />
+          <Heading size="xl" mb={2}>Add Recipient</Heading>
+          <Text color="gray.600">
+            Add someone special to your gift list and let us handle the rest.
+          </Text>
         </Box>
+
+        {/* Main form card */}
+        <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
+          <form onSubmit={handleSubmit}>
+            <CardHeader>
+              <Flex align="center" gap={2}>
+                <Icon as={FaUser} color="blue.500" />
+                <Heading size="md">Basic Information</Heading>
+              </Flex>
+            </CardHeader>
+            <CardBody>
+              <VStack spacing={6} align="stretch">
+                <HStack spacing={4}>
+                  <FormControl isRequired>
+                    <FormLabel>First Name</FormLabel>
+                    <Input 
+                      value={firstName} 
+                      onChange={e => setFirstName(e.target.value)} 
+                      placeholder="Their first name" 
+                    />
+                  </FormControl>
+                  <FormControl isRequired>
+                    <FormLabel>Last Name</FormLabel>
+                    <Input 
+                      value={lastName} 
+                      onChange={e => setLastName(e.target.value)} 
+                      placeholder="Their last name" 
+                    />
+                  </FormControl>
+                </HStack>
+                
+                <FormControl isRequired>
+                  <FormLabel>Relationship</FormLabel>
+                  <Select 
+                    value={recipient.relationship} 
+                    onChange={e => setRecipient(r => ({ ...r, relationship: e.target.value }))} 
+                    placeholder="Select relationship"
+                  >
+                    {relationshipOptions.map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </Select>
+                </FormControl>
+                
+                <Divider />
+                
+                <FormControl>
+                  <FormLabel>Birthdate (Optional)</FormLabel>
+                  <Text fontSize="sm" color="gray.600" mb={2}>
+                    This helps us recommend age-appropriate gifts and remember important dates.
+                  </Text>
+                  <HStack>
+                    <Select 
+                      placeholder="Month" 
+                      value={birthMonth} 
+                      onChange={e => setBirthMonth(e.target.value)}
+                    >
+                      {months.map((m: string, i: number) => (
+                        <option key={i} value={String(i+1).padStart(2, '0')}>{m}</option>
+                      ))}
+                    </Select>
+                    <Select 
+                      placeholder="Day" 
+                      value={birthDay} 
+                      onChange={e => setBirthDay(e.target.value)}
+                    >
+                      {days.map((d: number) => (
+                        <option key={d} value={String(d).padStart(2, '0')}>{d}</option>
+                      ))}
+                    </Select>
+                    <Select 
+                      placeholder="Year" 
+                      value={birthYear} 
+                      onChange={e => setBirthYear(e.target.value)}
+                    >
+                      {years.map((y: number) => (
+                        <option key={y} value={y}>{y}</option>
+                      ))}
+                    </Select>
+                  </HStack>
+                </FormControl>
+                
+                <Divider />
+                
+                <FormControl>
+                  <Flex align="center" gap={2} mb={2}>
+                    <Icon as={FaHeart} color="red.500" />
+                    <FormLabel mb={0}>Interests</FormLabel>
+                  </Flex>
+                  <Text fontSize="sm" color="gray.600" mb={3}>
+                    What do they love? This helps us find the perfect gifts.
+                  </Text>
+                  
+                  <HStack mb={3}>
+                    <Input 
+                      value={interestInput} 
+                      onChange={e => setInterestInput(e.target.value)} 
+                      placeholder="Add an interest" 
+                      onKeyDown={e => { 
+                        if (e.key === 'Enter') { 
+                          e.preventDefault(); 
+                          addInterest(); 
+                        } 
+                      }} 
+                    />
+                    <Button onClick={addInterest} leftIcon={<AddIcon />} colorScheme="blue">
+                      Add
+                    </Button>
+                  </HStack>
+                  
+                  {recipient.interests.length > 0 && (
+                    <Box mb={3}>
+                      <Text fontSize="sm" fontWeight="bold" mb={2}>Added interests:</Text>
+                      <Flex gap={2} flexWrap="wrap">
+                        {recipient.interests.map((interest, index) => (
+                          <Badge 
+                            key={interest} 
+                            colorScheme={getInterestColor(index)} 
+                            variant="solid" 
+                            cursor="pointer"
+                            onClick={() => removeInterest(interest)}
+                            _hover={{ opacity: 0.8 }}
+                          >
+                            {interest} ×
+                          </Badge>
+                        ))}
+                      </Flex>
+                    </Box>
+                  )}
+                  
+                  <Box>
+                    <Text fontSize="sm" fontWeight="bold" mb={2}>Quick suggestions:</Text>
+                    <Flex gap={2} flexWrap="wrap">
+                      {suggestedInterests
+                        .filter(si => !recipient.interests.includes(si))
+                        .map(si => (
+                          <Badge 
+                            key={si} 
+                            variant="outline" 
+                            colorScheme="gray" 
+                            cursor="pointer"
+                            onClick={() => setRecipient(r => ({ ...r, interests: [...r.interests, si] }))}
+                            _hover={{ bg: useColorModeValue('gray.100', 'gray.600') }}
+                          >
+                            {si}
+                          </Badge>
+                        ))}
+                    </Flex>
+                  </Box>
+                </FormControl>
+                
+                <Divider />
+                
+                <FormControl>
+                  <FormLabel>Tell us about them (Optional)</FormLabel>
+                  <Text fontSize="sm" color="gray.600" mb={2}>
+                    Share a few sentences about this person and your relationship with them. This helps us understand their personality and recommend more thoughtful, personalized gifts.
+                  </Text>
+                  <Textarea 
+                    value={description} 
+                    onChange={e => setDescription(e.target.value)} 
+                    placeholder="For example: 'My brother loves outdoor adventures and craft beer. He's always been the adventurous one in our family and enjoys trying new things...'"
+                    rows={4}
+                  />
+                </FormControl>
+              </VStack>
+            </CardBody>
+            <CardFooter>
+              <HStack spacing={3} width="100%" justifyContent="space-between">
+                <Button variant="ghost" as={RouterLink} to="/recipients">
+                  Cancel
+                </Button>
+                <Button colorScheme="blue" type="submit" isLoading={loading} leftIcon={<AddIcon />}>
+                  Save Recipient
+                </Button>
+              </HStack>
+            </CardFooter>
+          </form>
+        </Card>
         
         <AlertDialog
           isOpen={isPaywallOpen}

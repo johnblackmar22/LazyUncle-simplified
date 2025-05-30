@@ -42,6 +42,7 @@ import {
   AlertDialogOverlay,
 } from '@chakra-ui/react';
 import { EditIcon, DeleteIcon, ArrowBackIcon, AddIcon } from '@chakra-ui/icons';
+import { FaGift, FaCalendarAlt, FaDollarSign, FaUser, FaHeart, FaComments } from 'react-icons/fa';
 import { useRecipientStore } from '../store/recipientStore';
 import { format } from 'date-fns';
 import type { Recipient } from '../types';
@@ -49,172 +50,71 @@ import { showErrorToast } from '../utils/toastUtils';
 import { safeFormatDate } from '../utils/dateUtils';
 import { useOccasionStore } from '../store/occasionStore';
 import OccasionForm from '../components/OccasionForm';
-import { FaGift } from 'react-icons/fa';
+import OccasionCard from '../components/OccasionCard';
 
 export const RecipientDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const toast = useToast();
-  const { 
-    recipients, 
-    loading, 
-    error, 
-    fetchRecipients, 
-    deleteRecipient 
-  } = useRecipientStore();
-  const { occasions, fetchOccasions, addOccasion, deleteOccasion } = useOccasionStore();
   const location = useLocation();
-  
+
+  const { recipients, loading, error, fetchRecipients, deleteRecipient } = useRecipientStore();
+  const { occasions, addOccasion, updateOccasion, deleteOccasion, fetchOccasions } = useOccasionStore();
+
   const [currentRecipient, setCurrentRecipient] = useState<Recipient | null>(null);
-  
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingOccasion, setEditingOccasion] = useState<any>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deletingOccasionId, setDeletingOccasionId] = useState<string | null>(null);
+  const [isDeletingOccasion, setIsDeletingOccasion] = useState(false);
+
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
-  const [recommendations] = useState([
-    {
-      id: 'fake-1',
-      name: 'Bluetooth Speaker',
-      description: 'Portable speaker with high-quality sound.',
-      price: 49.99,
-      category: 'Electronics',
-    },
-    {
-      id: 'fake-2',
-      name: 'Personalized Mug',
-      description: 'Custom mug with their name and a fun design.',
-      price: 19.99,
-      category: 'Home',
-    },
-    {
-      id: 'fake-3',
-      name: 'Gift Card',
-      description: 'A $50 gift card to their favorite store.',
-      price: 50.00,
-      category: 'Gift Card',
-    },
-  ]);
-
-  const [isOccasionModalOpen, setOccasionModalOpen] = useState(false);
-  const [occasionLoading, setOccasionLoading] = useState(false);
-  const [isDuplicateAlertOpen, setDuplicateAlertOpen] = useState(false);
-  const [duplicateInfo, setDuplicateInfo] = useState<{ 
-    occasionName: string; 
-    existingCount: number; 
-    pendingOccasionData: any;
-  } | null>(null);
-  const cancelRef = React.useRef<HTMLButtonElement>(null);
-
-  const openOccasionModal = () => {
-    console.log('Opening occasion modal. Current recipient:', currentRecipient);
-    console.log('Modal state before:', isOccasionModalOpen);
-    setOccasionModalOpen(true);
-  };
-  
-  const closeOccasionModal = () => { 
-    console.log('Closing occasion modal');
-    setOccasionModalOpen(false); 
-  };
-
-  const handleDeleteOccasion = async (occasionId: string) => {
-    if (!id) return;
+  // Helper function to format birthday and calculate age
+  const formatBirthdayWithAge = (birthdate?: string) => {
+    if (!birthdate) return null;
     
-    if (window.confirm('Are you sure you want to delete this occasion?')) {
-      try {
-        await deleteOccasion(occasionId, id);
-        toast({
-          title: 'Occasion deleted',
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
-        });
-        // Refresh the occasions list
-        await fetchOccasions(id);
-      } catch (error) {
-        showErrorToast(toast, error, { title: 'Error deleting occasion' });
-      }
-    }
-  };
-
-  const checkForDuplicateOccasion = (occasionData: any) => {
-    if (!id || !occasions || !occasions[id]) return false;
-    
-    const existingOccasions = occasions[id];
-    const duplicates = existingOccasions.filter((occasion: any) => 
-      occasion.name.toLowerCase() === occasionData.name.toLowerCase()
-    );
-    
-    if (duplicates.length > 0) {
-      setDuplicateInfo({
-        occasionName: occasionData.name,
-        existingCount: duplicates.length,
-        pendingOccasionData: occasionData
-      });
-      setDuplicateAlertOpen(true);
-      return true;
-    }
-    return false;
-  };
-
-  const handleOccasionSubmit = async (occasionData: any) => {
-    console.log('=== OCCASION SUBMIT ===');
-    console.log('Occasion data received:', occasionData);
-    console.log('Recipient ID:', id);
-    
-    if (checkForDuplicateOccasion(occasionData)) {
-      console.log('Duplicate occasion detected, stopping submission');
-      return; // Stop here, let user confirm via dialog
-    }
-    
-    await proceedWithOccasionAdd(occasionData);
-  };
-
-  const proceedWithOccasionAdd = async (occasionData: any) => {
-    console.log('=== PROCEEDING WITH OCCASION ADD ===');
-    console.log('Final occasion data:', occasionData);
-    setOccasionLoading(true);
     try {
-      const result = await addOccasion(id || '', occasionData);
-      console.log('Add occasion result:', result);
-      if (!result) {
-        console.error('addOccasion returned null/falsy result');
-        toast({ title: 'Failed to add occasion', status: 'error', duration: 4000, isClosable: true });
-      } else {
-        console.log('Occasion added successfully');
-        toast({ title: 'Occasion added', status: 'success', duration: 2000, isClosable: true });
-        await fetchOccasions(id || '');
-        closeOccasionModal();
+      // Parse date in local timezone to avoid UTC issues
+      const [year, month, day] = birthdate.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      const today = new Date();
+      
+      // Calculate age
+      let age = today.getFullYear() - date.getFullYear();
+      const monthDiff = today.getMonth() - date.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < date.getDate())) {
+        age--;
       }
-    } catch (error) {
-      console.error('Error in proceedWithOccasionAdd:', error);
-      showErrorToast(toast, error, { title: 'Error adding occasion' });
-    } finally {
-      setOccasionLoading(false);
+      
+      // Format as Month DD
+      const monthDay = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+      
+      return { monthDay, age };
+    } catch {
+      return null;
     }
   };
 
-  const handleDuplicateConfirm = async () => {
-    if (duplicateInfo?.pendingOccasionData) {
-      setDuplicateAlertOpen(false);
-      await proceedWithOccasionAdd(duplicateInfo.pendingOccasionData);
-      setDuplicateInfo(null);
-    }
+  // Helper function to get diverse colors for interests
+  const getInterestColor = (index: number) => {
+    const colors = ['purple', 'teal', 'blue', 'orange', 'pink', 'cyan', 'red', 'yellow'];
+    return colors[index % colors.length];
   };
 
-  const handleDuplicateCancel = () => {
-    setDuplicateAlertOpen(false);
-    setDuplicateInfo(null);
-  };
-
+  // Load recipients and occasions
   useEffect(() => {
     console.log('RecipientDetailPage useEffect triggered. ID:', id, 'Location search:', location.search);
     fetchRecipients();
     if (id) {
       fetchOccasions(id);
     }
-    // Open modal if addOccasion query param is present
-    if (location.search.includes('addOccasion=true')) {
-      console.log('Found addOccasion=true in query params, opening modal');
-      setOccasionModalOpen(true);
+
+    // Check if we should open the occasion modal (from add recipient flow)
+    const urlParams = new URLSearchParams(location.search);
+    if (urlParams.get('addOccasion') === 'true') {
+      setIsModalOpen(true);
     }
   }, [fetchRecipients, fetchOccasions, id, location.search]);
   
@@ -222,274 +122,305 @@ export const RecipientDetailPage: React.FC = () => {
   useEffect(() => {
     if (id && recipients.length > 0) {
       const recipient = recipients.find(r => r.id === id);
-      setCurrentRecipient(recipient || null);
+      if (recipient) {
+        setCurrentRecipient(recipient);
+      } else {
+        console.warn('Recipient not found with ID:', id);
+      }
     }
   }, [id, recipients]);
 
-  const handleDelete = async () => {
+  const handleAddOccasion = async (occasionData: any) => {
     if (!id) return;
     
-    if (window.confirm('Are you sure you want to delete this recipient?')) {
-      try {
-        await deleteRecipient(id);
-        toast({
-          title: 'Recipient deleted',
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
-        });
-        navigate('/recipients');
-      } catch (error) {
-        showErrorToast(toast, error, { title: 'Error deleting recipient' });
-      }
-    }
-  };
-  
-  // Helper to format birthday as Month Day
-  const formatBirthdayMonthDay = (date: string | undefined) => {
-    if (!date) return 'Not set';
     try {
-      const [, month, day] = date.split('-');
-      const dateObj = new Date(2000, Number(month) - 1, Number(day));
-      return dateObj.toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
-    } catch {
-      return date;
+      await addOccasion(id, occasionData);
+      setIsModalOpen(false);
+      setEditingOccasion(null);
+      toast({
+        title: 'Occasion added successfully',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      showErrorToast(toast, error, { title: 'Error adding occasion' });
     }
   };
-  // Helper to calculate age
-  const calculateAge = (date: string | undefined) => {
-    if (!date) return '';
-    const [year, month, day] = date.split('-').map(Number);
-    const today = new Date();
-    let age = today.getFullYear() - year;
-    if (
-      today.getMonth() + 1 < month ||
-      (today.getMonth() + 1 === month && today.getDate() < day)
-    ) {
-      age--;
-    }
-    return age;
-  };
-  // Helper to format MM-DD
-  const formatMonthDay = (date: string) => {
+
+  const handleEditOccasion = async (occasionData: any) => {
+    if (!editingOccasion || !id) return;
+    
     try {
-      const [, month, day] = date.split('-');
-      const dateObj = new Date(2000, Number(month) - 1, Number(day));
-      return dateObj.toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
-    } catch {
-      return date;
+      await updateOccasion(editingOccasion.id, occasionData);
+      setIsModalOpen(false);
+      setEditingOccasion(null);
+      toast({
+        title: 'Occasion updated successfully',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      showErrorToast(toast, error, { title: 'Error updating occasion' });
     }
+  };
+
+  const handleDeleteOccasion = async (occasionId: string) => {
+    if (!id) return;
+    
+    setIsDeletingOccasion(true);
+    try {
+      await deleteOccasion(occasionId, id);
+      setIsDeleteDialogOpen(false);
+      setDeletingOccasionId(null);
+      toast({
+        title: 'Occasion deleted successfully',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      showErrorToast(toast, error, { title: 'Error deleting occasion' });
+    } finally {
+      setIsDeletingOccasion(false);
+    }
+  };
+
+  const openEditModal = (occasion: any) => {
+    setEditingOccasion(occasion);
+    setIsModalOpen(true);
+  };
+
+  const openDeleteDialog = (occasionId: string) => {
+    setDeletingOccasionId(occasionId);
+    setIsDeleteDialogOpen(true);
   };
 
   if (loading && !currentRecipient) {
     return (
-      <Flex justify="center" align="center" h="200px">
-        <Spinner size="xl" color="blue.500" />
-      </Flex>
+      <Container maxW="container.lg" mt={8}>
+        <Flex justify="center" align="center" h="200px">
+          <Spinner size="xl" color="blue.500" />
+        </Flex>
+      </Container>
     );
   }
 
   if (error) {
     return (
-      <Box p={4} bg="red.50" color="red.500" borderRadius="md">
-        <Text>Error: {error}</Text>
-      </Box>
+      <Container maxW="container.lg" mt={8}>
+        <Box p={4} bg="red.50" color="red.500" borderRadius="md">
+          <Text>Error: {error}</Text>
+        </Box>
+      </Container>
     );
   }
 
   if (!currentRecipient) {
     return (
-      <Box textAlign="center" p={8}>
-        <Text fontSize="lg" mb={4}>Recipient not found</Text>
-        <Button
-          as={RouterLink}
-          to="/recipients"
-          colorScheme="blue"
-          leftIcon={<ArrowBackIcon />}
-        >
-          Back to Recipients
-        </Button>
-      </Box>
+      <Container maxW="container.lg" mt={8}>
+        <Box textAlign="center" p={8}>
+          <Text fontSize="lg" mb={4}>Recipient not found</Text>
+          <Button as={RouterLink} to="/recipients" leftIcon={<ArrowBackIcon />}>
+            Back to Recipients
+          </Button>
+        </Box>
+      </Container>
     );
   }
 
   return (
-    <Box bg="gray.100" minH="100vh">
-      <Container maxW="container.lg" py={{ base: 4, md: 6 }} px={{ base: 2, md: 0 }}>
-        <VStack spacing={{ base: 4, md: 8 }} align="stretch">
-          <Box>
-            <Button 
-              leftIcon={<ArrowBackIcon />} 
-              variant="ghost" 
-              onClick={() => navigate('/recipients')}
-              mb={4}
-              w={{ base: 'full', md: 'auto' }}
-            >
-              Back to Recipients
-            </Button>
-            <Flex direction={{ base: 'column', md: 'row' }} justify="space-between" align={{ base: 'stretch', md: 'center' }}>
-              <Heading size={{ base: 'lg', md: 'xl' }} mb={2}>{currentRecipient.name}</Heading>
-              <HStack spacing={2} mt={{ base: 2, md: 0 }}>
-                <IconButton
-                  as={RouterLink}
-                  to={`/recipients/${currentRecipient.id}/edit`}
-                  aria-label="Edit"
-                  icon={<EditIcon />}
-                  colorScheme="blue"
-                  variant="outline"
-                />
-                <IconButton
-                  aria-label="Delete"
-                  icon={<DeleteIcon />}
-                  colorScheme="red"
-                  variant="outline"
-                  onClick={handleDelete}
-                />
-                <Button
-                  colorScheme="purple"
-                  leftIcon={<AddIcon />}
-                  w={{ base: 'full', md: 'auto' }}
-                  onClick={openOccasionModal}
-                >
-                  Add Occasion
-                </Button>
-              </HStack>
+    <Container maxW="container.lg" mt={4}>
+      {/* Header */}
+      <Flex justify="space-between" align="center" mb={6}>
+        <HStack>
+          <IconButton
+            as={RouterLink}
+            to="/recipients"
+            aria-label="Go back"
+            icon={<ArrowBackIcon />}
+            variant="ghost"
+          />
+          <Heading size="lg">{currentRecipient.name}</Heading>
+        </HStack>
+        <HStack>
+          <Button
+            as={RouterLink}
+            to={`/recipients/${id}/edit`}
+            leftIcon={<EditIcon />}
+            colorScheme="teal"
+            variant="outline"
+          >
+            Edit Recipient
+          </Button>
+        </HStack>
+      </Flex>
+
+      <Stack spacing={6}>
+        {/* Recipient Info Card */}
+        <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
+          <CardHeader>
+            <Flex gap={4}>
+              <Avatar name={currentRecipient.name} size="lg" />
+              <Box>
+                <Heading size="md">{currentRecipient.name}</Heading>
+                <Badge colorScheme="blue" mt={1}>{currentRecipient.relationship}</Badge>
+              </Box>
             </Flex>
-            <Badge colorScheme="blue" fontSize="md" mt={1}>
-              {currentRecipient.relationship}
-            </Badge>
-          </Box>
-
-          <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
-            <CardHeader pb={0}>
-              <Heading size="md">Birthday</Heading>
-            </CardHeader>
-            <CardBody>
-              {typeof currentRecipient.birthdate === 'string' && currentRecipient.birthdate ? (
-                <Flex align="center" gap={2}>
-                  <Text>{formatBirthdayMonthDay(currentRecipient.birthdate as string)}</Text>
-                  <Text color="gray.500">({calculateAge(currentRecipient.birthdate as string)} years old)</Text>
-                </Flex>
-              ) : (
-                <Text color="gray.500">No birthdate set.</Text>
-              )}
-            </CardBody>
-          </Card>
-
-          <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
-            <CardHeader pb={0}>
-              <Heading size="md">Interests</Heading>
-            </CardHeader>
-            <CardBody>
-              {currentRecipient.interests && currentRecipient.interests.length > 0 ? (
-                <Flex gap={2} flexWrap="wrap">
-                  {currentRecipient.interests.map((interest, index) => (
-                    <Badge key={index} colorScheme="green" variant="solid" px={2} py={1}>
-                      {interest}
-                    </Badge>
-                  ))}
-                </Flex>
-              ) : (
-                <Text color="gray.500">No interests added yet.</Text>
-              )}
-            </CardBody>
-          </Card>
-
-          <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
-            <CardHeader pb={0}>
-              <Heading size="md">Gift Occasions</Heading>
-            </CardHeader>
-            <CardBody>
-              {id && occasions && occasions[id] && occasions[id].length > 0 ? (
-                <VStack align="start" spacing={3}>
-                  {occasions[id].map((occasion: any) => (
-                    <Flex key={occasion.id} align="center" justify="space-between" w="full" p={2} borderWidth="1px" borderRadius="md" borderColor={borderColor}>
-                      <Flex align="center" gap={2}>
-                        <FaGift color="purple" />
-                        <Box>
-                          <Text fontWeight="bold">{occasion.name}</Text>
-                          <Text fontSize="sm" color="gray.500">{formatMonthDay(occasion.date)}</Text>
-                        </Box>
-                      </Flex>
-                      <IconButton
-                        aria-label="Delete occasion"
-                        icon={<DeleteIcon />}
-                        colorScheme="red"
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleDeleteOccasion(occasion.id)}
-                      />
-                    </Flex>
-                  ))}
+          </CardHeader>
+          <CardBody>
+            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+              {currentRecipient.birthdate && (() => {
+                const birthdayInfo = formatBirthdayWithAge(currentRecipient.birthdate);
+                return birthdayInfo && (
+                  <>
+                    <HStack>
+                      <FaUser color="blue" />
+                      <Text>
+                        <strong>Birthday:</strong> {birthdayInfo.monthDay}
+                      </Text>
+                    </HStack>
+                    <HStack>
+                      <FaUser color="green" />
+                      <Text>
+                        <strong>Age:</strong> {birthdayInfo.age} years old
+                      </Text>
+                    </HStack>
+                  </>
+                );
+              })()}
+              
+              {currentRecipient.interests && currentRecipient.interests.length > 0 && (
+                <VStack align="start">
+                  <HStack>
+                    <FaHeart color="red" />
+                    <Text fontWeight="bold">Interests:</Text>
+                  </HStack>
+                  <Flex gap={1} flexWrap="wrap">
+                    {currentRecipient.interests.map((interest, index) => (
+                      <Badge key={index} colorScheme={getInterestColor(index)} variant="subtle">
+                        {interest}
+                      </Badge>
+                    ))}
+                  </Flex>
                 </VStack>
-              ) : (
-                <Text color="gray.500">No gift occasions yet.</Text>
               )}
+            </SimpleGrid>
+          </CardBody>
+        </Card>
+
+        {/* Gift Occasions */}
+        <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
+          <CardHeader>
+            <Flex justify="space-between" align="center">
+              <Heading size="md">Gift Occasions</Heading>
+              <Button
+                leftIcon={<AddIcon />}
+                colorScheme="purple"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsModalOpen(true)}
+              >
+                Add Occasion
+              </Button>
+            </Flex>
+          </CardHeader>
+          <CardBody>
+            {id && occasions && occasions[id] && occasions[id].length > 0 ? (
+              <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={4}>
+                {occasions[id].map((occasion: any) => (
+                  <OccasionCard
+                    key={occasion.id}
+                    occasion={occasion}
+                    recipient={currentRecipient}
+                    onEdit={openEditModal}
+                    onDelete={openDeleteDialog}
+                    isDeleting={isDeletingOccasion && deletingOccasionId === occasion.id}
+                  />
+                ))}
+              </SimpleGrid>
+            ) : (
+              <Box textAlign="center" p={6}>
+                <Text mb={4} color="gray.500">No occasions created yet</Text>
+                <Button
+                  leftIcon={<AddIcon />}
+                  colorScheme="purple"
+                  onClick={() => setIsModalOpen(true)}
+                >
+                  Add First Occasion
+                </Button>
+              </Box>
+            )}
+          </CardBody>
+        </Card>
+
+        {/* Description */}
+        {currentRecipient.description && (
+          <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
+            <CardHeader>
+              <Heading size="md">About {currentRecipient.name}</Heading>
+            </CardHeader>
+            <CardBody>
+              <Text>{currentRecipient.description}</Text>
             </CardBody>
           </Card>
+        )}
+      </Stack>
 
-          {currentRecipient.description && (
-            <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
-              <CardHeader pb={0}>
-                <Heading size="md">About {currentRecipient.name.split(' ')[0]}</Heading>
-              </CardHeader>
-              <CardBody>
-                <Text>{currentRecipient.description}</Text>
-              </CardBody>
-            </Card>
-          )}
-        </VStack>
-      </Container>
-      <Modal isOpen={isOccasionModalOpen} onClose={closeOccasionModal} isCentered>
+      {/* Occasion Modal */}
+      <Modal isOpen={isModalOpen} onClose={() => {
+        setIsModalOpen(false);
+        setEditingOccasion(null);
+      }} size="lg">
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>Add Occasion</ModalHeader>
+          <ModalHeader>
+            {editingOccasion ? 'Edit Occasion' : 'Add New Occasion'}
+          </ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            {(() => {
-              console.log('Modal rendering. Modal open:', isOccasionModalOpen, 'Current recipient:', currentRecipient);
-              return currentRecipient && (
-                <OccasionForm
-                  recipient={currentRecipient}
-                  loading={occasionLoading}
-                  onSubmit={handleOccasionSubmit}
-                  onCancel={closeOccasionModal}
-                />
-              );
-            })()}
+            <OccasionForm
+              recipient={currentRecipient}
+              initialValues={editingOccasion}
+              onSubmit={editingOccasion ? handleEditOccasion : handleAddOccasion}
+              onCancel={() => {
+                setIsModalOpen(false);
+                setEditingOccasion(null);
+              }}
+            />
           </ModalBody>
         </ModalContent>
       </Modal>
+
+      {/* Delete Confirmation Dialog */}
       <AlertDialog
-        isOpen={isDuplicateAlertOpen}
-        leastDestructiveRef={cancelRef}
-        onClose={handleDuplicateCancel}
+        isOpen={isDeleteDialogOpen}
+        leastDestructiveRef={React.createRef()}
+        onClose={() => setIsDeleteDialogOpen(false)}
       >
         <AlertDialogOverlay>
           <AlertDialogContent>
-            <AlertDialogHeader fontSize="lg" fontWeight="bold">
-              Duplicate Occasion
-            </AlertDialogHeader>
+            <AlertDialogHeader>Delete Occasion</AlertDialogHeader>
             <AlertDialogBody>
-              An occasion with the name "{duplicateInfo?.occasionName}" already exists. 
-              {duplicateInfo && (
-                <Text mt={2}>
-                  You will be sending <strong>{duplicateInfo.existingCount + 1}</strong> gifts for this occasion. 
-                  Are you sure you want to continue?
-                </Text>
-              )}
+              Are you sure you want to delete this occasion? This action cannot be undone.
             </AlertDialogBody>
             <AlertDialogFooter>
-              <Button ref={cancelRef} onClick={handleDuplicateCancel}>
+              <Button onClick={() => setIsDeleteDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button colorScheme="red" onClick={handleDuplicateConfirm} ml={3}>
-                Confirm
+              <Button
+                colorScheme="red"
+                onClick={() => deletingOccasionId && handleDeleteOccasion(deletingOccasionId)}
+                ml={3}
+                isLoading={isDeletingOccasion}
+              >
+                Delete
               </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialogOverlay>
       </AlertDialog>
-    </Box>
+    </Container>
   );
 }; 

@@ -21,10 +21,13 @@ import {
   InputLeftAddon,
   Flex,
   Badge,
+  VStack,
 } from '@chakra-ui/react';
-import { FaGift } from 'react-icons/fa';
+import { FaGift, FaCalendarAlt, FaTruck } from 'react-icons/fa';
 import type { Recipient, Occasion } from '../types';
 import { useAuthStore } from '../store/authStore';
+import { getNextBirthday, getNextChristmas, getCurrentDateISO } from '../utils/dateUtils';
+import { subDays, format, addDays } from 'date-fns';
 
 type OccasionType = 'birthday' | 'anniversary' | 'christmas' | 'other';
 
@@ -38,6 +41,7 @@ interface OccasionFormProps {
     giftWrap?: boolean;
     personalizedNote?: boolean;
     noteText?: string;
+    deliveryDate?: string;
   }) => void;
   onCancel: () => void;
 }
@@ -51,7 +55,8 @@ export const OccasionForm: React.FC<OccasionFormProps> = ({
 }) => {
   const [type, setType] = useState<OccasionType>(initialValues?.type as OccasionType || 'birthday');
   const [otherName, setOtherName] = useState(initialValues?.name || '');
-  const [date, setDate] = useState(initialValues?.date ? initialValues.date.slice(5) : ''); // MM-DD
+  const [occasionDate, setOccasionDate] = useState(''); // When the event actually happens
+  const [deliveryDate, setDeliveryDate] = useState(''); // When to deliver the gift
   const [recurring, setRecurring] = useState(initialValues?.recurring ?? true);
   const [budget, setBudget] = useState<number>(initialValues?.budget || 50);
   const [giftWrap, setGiftWrap] = useState(initialValues?.giftWrap ?? false);
@@ -60,25 +65,55 @@ export const OccasionForm: React.FC<OccasionFormProps> = ({
 
   const { user } = useAuthStore();
 
-  // Set date based on type
+  // Helper function to calculate delivery date (one week before occasion)
+  const calculateDeliveryDate = (eventDate: string): string => {
+    if (!eventDate) return '';
+    try {
+      const [year, month, day] = eventDate.split('-').map(Number);
+      const event = new Date(year, month - 1, day);
+      const delivery = subDays(event, 7); // One week before
+      return format(delivery, 'yyyy-MM-dd');
+    } catch {
+      return '';
+    }
+  };
+
+  // Set dates based on type and calculate next occurrence
   useEffect(() => {
     if (type === 'birthday') {
       if (recipient.birthdate) {
-        const [, month, day] = recipient.birthdate.split('-');
-        setDate(`${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+        // Use the next birthday date instead of the historical birthdate
+        const nextBirthday = getNextBirthday(recipient.birthdate);
+        setOccasionDate(nextBirthday);
+        setDeliveryDate(calculateDeliveryDate(nextBirthday));
       } else {
-        // If no birthdate is set, default to today's month-day
-        const today = new Date();
-        const month = (today.getMonth() + 1).toString().padStart(2, '0');
-        const day = today.getDate().toString().padStart(2, '0');
-        setDate(`${month}-${day}`);
+        // If no birthdate is set, default to today's date for setting up
+        const today = getCurrentDateISO();
+        setOccasionDate(today);
+        setDeliveryDate(calculateDeliveryDate(today));
       }
     } else if (type === 'christmas') {
-      setDate('12-25');
-    } else if (type !== 'other') {
-      setDate('');
+      // Use the next Christmas date
+      const nextChristmas = getNextChristmas();
+      setOccasionDate(nextChristmas);
+      setDeliveryDate(calculateDeliveryDate(nextChristmas));
+    } else if (initialValues?.date) {
+      // For editing existing occasions, use the provided date
+      setOccasionDate(initialValues.date);
+      setDeliveryDate(calculateDeliveryDate(initialValues.date));
+    } else {
+      // For new non-birthday/christmas occasions, reset the dates
+      setOccasionDate('');
+      setDeliveryDate('');
     }
-  }, [type, recipient.birthdate]);
+  }, [type, recipient.birthdate, initialValues?.date]);
+
+  // Update delivery date when occasion date changes
+  useEffect(() => {
+    if (occasionDate && (type === 'other' || type === 'anniversary')) {
+      setDeliveryDate(calculateDeliveryDate(occasionDate));
+    }
+  }, [occasionDate, type]);
 
   // Generate default note text when personalized note is enabled
   useEffect(() => {
@@ -103,179 +138,166 @@ export const OccasionForm: React.FC<OccasionFormProps> = ({
     } else {
       name = type.charAt(0).toUpperCase() + type.slice(1);
     }
-    if (!date) return;
-    // Save as MM-DD, but backend may expect YYYY-MM-DD, so use 2000 as dummy year
-    const formattedDate = `2000-${date}`;
+    if (!occasionDate || !deliveryDate) return;
+    
     onSubmit({
       name,
       type: occasionType,
-      date: formattedDate,
+      date: occasionDate, // Store the occasion date
       budget,
       giftWrap,
       personalizedNote,
       noteText: personalizedNote ? noteText : undefined,
+      deliveryDate, // Add delivery date
       ...(recurring !== undefined ? { recurring } : {}),
     });
   };
 
   return (
     <form onSubmit={handleSubmit}>
-      <FormControl isRequired mb={3}>
-        <FormLabel>Occasion</FormLabel>
-        <Select
-          value={type}
-          onChange={e => setType(e.target.value as OccasionType)}
-          name="type"
-        >
-          <option value="birthday">Birthday</option>
-          <option value="christmas">Christmas</option>
-          <option value="anniversary">Anniversary</option>
-          <option value="other">Other</option>
-        </Select>
-      </FormControl>
-      {type === 'other' && (
-        <FormControl isRequired mb={3}>
-          <FormLabel>Occasion Name</FormLabel>
-          <Input
-            value={otherName}
-            onChange={e => setOtherName(e.target.value)}
-            placeholder="Enter occasion name"
-            name="otherName"
-          />
-        </FormControl>
-      )}
-      <FormControl isRequired mb={3}>
-        <FormLabel>Date</FormLabel>
-        <Input
-          type="text"
-          pattern="^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"
-          placeholder="MM-DD"
-          value={date}
-          onChange={e => setDate(e.target.value)}
-          disabled={type === 'birthday' || type === 'christmas'}
-        />
-        <Text fontSize="xs" color="gray.500" mt={1}>
-          {type === 'birthday' 
-            ? (recipient.birthdate 
-                ? 'Birthday date is from recipient info' 
-                : 'Please set the correct birthday date')
-            : type === 'christmas'
-            ? 'Christmas is always December 25'
-            : 'Format: MM-DD (e.g., 04-12)'}
-        </Text>
-      </FormControl>
-      <FormControl mb={4}>
-        <FormLabel>Recipient Interests</FormLabel>
-        <Text fontSize="sm" color="gray.600" mb={2}>
-          These interests help us recommend better gifts for {recipient.name.split(' ')[0]}.
-        </Text>
-        <Box>
-          {recipient.interests && recipient.interests.length > 0 ? (
-            <Flex gap={2} flexWrap="wrap" mb={3}>
-              {recipient.interests.map((interest, index) => (
-                <Badge key={index} colorScheme="green" variant="solid" px={2} py={1}>
-                  {interest}
-                </Badge>
-              ))}
-            </Flex>
-          ) : (
-            <Text fontSize="sm" color="gray.500" mb={3}>
-              No interests added yet. Consider adding some to improve gift recommendations.
-            </Text>
-          )}
-          <Text fontSize="xs" color="gray.500">
-            To update interests, edit the recipient's profile from the recipients page.
-          </Text>
-        </Box>
-      </FormControl>
-      <FormControl display="flex" alignItems="center" mb={3}>
-        <FormLabel mb="0">Recurring</FormLabel>
-        <Switch
-          isChecked={recurring}
-          onChange={e => setRecurring(e.target.checked)}
-          colorScheme="blue"
-          name="recurring"
-          ml={2}
-        />
-        <Tooltip label="We'll automatically send another gift next year if this is on.">
-          <Text fontSize="sm" color="gray.500" ml={2}>
-            Auto-send every year
-          </Text>
-        </Tooltip>
-      </FormControl>
-      <FormControl isRequired mb={3}>
-        <FormLabel>Budget</FormLabel>
-        <InputGroup>
-          <InputLeftAddon children="$" />
-          <NumberInput
-            value={budget}
-            onChange={(valueString) => setBudget(parseFloat(valueString) || 0)}
-            min={0}
-            precision={2}
-            step={5}
-            name="budget"
+      <VStack spacing={4} align="stretch">
+        <FormControl isRequired>
+          <FormLabel>Occasion</FormLabel>
+          <Select
+            value={type}
+            onChange={e => setType(e.target.value as OccasionType)}
+            name="type"
           >
-            <NumberInputField />
-            <NumberInputStepper>
-              <NumberIncrementStepper />
-              <NumberDecrementStepper />
-            </NumberInputStepper>
-          </NumberInput>
-        </InputGroup>
-      </FormControl>
-      <FormControl display="flex" alignItems="center" mb={3}>
-        <FormLabel mb="0">Gift Wrap</FormLabel>
-        <Switch
-          isChecked={giftWrap}
-          onChange={e => setGiftWrap(e.target.checked)}
-          colorScheme="blue"
-          name="giftWrap"
-          ml={2}
-        />
-        <Tooltip label="We'll wrap the gift for you if this is on.">
-          <Text fontSize="sm" color="gray.500" ml={2}>
-            Wrap gift
-          </Text>
-        </Tooltip>
-      </FormControl>
-      <FormControl display="flex" alignItems="center" mb={3}>
-        <FormLabel mb="0">Personalized Note</FormLabel>
-        <Switch
-          isChecked={personalizedNote}
-          onChange={e => setPersonalizedNote(e.target.checked)}
-          colorScheme="blue"
-          name="personalizedNote"
-          ml={2}
-        />
-        <Tooltip label="We'll include a personalized note with the gift if this is on.">
-          <Text fontSize="sm" color="gray.500" ml={2}>
-            Include note
-          </Text>
-        </Tooltip>
-      </FormControl>
-      {personalizedNote && (
-        <FormControl mb={3}>
-          <FormLabel>Note Text</FormLabel>
-          <Textarea
-            value={noteText}
-            onChange={e => setNoteText(e.target.value)}
-            placeholder="Enter your personalized message..."
-            name="noteText"
-            rows={3}
+            <option value="birthday">Birthday</option>
+            <option value="christmas">Christmas</option>
+            <option value="anniversary">Anniversary</option>
+            <option value="other">Other</option>
+          </Select>
+        </FormControl>
+
+        {type === 'other' && (
+          <FormControl isRequired>
+            <FormLabel>Occasion Name</FormLabel>
+            <Input
+              value={otherName}
+              onChange={e => setOtherName(e.target.value)}
+              placeholder="Enter occasion name"
+              name="otherName"
+            />
+          </FormControl>
+        )}
+
+        {/* Occasion Date */}
+        <FormControl isRequired>
+          <FormLabel>
+            <HStack>
+              <FaCalendarAlt />
+              <Text>Occasion Date</Text>
+            </HStack>
+          </FormLabel>
+          <Input
+            type="date"
+            value={occasionDate}
+            onChange={e => {
+              setOccasionDate(e.target.value);
+              if (type === 'other' || type === 'anniversary') {
+                setDeliveryDate(calculateDeliveryDate(e.target.value));
+              }
+            }}
+            disabled={type === 'birthday' || type === 'christmas'}
+            min={getCurrentDateISO()}
           />
           <Text fontSize="xs" color="gray.500" mt={1}>
-            This note will be included with the gift.
+            {type === 'birthday' 
+              ? (recipient.birthdate 
+                  ? `Next birthday: ${occasionDate}` 
+                  : 'Please set birthday in recipient details first')
+              : type === 'christmas'
+              ? `Next Christmas: ${occasionDate}`
+              : 'When the occasion actually happens'}
           </Text>
         </FormControl>
-      )}
-      <HStack mt={6} justify="flex-end">
-        <Button onClick={onCancel} variant="ghost" isDisabled={loading}>
-          Cancel
-        </Button>
-        <Button colorScheme="blue" type="submit" isLoading={loading}>
-          Add Occasion
-        </Button>
-      </HStack>
+
+        {/* Gift Delivery Date */}
+        <FormControl isRequired>
+          <FormLabel>
+            <HStack>
+              <FaTruck />
+              <Text>Gift Delivery Date</Text>
+              <Badge colorScheme="green" variant="subtle">Auto-calculated</Badge>
+            </HStack>
+          </FormLabel>
+          <Input
+            type="date"
+            value={deliveryDate}
+            onChange={e => setDeliveryDate(e.target.value)}
+            min={getCurrentDateISO()}
+          />
+          <Text fontSize="xs" color="blue.500" mt={1}>
+            <strong>Automatically set to 1 week before the occasion</strong> - you can adjust if needed
+          </Text>
+        </FormControl>
+
+        <FormControl>
+          <FormLabel>Budget</FormLabel>
+          <InputGroup>
+            <InputLeftAddon>$</InputLeftAddon>
+            <NumberInput min={1} value={budget} onChange={(_, value) => setBudget(value || 50)}>
+              <NumberInputField borderLeftRadius={0} />
+              <NumberInputStepper>
+                <NumberIncrementStepper />
+                <NumberDecrementStepper />
+              </NumberInputStepper>
+            </NumberInput>
+          </InputGroup>
+        </FormControl>
+
+        <FormControl display="flex" alignItems="center">
+          <FormLabel htmlFor="gift-wrap" mb="0">
+            Gift Wrap
+          </FormLabel>
+          <Switch 
+            id="gift-wrap" 
+            isChecked={giftWrap} 
+            onChange={e => setGiftWrap(e.target.checked)} 
+            colorScheme="blue" 
+          />
+        </FormControl>
+
+        <FormControl display="flex" alignItems="center">
+          <FormLabel htmlFor="personalized-note" mb="0">
+            Include Personalized Note
+          </FormLabel>
+          <Switch 
+            id="personalized-note" 
+            isChecked={personalizedNote} 
+            onChange={e => setPersonalizedNote(e.target.checked)} 
+            colorScheme="blue" 
+          />
+        </FormControl>
+
+        {personalizedNote && (
+          <FormControl>
+            <FormLabel>Note Text</FormLabel>
+            <Textarea
+              value={noteText}
+              onChange={e => setNoteText(e.target.value)}
+              placeholder="Enter your personalized message..."
+              rows={3}
+            />
+          </FormControl>
+        )}
+
+        <HStack spacing={3} justifyContent="flex-end" pt={4}>
+          <Button variant="ghost" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            colorScheme="blue"
+            leftIcon={<FaGift />}
+            isLoading={loading}
+            loadingText="Adding..."
+          >
+            Add Occasion
+          </Button>
+        </HStack>
+      </VStack>
     </form>
   );
 };

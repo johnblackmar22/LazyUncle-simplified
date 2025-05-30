@@ -75,7 +75,8 @@ export interface Occasion {
   id: string;
   recipientId: string;
   name: string; // e.g., 'Birthday', 'Anniversary', 'Graduation', etc.
-  date: string; // Format: 'YYYY-MM-DD'
+  date: string; // Format: 'YYYY-MM-DD' - when the occasion actually happens
+  deliveryDate?: string; // Format: 'YYYY-MM-DD' - when to deliver the gift (usually 1 week before)
   type: 'birthday' | 'anniversary' | 'custom' | 'christmas';
   notes?: string;
   budget?: number; // Gift budget for this occasion
@@ -116,5 +117,6 @@ export interface GiftSuggestion {
   imageUrl?: string;
   affiliateLink?: string;
   score?: number;
+  confidence?: number; // Confidence score from 0-1 for AI suggestions
   tags?: string[];
 } 
