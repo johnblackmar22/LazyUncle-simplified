@@ -1,6 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
 import { addDays, subDays, addMonths, addYears, format as formatDate } from 'date-fns';
-import { useAuthStore } from '../store/authStore';
 
 // Generate dates relative to today for more realistic demo data
 const today = new Date();
@@ -405,14 +404,11 @@ export const clearDemoData = () => {
   try {
     // Clear localStorage
     localStorage.removeItem('demoMode');
+    localStorage.removeItem('demoUser');
     localStorage.removeItem('recipients');
     localStorage.removeItem('gifts');
     
-    // Clear demo mode in the auth store
-    const authStore = useAuthStore.getState();
-    authStore.setDemoMode(false);
-    
-    // console.log('Demo data cleared'); // Uncomment for debugging only
+    console.log('Demo data cleared successfully');
   } catch (error) {
     console.error('Error clearing demo data:', error);
   }
