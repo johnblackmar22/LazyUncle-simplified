@@ -97,8 +97,15 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
         throw new Error('User not authenticated');
       }
       console.log('Using Firebase mode for occasion creation');
+      
+      // Clean the occasion data to remove undefined values that Firebase rejects
+      const cleanedOccasionData = Object.fromEntries(
+        Object.entries(occasionData).filter(([key, value]) => value !== undefined)
+      ) as Omit<Occasion, 'id' | 'recipientId' | 'createdAt' | 'updatedAt'>;
+      console.log('Cleaned occasion data (removed undefined values):', cleanedOccasionData);
+      
       const newOccasion = {
-        ...occasionData,
+        ...cleanedOccasionData,
         recipientId,
         userId: user.id,
         createdAt: timestamp,
