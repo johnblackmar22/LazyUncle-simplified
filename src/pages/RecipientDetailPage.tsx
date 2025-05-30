@@ -56,7 +56,7 @@ export const RecipientDetailPage: React.FC = () => {
     fetchRecipients, 
     deleteRecipient 
   } = useRecipientStore();
-  const { occasions, fetchOccasions, addOccasion } = useOccasionStore();
+  const { occasions, fetchOccasions, addOccasion, deleteOccasion } = useOccasionStore();
   const location = useLocation();
   
   const [currentRecipient, setCurrentRecipient] = useState<Recipient | null>(null);
@@ -93,6 +93,26 @@ export const RecipientDetailPage: React.FC = () => {
 
   const openOccasionModal = () => setOccasionModalOpen(true);
   const closeOccasionModal = () => { setOccasionModalOpen(false); };
+
+  const handleDeleteOccasion = async (occasionId: string) => {
+    if (!id) return;
+    
+    if (window.confirm('Are you sure you want to delete this occasion?')) {
+      try {
+        await deleteOccasion(occasionId, id);
+        toast({
+          title: 'Occasion deleted',
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+        // Refresh the occasions list
+        await fetchOccasions(id);
+      } catch (error) {
+        showErrorToast(toast, error, { title: 'Error deleting occasion' });
+      }
+    }
+  };
 
   useEffect(() => {
     fetchRecipients();
@@ -288,12 +308,24 @@ export const RecipientDetailPage: React.FC = () => {
             </CardHeader>
             <CardBody>
               {id && occasions && occasions[id] && occasions[id].length > 0 ? (
-                <VStack align="start" spacing={2}>
+                <VStack align="start" spacing={3}>
                   {occasions[id].map((occasion: any) => (
-                    <Flex key={occasion.id} align="center" gap={2}>
-                      <FaGift color="purple" />
-                      <Text fontWeight="bold">{occasion.name}</Text>
-                      <Text fontSize="sm">{formatMonthDay(occasion.date)}</Text>
+                    <Flex key={occasion.id} align="center" justify="space-between" w="full" p={2} borderWidth="1px" borderRadius="md" borderColor={borderColor}>
+                      <Flex align="center" gap={2}>
+                        <FaGift color="purple" />
+                        <Box>
+                          <Text fontWeight="bold">{occasion.name}</Text>
+                          <Text fontSize="sm" color="gray.500">{formatMonthDay(occasion.date)}</Text>
+                        </Box>
+                      </Flex>
+                      <IconButton
+                        aria-label="Delete occasion"
+                        icon={<DeleteIcon />}
+                        colorScheme="red"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleDeleteOccasion(occasion.id)}
+                      />
                     </Flex>
                   ))}
                 </VStack>

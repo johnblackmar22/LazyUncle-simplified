@@ -35,6 +35,7 @@ import { useAuthStore } from '../../store/authStore';
 import { initializeDemoData } from '../../services/demoData';
 import { useOccasionStore } from '../../store/occasionStore';
 import { FaGift } from 'react-icons/fa';
+import { AddIcon } from '@chakra-ui/icons';
 
 export default function DashboardPage() {
   // Get state and actions from stores
@@ -215,7 +216,7 @@ export default function DashboardPage() {
     <Stack spacing={8}>
       <Flex justify="space-between" align="center">
         <Box>
-          <Heading as="h1" size="lg" mb={2}>
+          <Heading as="h1" size="xl" mb={2}>
             Welcome to LazyUncle
           </Heading>
           <Text color="gray.600" mb={6}>
@@ -227,7 +228,7 @@ export default function DashboardPage() {
             as={RouterLink}
             to="/recipients/add"
             colorScheme="blue"
-            size="sm"
+            leftIcon={<AddIcon />}
           >
             Add Recipient
           </Button>
@@ -262,6 +263,8 @@ export default function DashboardPage() {
                       cursor="pointer"
                       _hover={{ boxShadow: 'md', bg: 'gray.50' }}
                       onClick={() => navigate(`/recipients/${recipient.id}`)}
+                      bg={boxBg}
+                      shadow="md"
                     >
                       <Flex align="center" gap={4} mb={2}>
                         <Avatar size="md" name={recipient.name} />

@@ -62,8 +62,7 @@ export const Navbar: React.FC = () => {
   ];
 
   // Authenticated nav - removed Dashboard and Recipients, keeping only Settings
-  const authLinks = [
-    { label: 'Settings', to: '/settings' },
+  const authLinks: { label: string; to: string }[] = [
   ];
 
   const handleSignOut = async () => {

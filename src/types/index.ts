@@ -99,4 +99,17 @@ export interface Gift {
   updatedAt: Date | number;
   autoSend?: boolean; // For test compatibility
   recurring?: boolean; // Deliver this gift every year
+}
+
+// Gift suggestion/recommendation types
+export interface GiftSuggestion {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  category: string;
+  imageUrl?: string;
+  affiliateLink?: string;
+  score?: number;
+  tags?: string[];
 } 
