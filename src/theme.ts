@@ -14,10 +14,83 @@ const theme = extendTheme({
       800: '#01337D',
       900: '#002159',
     },
+    orange: {
+      50: '#FFF7ED',
+      100: '#FFEDD5',
+      200: '#FED7AA',
+      300: '#FDBA74',
+      400: '#FB923C', // This is our primary orange
+      500: '#F97316',
+      600: '#EA580C',
+      700: '#C2410C',
+      800: '#9A3412',
+      900: '#7C2D12',
+    },
+    neutral: {
+      50: '#FAFAFA',
+      100: '#F5F5F5',
+      200: '#E5E5E5',
+      300: '#D4D4D4',
+      400: '#A3A3A3',
+      500: '#737373',
+      600: '#525252',
+      700: '#404040',
+      800: '#262626',
+      900: '#171717',
+    },
   },
   fonts: {
     heading: 'Inter, system-ui, sans-serif',
     body: 'Inter, system-ui, sans-serif',
+  },
+  components: {
+    Button: {
+      baseStyle: {
+        fontWeight: 'semibold',
+        borderRadius: 'lg',
+        transition: 'all 0.2s',
+      },
+      variants: {
+        solid: {
+          _hover: {
+            transform: 'translateY(-1px)',
+            boxShadow: 'lg',
+          },
+        },
+        outline: {
+          _hover: {
+            transform: 'translateY(-1px)',
+            boxShadow: 'md',
+          },
+        },
+        ghost: {
+          _hover: {
+            transform: 'translateY(-1px)',
+          },
+        },
+      },
+      sizes: {
+        lg: {
+          px: 8,
+          py: 3,
+          fontSize: 'lg',
+          borderRadius: 'xl',
+        },
+      },
+    },
+    Card: {
+      baseStyle: {
+        container: {
+          borderRadius: 'xl',
+          boxShadow: 'md',
+          transition: 'all 0.2s',
+          _hover: {
+            boxShadow: 'lg',
+            transform: 'translateY(-2px)',
+          },
+        },
+      },
+    },
   },
 });
 

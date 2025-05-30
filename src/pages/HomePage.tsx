@@ -152,13 +152,15 @@ export default function HomePage() {
               as="h1"
               size={useBreakpointValue({ base: '2xl', md: '3xl' })}
               fontWeight={900}
-              color={ACCENT_BLUE}
               lineHeight={1.1}
               letterSpacing={-1}
               mb={2}
               animation={fadeInSync}
             >
-              Gifting, on Autopilot.
+              <Box as="span" color={ACCENT_ORANGE}>Gifting</Box>
+              <Box as="span" color="gray.800">, on </Box>
+              <Box as="span" color={ACCENT_BLUE}>Autopilot</Box>
+              <Box as="span" color={ACCENT_ORANGE}>.</Box>
             </Heading>
             <Text
               color="neutral.700"
@@ -234,6 +236,14 @@ export default function HomePage() {
 }
 
 function ValueProp({ icon, text, headline, description }: { icon: any; text: string; headline: string; description: string }) {
+  // Assign specific colors to each icon based on the icon type
+  const getIconColor = (iconComponent: any) => {
+    if (iconComponent === FaRegCalendarCheck) return ACCENT_BLUE;
+    if (iconComponent === FaGift) return ACCENT_ORANGE;
+    if (iconComponent === FaTruck) return 'green.500';
+    return 'gray.400'; // fallback
+  };
+
   return (
     <Box
       bg="white"
@@ -248,7 +258,7 @@ function ValueProp({ icon, text, headline, description }: { icon: any; text: str
       transition="box-shadow 0.2s, transform 0.2s"
       _hover={{ boxShadow: 'xl', transform: 'translateY(-4px) scale(1.03)' }}
     >
-      <Icon as={icon} w={9} h={9} color="gray.400" mb={4} />
+      <Icon as={icon} w={9} h={9} color={getIconColor(icon)} mb={4} />
       <Text fontWeight={700} color="gray.800" fontSize="lg" mb={1} textAlign="center">{text}</Text>
       <Text fontWeight={500} color="gray.700" fontSize="md" mb={2} textAlign="center">{headline}</Text>
       <Text color="gray.500" fontSize="sm" textAlign="center">{description}</Text>

@@ -7,6 +7,7 @@ import { useAuthStore } from './store/authStore';
 import { initializeDemoData } from './services/demoData';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
+import theme from './theme';
 
 // Pages
 import HomePage from './pages/HomePage';
@@ -77,16 +78,18 @@ function App() {
   }
 
   return (
-    <ChakraProvider>
+    <ChakraProvider theme={theme}>
       <Routes>
-        {/* Public Routes */}
+        {/* HomePage - standalone without Layout to avoid double navbar */}
+        <Route path="/" element={<HomePage />} />
+        
+        {/* Public Routes with Layout */}
         <Route element={<Layout />}>
-          <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
         </Route>
         
-        {/* Protected Routes */}
+        {/* Protected Routes with Layout */}
         <Route element={<ProtectedRoute />}>
           <Route element={<Layout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
