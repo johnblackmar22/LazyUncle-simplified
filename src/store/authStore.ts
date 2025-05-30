@@ -52,6 +52,9 @@ function createDemoUser(): User {
   };
 }
 
+// Flag to track if auth listener has been set up
+let authListenerInitialized = false;
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   loading: false,
@@ -186,6 +189,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   initializeAuth: () => {
     const isDemo = isDemoMode();
+    
     if (isDemo) {
       // Get stored demo user or create one
       const storedUser = localStorage.getItem('demoUser');
@@ -205,35 +209,40 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return;
     }
     
+    // Set up Firebase auth listener only once and only for non-demo mode
+    if (!authListenerInitialized) {
+      authListenerInitialized = true;
+      
+      console.log('Setting up Firebase auth listener');
+      onAuthStateChanged(auth, (firebaseUser) => {
+        const currentState = get();
+        
+        // Skip Firebase auth if we're in demo mode
+        if (currentState.demoMode) {
+          console.log('Skipping Firebase auth listener - demo mode active');
+          return;
+        }
+        
+        if (firebaseUser) {
+          console.log('Firebase user detected, updating auth state');
+          set({ 
+            user: convertFirebaseUser(firebaseUser),
+            initialized: true,
+            demoMode: false
+          });
+        } else {
+          console.log('No Firebase user, clearing auth state');
+          set({ 
+            user: null,
+            initialized: true,
+            demoMode: false
+          });
+        }
+      });
+    }
+    
     // For non-demo mode, mark as initialized but wait for Firebase
     set({ initialized: true });
     console.log('Non-demo mode initialized, waiting for Firebase auth');
   }
-}));
-
-// Initialize auth state listener
-onAuthStateChanged(auth, (firebaseUser) => {
-  const currentState = useAuthStore.getState();
-  
-  // Skip Firebase auth if we're in demo mode
-  if (currentState.demoMode) {
-    console.log('Skipping Firebase auth listener - demo mode active');
-    return;
-  }
-  
-  if (firebaseUser) {
-    console.log('Firebase user detected, updating auth state');
-    useAuthStore.setState({ 
-      user: convertFirebaseUser(firebaseUser),
-      initialized: true,
-      demoMode: false
-    });
-  } else {
-    console.log('No Firebase user, clearing auth state');
-    useAuthStore.setState({ 
-      user: null,
-      initialized: true,
-      demoMode: false
-    });
-  }
-}); 
+})); 
