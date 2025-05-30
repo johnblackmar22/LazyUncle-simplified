@@ -19,6 +19,8 @@ import {
   NumberDecrementStepper,
   InputGroup,
   InputLeftAddon,
+  Flex,
+  Badge,
 } from '@chakra-ui/react';
 import { FaGift } from 'react-icons/fa';
 import type { Recipient, Occasion } from '../types';
@@ -50,7 +52,6 @@ export const OccasionForm: React.FC<OccasionFormProps> = ({
   const [type, setType] = useState<OccasionType>(initialValues?.type as OccasionType || 'birthday');
   const [otherName, setOtherName] = useState(initialValues?.name || '');
   const [date, setDate] = useState(initialValues?.date ? initialValues.date.slice(5) : ''); // MM-DD
-  const [notes, setNotes] = useState(initialValues?.notes || '');
   const [recurring, setRecurring] = useState(initialValues?.recurring ?? true);
   const [budget, setBudget] = useState<number>(initialValues?.budget || 50);
   const [giftWrap, setGiftWrap] = useState(initialValues?.giftWrap ?? false);
@@ -75,9 +76,10 @@ export const OccasionForm: React.FC<OccasionFormProps> = ({
   useEffect(() => {
     if (personalizedNote && !noteText) {
       const userName = user?.displayName?.split(' ')[0] || 'Your Secret Santa';
+      const recipientFirstName = recipient.name.split(' ')[0];
       const occasionName = type === 'other' ? (otherName || 'Special Day') : 
                           type.charAt(0).toUpperCase() + type.slice(1);
-      const defaultNote = `Dear ${recipient.name}, Happy ${occasionName}! Love, ${userName}`;
+      const defaultNote = `Dear ${recipientFirstName}, Happy ${occasionName}! Love, ${userName}`;
       setNoteText(defaultNote);
     }
   }, [personalizedNote, type, otherName, recipient.name, user?.displayName, noteText]);
@@ -100,7 +102,6 @@ export const OccasionForm: React.FC<OccasionFormProps> = ({
       name,
       type: occasionType,
       date: formattedDate,
-      notes,
       budget,
       giftWrap,
       personalizedNote,
@@ -153,14 +154,29 @@ export const OccasionForm: React.FC<OccasionFormProps> = ({
             : 'Format: MM-DD (e.g., 04-12)'}
         </Text>
       </FormControl>
-      <FormControl mb={3}>
-        <FormLabel>Notes</FormLabel>
-        <Textarea
-          value={notes}
-          onChange={e => setNotes(e.target.value)}
-          placeholder="Is there anything else you'd like us to know about this occasion?"
-          name="notes"
-        />
+      <FormControl mb={4}>
+        <FormLabel>Recipient Interests</FormLabel>
+        <Text fontSize="sm" color="gray.600" mb={2}>
+          These interests help us recommend better gifts for {recipient.name.split(' ')[0]}.
+        </Text>
+        <Box>
+          {recipient.interests && recipient.interests.length > 0 ? (
+            <Flex gap={2} flexWrap="wrap" mb={3}>
+              {recipient.interests.map((interest, index) => (
+                <Badge key={index} colorScheme="green" variant="solid" px={2} py={1}>
+                  {interest}
+                </Badge>
+              ))}
+            </Flex>
+          ) : (
+            <Text fontSize="sm" color="gray.500" mb={3}>
+              No interests added yet. Consider adding some to improve gift recommendations.
+            </Text>
+          )}
+          <Text fontSize="xs" color="gray.500">
+            To update interests, edit the recipient's profile from the recipients page.
+          </Text>
+        </Box>
       </FormControl>
       <FormControl display="flex" alignItems="center" mb={3}>
         <FormLabel mb="0">Recurring</FormLabel>

@@ -36,6 +36,8 @@ import { format } from 'date-fns';
 import { showErrorToast } from '../utils/toastUtils';
 import { useAuthStore } from '../store/authStore';
 import { getPlanById } from '../services/subscription/plans';
+import { useOccasionStore } from '../store/occasionStore';
+import { FaGift } from 'react-icons/fa';
 
 const RecipientsListPage: React.FC = () => {
   const toast = useToast();
@@ -46,6 +48,7 @@ const RecipientsListPage: React.FC = () => {
     fetchRecipients, 
     deleteRecipient 
   } = useRecipientStore();
+  const { occasions, fetchOccasions } = useOccasionStore();
   const { user, demoMode } = useAuthStore();
   const planId = user?.planId || 'free';
   const plan = getPlanById(planId);
@@ -62,6 +65,13 @@ const RecipientsListPage: React.FC = () => {
   useEffect(() => {
     fetchRecipients();
   }, [fetchRecipients]);
+
+  // Load occasions for all recipients
+  useEffect(() => {
+    recipients.forEach(recipient => {
+      fetchOccasions(recipient.id);
+    });
+  }, [recipients, fetchOccasions]);
 
   // Monitor recipients changes
   useEffect(() => {
@@ -204,6 +214,26 @@ const RecipientsListPage: React.FC = () => {
                             {interest}
                           </Badge>
                         ))}
+                      </Flex>
+                    </Box>
+                  )}
+                  
+                  {occasions && occasions[recipient.id] && occasions[recipient.id].length > 0 && (
+                    <Box>
+                      <Text fontSize="sm" fontWeight="bold" mb={1}>
+                        Gift Occasions:
+                      </Text>
+                      <Flex gap={1} flexWrap="wrap">
+                        {occasions[recipient.id].slice(0, 3).map((occasion) => (
+                          <Badge key={occasion.id} colorScheme="purple" variant="subtle" fontSize="xs" display="flex" alignItems="center">
+                            <FaGift style={{ marginRight: 4 }} /> {occasion.name}
+                          </Badge>
+                        ))}
+                        {occasions[recipient.id].length > 3 && (
+                          <Badge colorScheme="gray" variant="subtle" fontSize="xs">
+                            +{occasions[recipient.id].length - 3} more
+                          </Badge>
+                        )}
                       </Flex>
                     </Box>
                   )}
