@@ -40,6 +40,10 @@ import {
   AlertDialogHeader,
   AlertDialogContent,
   AlertDialogOverlay,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
 } from '@chakra-ui/react';
 import { EditIcon, DeleteIcon, ArrowBackIcon, AddIcon } from '@chakra-ui/icons';
 import { FaGift, FaCalendarAlt, FaDollarSign, FaUser, FaHeart, FaComments, FaMapMarkerAlt } from 'react-icons/fa';
@@ -130,6 +134,49 @@ export const RecipientDetailPage: React.FC = () => {
     }
   }, [id, recipients]);
 
+  // Function to check if recipient has delivery address and handle validation
+  const checkDeliveryAddressAndProceed = (actionCallback: () => void) => {
+    if (!currentRecipient?.deliveryAddress) {
+      toast({
+        title: 'Delivery Address Required',
+        description: 'Please add a delivery address for this recipient before creating gift occasions.',
+        status: 'warning',
+        duration: 6000,
+        isClosable: true,
+        position: 'top',
+        render: ({ onClose }) => (
+          <Alert status="warning" borderRadius="md" boxShadow="lg" maxW="md">
+            <AlertIcon />
+            <VStack align="start" spacing={2} flex="1">
+              <AlertTitle fontSize="sm">Delivery Address Required!</AlertTitle>
+              <AlertDescription fontSize="sm">
+                Please add a delivery address for {currentRecipient?.name} before creating gift occasions.
+              </AlertDescription>
+              <HStack spacing={2} mt={2}>
+                <Button
+                  as={RouterLink}
+                  to={`/recipients/${id}/edit`}
+                  size="xs"
+                  colorScheme="orange"
+                  leftIcon={<EditIcon />}
+                >
+                  Add Address
+                </Button>
+                <Button size="xs" variant="ghost" onClick={onClose}>
+                  Dismiss
+                </Button>
+              </HStack>
+            </VStack>
+          </Alert>
+        ),
+      });
+      return false;
+    }
+    
+    actionCallback();
+    return true;
+  };
+
   const handleAddOccasion = async (occasionData: any) => {
     if (!id) return;
     
@@ -195,6 +242,11 @@ export const RecipientDetailPage: React.FC = () => {
   const openDeleteDialog = (occasionId: string) => {
     setDeletingOccasionId(occasionId);
     setIsDeleteDialogOpen(true);
+  };
+
+  // Handler for opening add occasion modal with address validation
+  const handleOpenAddOccasionModal = () => {
+    checkDeliveryAddressAndProceed(() => setIsModalOpen(true));
   };
 
   if (loading && !currentRecipient) {
@@ -292,7 +344,7 @@ export const RecipientDetailPage: React.FC = () => {
               })()}
               
               {/* Delivery Address */}
-              {currentRecipient.deliveryAddress && (
+              {currentRecipient.deliveryAddress ? (
                 <VStack align="start" spacing={1}>
                   <HStack>
                     <FaMapMarkerAlt color="green" />
@@ -306,6 +358,28 @@ export const RecipientDetailPage: React.FC = () => {
                     <Text>
                       {currentRecipient.deliveryAddress.city}, {currentRecipient.deliveryAddress.state} {currentRecipient.deliveryAddress.postalCode}
                     </Text>
+                  </Box>
+                </VStack>
+              ) : (
+                <VStack align="start" spacing={1}>
+                  <HStack>
+                    <FaMapMarkerAlt color="orange" />
+                    <Text fontWeight="bold" color="orange.500">No Delivery Address</Text>
+                  </HStack>
+                  <Box pl={6} fontSize="sm">
+                    <Text color="gray.600" mb={2}>
+                      Add a delivery address to enable gift occasions.
+                    </Text>
+                    <Button
+                      as={RouterLink}
+                      to={`/recipients/${id}/edit`}
+                      size="xs"
+                      colorScheme="orange"
+                      variant="outline"
+                      leftIcon={<EditIcon />}
+                    >
+                      Add Address
+                    </Button>
                   </Box>
                 </VStack>
               )}
@@ -339,13 +413,36 @@ export const RecipientDetailPage: React.FC = () => {
                 colorScheme="purple"
                 variant="outline"
                 size="sm"
-                onClick={() => setIsModalOpen(true)}
+                onClick={handleOpenAddOccasionModal}
+                isDisabled={!currentRecipient.deliveryAddress}
               >
                 Add Occasion
               </Button>
             </Flex>
           </CardHeader>
           <CardBody>
+            {!currentRecipient.deliveryAddress && (
+              <Alert status="info" mb={4} borderRadius="md">
+                <AlertIcon />
+                <VStack align="start" spacing={1} flex="1">
+                  <AlertTitle fontSize="sm">Add Delivery Address First</AlertTitle>
+                  <AlertDescription fontSize="sm">
+                    You need to add a delivery address before creating gift occasions for {currentRecipient.name}.
+                  </AlertDescription>
+                </VStack>
+                <Button
+                  as={RouterLink}
+                  to={`/recipients/${id}/edit`}
+                  size="xs"
+                  colorScheme="blue"
+                  leftIcon={<EditIcon />}
+                  ml={4}
+                >
+                  Add Address
+                </Button>
+              </Alert>
+            )}
+            
             {id && occasions && occasions[id] && occasions[id].length > 0 ? (
               <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={4}>
                 {occasions[id].map((occasion: any) => (
@@ -362,13 +459,15 @@ export const RecipientDetailPage: React.FC = () => {
             ) : (
               <Box textAlign="center" p={6}>
                 <Text mb={4} color="gray.500">No occasions created yet</Text>
-                <Button
-                  leftIcon={<AddIcon />}
-                  colorScheme="purple"
-                  onClick={() => setIsModalOpen(true)}
-                >
-                  Add First Occasion
-                </Button>
+                {currentRecipient.deliveryAddress && (
+                  <Button
+                    leftIcon={<AddIcon />}
+                    colorScheme="purple"
+                    onClick={handleOpenAddOccasionModal}
+                  >
+                    Add First Occasion
+                  </Button>
+                )}
               </Box>
             )}
           </CardBody>

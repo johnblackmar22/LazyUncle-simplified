@@ -19,7 +19,8 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import type { Address } from '../types';
-import { AddressVerificationService, AddressValidationResult } from '../services/addressVerification';
+import AddressVerificationService from '../services/addressVerification';
+import type { AddressValidationResult } from '../services/addressVerification';
 
 // US states for the dropdown
 const US_STATES = [

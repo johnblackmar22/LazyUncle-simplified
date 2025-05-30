@@ -82,6 +82,19 @@ const RecipientDetail = () => {
   
   const handleAddOccasion = async () => {
     if (!id || !newOccasion.name || !newOccasion.date) return;
+    
+    // Check if recipient has delivery address
+    if (!recipient?.deliveryAddress) {
+      toast({
+        title: 'Delivery Address Required',
+        description: `Please add a delivery address for ${recipient?.name} before creating gift occasions.`,
+        status: 'warning',
+        duration: 6000,
+        isClosable: true,
+      });
+      return;
+    }
+    
     setAdding(true);
     try {
       console.log('Adding occasion:', { recipientId: id, ...newOccasion });
@@ -222,6 +235,22 @@ const RecipientDetail = () => {
             )}
             <Box mt={6} textAlign="left">
               <Heading as="h5" size="sm" mb={2}>Add New Occasion</Heading>
+              {!recipient.deliveryAddress && (
+                <Box mb={4} p={3} bg="orange.50" borderColor="orange.200" borderWidth="1px" borderRadius="md">
+                  <Text fontSize="sm" color="orange.800" mb={2}>
+                    <strong>Delivery Address Required:</strong> Please add a delivery address for {recipient.name} before creating gift occasions.
+                  </Text>
+                  <Button
+                    as={RouterLink}
+                    to={`/recipients/edit/${id}`}
+                    size="xs"
+                    colorScheme="orange"
+                    variant="outline"
+                  >
+                    Add Address
+                  </Button>
+                </Box>
+              )}
               <SimpleGrid columns={{ base: 1, md: 4 }} spacing={2} mb={2}>
                 <input
                   type="text"
@@ -229,17 +258,20 @@ const RecipientDetail = () => {
                   value={newOccasion.name}
                   onChange={e => setNewOccasion({ ...newOccasion, name: e.target.value })}
                   className="border rounded p-2"
+                  disabled={!recipient.deliveryAddress}
                 />
                 <input
                   type="date"
                   value={newOccasion.date}
                   onChange={e => setNewOccasion({ ...newOccasion, date: e.target.value })}
                   className="border rounded p-2"
+                  disabled={!recipient.deliveryAddress}
                 />
                 <select
                   value={newOccasion.type}
                   onChange={e => setNewOccasion({ ...newOccasion, type: e.target.value as 'birthday' | 'anniversary' | 'custom' })}
                   className="border rounded p-2"
+                  disabled={!recipient.deliveryAddress}
                 >
                   <option value="birthday">Birthday</option>
                   <option value="anniversary">Anniversary</option>
@@ -251,9 +283,17 @@ const RecipientDetail = () => {
                   value={newOccasion.notes}
                   onChange={e => setNewOccasion({ ...newOccasion, notes: e.target.value })}
                   className="border rounded p-2"
+                  disabled={!recipient.deliveryAddress}
                 />
               </SimpleGrid>
-              <Button colorScheme="blue" size="sm" onClick={handleAddOccasion} isLoading={adding} mt={2}>
+              <Button 
+                colorScheme="blue" 
+                size="sm" 
+                onClick={handleAddOccasion} 
+                isLoading={adding} 
+                mt={2}
+                isDisabled={!recipient.deliveryAddress}
+              >
                 Add Occasion
               </Button>
             </Box>
