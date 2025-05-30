@@ -418,7 +418,7 @@ export default function SettingsPage() {
           
           {/* Phone number field appears only if text notifications is enabled */}
           {settings.textNotifications && (
-            <FormControl mb={4} isRequired>
+            <FormControl mb={4} isRequired maxW="400px">
               <FormLabel>Phone Number</FormLabel>
               <InputGroup>
                 <InputLeftAddon>+1</InputLeftAddon>
@@ -433,7 +433,7 @@ export default function SettingsPage() {
             </FormControl>
           )}
 
-          <FormControl mb={4}>
+          <FormControl mb={4} maxW="200px">
             <FormLabel>Reminder Days Before Event</FormLabel>
             <NumberInput 
               value={settings.reminderDays} 

@@ -158,9 +158,9 @@ export default function HomePage() {
               animation={fadeInSync}
             >
               <Box as="span" color={ACCENT_ORANGE}>Gifting</Box>
-              <Box as="span" color="gray.800">, on </Box>
+              <Box as="span" color={ACCENT_BLUE}>, on </Box>
               <Box as="span" color={ACCENT_BLUE}>Autopilot</Box>
-              <Box as="span" color={ACCENT_ORANGE}>.</Box>
+              <Box as="span" color={ACCENT_BLUE}>.</Box>
             </Heading>
             <Text
               color="neutral.700"

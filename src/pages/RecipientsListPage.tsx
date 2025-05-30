@@ -164,6 +164,7 @@ const RecipientsListPage: React.FC = () => {
             to="/recipients/add"
             colorScheme="blue"
             leftIcon={<AddIcon />}
+            size="lg"
           >
             Add Recipient
           </Button>
