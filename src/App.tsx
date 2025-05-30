@@ -62,7 +62,7 @@ function App() {
   }, [location.pathname, user, demoMode, storedDemoMode, isAuthenticated, shouldShowNavbar]);
   
   return (
-    <Box minH="100vh" bg="gray.50">
+    <Box minH="100vh" bg="gray.50" pt={shouldShowNavbar ? "80px" : "0"}>
       {/* Only show navbar for authenticated routes */}
       {shouldShowNavbar && <Navbar />}
       

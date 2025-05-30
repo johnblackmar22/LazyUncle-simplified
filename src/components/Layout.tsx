@@ -34,15 +34,29 @@ const Layout: React.FC = () => {
   }, [location.pathname, user, demoMode, storedDemoMode, isAuthenticated, shouldShowSidebar]);
   
   return (
-    <Box minH="100vh" bg="neutral.100">
+    <Box minH="100vh" bg="neutral.100" pt={shouldShowSidebar ? "80px" : "0"}>
       <Flex direction={{ base: 'column', md: 'row' }}>
         {/* Sidebar only shown when user is authenticated and on a protected route */}
         {shouldShowSidebar && (
-          <Box display={{ base: 'none', md: 'block' }} position="sticky" top="0" left="0" h="100vh">
+          <Box 
+            display={{ base: 'none', md: 'block' }} 
+            position="fixed" 
+            top="80px" 
+            left="0" 
+            h="calc(100vh - 80px)"
+            w="250px"
+            zIndex="100"
+          >
             <Sidebar />
           </Box>
         )}
-        <Box as="main" flex="1" p={{ base: 2, md: 4 }} w="full">
+        <Box 
+          as="main" 
+          flex="1" 
+          p={{ base: 2, md: 4 }} 
+          w="full"
+          ml={shouldShowSidebar ? { base: "0", md: "250px" } : "0"}
+        >
           <Container maxW="container.xl" px={{ base: 2, md: 8 }}>
             <Outlet />
           </Container>

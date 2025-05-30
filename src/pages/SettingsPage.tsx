@@ -331,23 +331,6 @@ export default function SettingsPage() {
             <FormHelperText>Your email is used for account recovery and notifications</FormHelperText>
           </FormControl>
 
-          {/* Only show phone number if text notifications is enabled */}
-          {settings.textNotifications && (
-            <FormControl mb={4}>
-              <FormLabel>Phone Number</FormLabel>
-              <InputGroup>
-                <InputLeftAddon>+1</InputLeftAddon>
-                <Input 
-                  type="tel" 
-                  value={settings.phoneNumber} 
-                  onChange={handlePhoneNumberChange}
-                  placeholder="(555) 123-4567"
-                />
-              </InputGroup>
-              <FormHelperText>Your phone number is used for text notifications</FormHelperText>
-            </FormControl>
-          )}
-
           <Divider my={4} />
 
           {!isPasswordChangeVisible ? (

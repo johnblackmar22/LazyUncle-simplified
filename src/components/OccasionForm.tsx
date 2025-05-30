@@ -62,9 +62,17 @@ export const OccasionForm: React.FC<OccasionFormProps> = ({
 
   // Set date based on type
   useEffect(() => {
-    if (type === 'birthday' && recipient.birthdate) {
-      const [, month, day] = recipient.birthdate.split('-');
-      setDate(`${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+    if (type === 'birthday') {
+      if (recipient.birthdate) {
+        const [, month, day] = recipient.birthdate.split('-');
+        setDate(`${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+      } else {
+        // If no birthdate is set, default to today's month-day
+        const today = new Date();
+        const month = (today.getMonth() + 1).toString().padStart(2, '0');
+        const day = today.getDate().toString().padStart(2, '0');
+        setDate(`${month}-${day}`);
+      }
     } else if (type === 'christmas') {
       setDate('12-25');
     } else if (type !== 'other') {
@@ -147,8 +155,10 @@ export const OccasionForm: React.FC<OccasionFormProps> = ({
           disabled={type === 'birthday' || type === 'christmas'}
         />
         <Text fontSize="xs" color="gray.500" mt={1}>
-          {type === 'birthday' && recipient.birthdate
-            ? 'Birthday date is from recipient info'
+          {type === 'birthday' 
+            ? (recipient.birthdate 
+                ? 'Birthday date is from recipient info' 
+                : 'Please set the correct birthday date')
             : type === 'christmas'
             ? 'Christmas is always December 25'
             : 'Format: MM-DD (e.g., 04-12)'}

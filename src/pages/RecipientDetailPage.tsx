@@ -406,6 +406,17 @@ export const RecipientDetailPage: React.FC = () => {
               )}
             </CardBody>
           </Card>
+
+          {currentRecipient.description && (
+            <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
+              <CardHeader pb={0}>
+                <Heading size="md">About {currentRecipient.name.split(' ')[0]}</Heading>
+              </CardHeader>
+              <CardBody>
+                <Text>{currentRecipient.description}</Text>
+              </CardBody>
+            </Card>
+          )}
         </VStack>
       </Container>
       <Modal isOpen={isOccasionModalOpen} onClose={closeOccasionModal} isCentered>
