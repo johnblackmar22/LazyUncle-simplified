@@ -239,7 +239,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   initializeAuth: () => {
-    console.log('=== AUTH INITIALIZATION ===');
+    console.log('=== AUTH INITIALIZATION START ===');
     
     // Check for demo mode first - this needs to be synchronous to prevent race conditions
     const isDemoMode = checkDemoMode();
@@ -247,27 +247,29 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     
     if (isDemoMode) {
       const storedUser = getStoredDemoUser();
-      console.log('Stored demo user:', storedUser);
+      console.log('Stored demo user found:', !!storedUser);
       if (storedUser) {
         // Set state synchronously to prevent redirect
         set({
           user: storedUser,
           demoMode: true,
           initialized: true,
-          loading: false
+          loading: false,
+          error: null
         });
-        console.log('Demo user restored successfully - auth initialized synchronously');
+        console.log('✅ Demo user restored successfully - auth initialized synchronously');
         return;
       } else {
-        // Demo mode enabled but no user - this is an error state
-        // Don't clear demo mode, just mark as not authenticated
+        // Demo mode enabled but no user - clear demo mode and require login
+        console.log('⚠️ Demo mode flag found but no user - clearing demo mode');
+        localStorage.removeItem('lazyuncle_demoMode');
         set({
           user: null,
-          demoMode: true,
+          demoMode: false,
           initialized: true,
-          loading: false
+          loading: false,
+          error: null
         });
-        console.log('Demo mode active but no user - user needs to sign in');
         return;
       }
     }
@@ -277,8 +279,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ 
       initialized: true, 
       demoMode: false,
-      loading: false
+      loading: false,
+      error: null
     });
-    console.log('Auth initialization complete - Firebase mode (will wait for onAuthStateChanged)');
+    console.log('✅ Auth initialization complete - Firebase mode (will wait for onAuthStateChanged)');
   }
 })); 

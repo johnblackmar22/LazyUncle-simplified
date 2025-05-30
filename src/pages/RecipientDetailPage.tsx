@@ -136,43 +136,7 @@ export const RecipientDetailPage: React.FC = () => {
 
   // Function to check if recipient has delivery address and handle validation
   const checkDeliveryAddressAndProceed = (actionCallback: () => void) => {
-    if (!currentRecipient?.deliveryAddress) {
-      toast({
-        title: 'Delivery Address Required',
-        description: 'Please add a delivery address for this recipient before creating gift occasions.',
-        status: 'warning',
-        duration: 6000,
-        isClosable: true,
-        position: 'top',
-        render: ({ onClose }) => (
-          <Alert status="warning" borderRadius="md" boxShadow="lg" maxW="md">
-            <AlertIcon />
-            <VStack align="start" spacing={2} flex="1">
-              <AlertTitle fontSize="sm">Delivery Address Required!</AlertTitle>
-              <AlertDescription fontSize="sm">
-                Please add a delivery address for {currentRecipient?.name} before creating gift occasions.
-              </AlertDescription>
-              <HStack spacing={2} mt={2}>
-                <Button
-                  as={RouterLink}
-                  to={`/recipients/${id}/edit`}
-                  size="xs"
-                  colorScheme="orange"
-                  leftIcon={<EditIcon />}
-                >
-                  Add Address
-                </Button>
-                <Button size="xs" variant="ghost" onClick={onClose}>
-                  Dismiss
-                </Button>
-              </HStack>
-            </VStack>
-          </Alert>
-        ),
-      });
-      return false;
-    }
-    
+    // Remove the address requirement - occasions should be allowed without delivery addresses
     actionCallback();
     return true;
   };
@@ -363,18 +327,18 @@ export const RecipientDetailPage: React.FC = () => {
               ) : (
                 <VStack align="start" spacing={1}>
                   <HStack>
-                    <FaMapMarkerAlt color="orange" />
-                    <Text fontWeight="bold" color="orange.500">No Delivery Address</Text>
+                    <FaMapMarkerAlt color="gray" />
+                    <Text fontWeight="bold" color="gray.500">No Delivery Address</Text>
                   </HStack>
                   <Box pl={6} fontSize="sm">
                     <Text color="gray.600" mb={2}>
-                      Add a delivery address to enable gift occasions.
+                      Add a delivery address for easier gift shipping.
                     </Text>
                     <Button
                       as={RouterLink}
                       to={`/recipients/${id}/edit`}
                       size="xs"
-                      colorScheme="orange"
+                      colorScheme="blue"
                       variant="outline"
                       leftIcon={<EditIcon />}
                     >
@@ -414,35 +378,12 @@ export const RecipientDetailPage: React.FC = () => {
                 variant="outline"
                 size="sm"
                 onClick={handleOpenAddOccasionModal}
-                isDisabled={!currentRecipient.deliveryAddress}
               >
                 Add Occasion
               </Button>
             </Flex>
           </CardHeader>
           <CardBody>
-            {!currentRecipient.deliveryAddress && (
-              <Alert status="info" mb={4} borderRadius="md">
-                <AlertIcon />
-                <VStack align="start" spacing={1} flex="1">
-                  <AlertTitle fontSize="sm">Add Delivery Address First</AlertTitle>
-                  <AlertDescription fontSize="sm">
-                    You need to add a delivery address before creating gift occasions for {currentRecipient.name}.
-                  </AlertDescription>
-                </VStack>
-                <Button
-                  as={RouterLink}
-                  to={`/recipients/${id}/edit`}
-                  size="xs"
-                  colorScheme="blue"
-                  leftIcon={<EditIcon />}
-                  ml={4}
-                >
-                  Add Address
-                </Button>
-              </Alert>
-            )}
-            
             {id && occasions && occasions[id] && occasions[id].length > 0 ? (
               <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={4}>
                 {occasions[id].map((occasion: any) => (
@@ -459,15 +400,13 @@ export const RecipientDetailPage: React.FC = () => {
             ) : (
               <Box textAlign="center" p={6}>
                 <Text mb={4} color="gray.500">No occasions created yet</Text>
-                {currentRecipient.deliveryAddress && (
-                  <Button
-                    leftIcon={<AddIcon />}
-                    colorScheme="purple"
-                    onClick={handleOpenAddOccasionModal}
-                  >
-                    Add First Occasion
-                  </Button>
-                )}
+                <Button
+                  leftIcon={<AddIcon />}
+                  colorScheme="purple"
+                  onClick={handleOpenAddOccasionModal}
+                >
+                  Add First Occasion
+                </Button>
               </Box>
             )}
           </CardBody>

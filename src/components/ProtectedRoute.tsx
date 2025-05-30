@@ -1,44 +1,39 @@
 import React, { useEffect } from 'react';
-import { Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { isDemoMode } from '../services/demoData';
-import { DEMO_MODE } from '../services/firebase';
 
 const ProtectedRoute = () => {
   const { user, demoMode, initialized } = useAuthStore();
-  const storedDemoMode = isDemoMode();
   const location = useLocation();
-  const navigate = useNavigate();
   
   // Log authentication state for debugging
   useEffect(() => {
     console.log('ProtectedRoute - Auth State:', { 
       user: !!user, 
       demoMode, 
-      storedDemoMode,
-      DEMO_MODE,
       initialized,
       path: location.pathname
     });
-  }, [user, demoMode, storedDemoMode, initialized, location.pathname]);
+  }, [user, demoMode, initialized, location.pathname]);
   
   // Don't redirect during initialization - wait for auth to be determined
   if (!initialized) {
     console.log('ProtectedRoute - Waiting for auth initialization...');
-    return null; // Or could return a loading spinner
+    return null; // Show nothing while waiting for initialization
   }
   
   // Check if we have valid authentication
-  const isAuthenticated = !!user || demoMode || storedDemoMode || DEMO_MODE;
+  // Either a real user (Firebase) OR demo mode is active
+  const isAuthenticated = !!user || demoMode;
   
   if (!isAuthenticated) {
-    console.log('Protected route accessed without auth, redirecting to login');
+    console.log('ProtectedRoute - No authentication found, redirecting to login');
     // Store the attempted location for potential redirect after login
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
   
   // User is authenticated, allow access to protected routes
-  console.log('ProtectedRoute - User authenticated, allowing access');
+  console.log('ProtectedRoute - Authentication verified, allowing access');
   return <Outlet />;
 };
 
