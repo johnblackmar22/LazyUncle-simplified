@@ -103,21 +103,50 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
         
         // Get existing occasions and add the new one
         const storageKey = getOccasionsStorageKey(recipientId);
-        const saved = localStorage.getItem(storageKey);
-        const existingOccasions = saved ? JSON.parse(saved) : [];
-        const updatedOccasions = [...existingOccasions, newOccasion];
+        console.log('Storage key:', storageKey);
         
-        // Save to localStorage
-        localStorage.setItem(storageKey, JSON.stringify(updatedOccasions));
-        console.log('Saved to localStorage with key:', storageKey);
-        console.log('Updated occasions:', updatedOccasions);
+        let existingOccasions: Occasion[] = [];
+        try {
+          const saved = localStorage.getItem(storageKey);
+          console.log('Existing data from localStorage:', saved);
+          existingOccasions = saved ? JSON.parse(saved) : [];
+          console.log('Parsed existing occasions:', existingOccasions);
+        } catch (parseError) {
+          console.error('Error parsing existing occasions:', parseError);
+          existingOccasions = [];
+        }
+        
+        const updatedOccasions = [...existingOccasions, newOccasion];
+        console.log('Updated occasions array:', updatedOccasions);
+        
+        // Save to localStorage with error handling
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(updatedOccasions));
+          console.log('✅ Successfully saved to localStorage');
+          
+          // Verify the save worked
+          const verification = localStorage.getItem(storageKey);
+          console.log('Verification read:', verification);
+          
+          if (!verification) {
+            throw new Error('localStorage save verification failed');
+          }
+        } catch (storageError) {
+          console.error('❌ localStorage save failed:', storageError);
+          throw new Error(`Failed to save occasion: ${(storageError as Error).message}`);
+        }
         
         // Update store state
-        set(state => ({ 
-          occasions: { ...state.occasions, [recipientId]: updatedOccasions }, 
-          loading: false 
-        }));
-        console.log('Demo occasion saved successfully');
+        set(state => {
+          const newState = { 
+            occasions: { ...state.occasions, [recipientId]: updatedOccasions }, 
+            loading: false 
+          };
+          console.log('✅ Store state updated:', newState);
+          return newState;
+        });
+        
+        console.log('✅ Demo occasion saved successfully');
         return newOccasion;
       }
       if (!user) {
@@ -154,7 +183,7 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
       console.log('Firebase occasion saved successfully:', occasion);
       return occasion;
     } catch (error) {
-      console.error('Error in addOccasion store:', error);
+      console.error('❌ Error in addOccasion store:', error);
       set({ error: (error as Error).message, loading: false });
       return null;
     }

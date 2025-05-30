@@ -68,13 +68,29 @@ const hasValidConfig = !!apiKey &&
   apiKey !== 'test-api-key' && 
   apiKey.length > 10;  // API keys should be reasonably long
 
-// Only enable demo mode if explicitly forced, environment variable is set, 
-// config is invalid, or we're in a test environment
-export const DEMO_MODE = 
-  forceDemoMode || 
-  (demoModeEnv === 'true' && process.env.NODE_ENV !== 'production') || 
-  (!hasValidConfig && process.env.NODE_ENV !== 'production') || 
-  process.env.NODE_ENV === 'test';
+// Check for demo mode - prioritize environment variable, but fall back to smart detection
+export const DEMO_MODE = (() => {
+  // First, check the environment variable
+  const envDemoMode = import.meta.env.VITE_DEMO_MODE;
+  if (envDemoMode === 'true') return true;
+  if (envDemoMode === 'false') return false;
+  
+  // If no environment variable is set, check if we have Firebase config
+  const hasFirebaseConfig = !!(
+    import.meta.env.VITE_FIREBASE_API_KEY &&
+    import.meta.env.VITE_FIREBASE_AUTH_DOMAIN &&
+    import.meta.env.VITE_FIREBASE_PROJECT_ID
+  );
+  
+  // If no Firebase config is available, default to demo mode
+  if (!hasFirebaseConfig) {
+    console.log('🔧 No Firebase config found - defaulting to DEMO MODE');
+    return true;
+  }
+  
+  // If we have Firebase config but no explicit demo mode setting, use Firebase
+  return false;
+})();
 
 // Log the configuration for easier debugging
 console.log('Detected Firebase config:', { 
