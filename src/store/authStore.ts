@@ -6,7 +6,7 @@ import {
   sendPasswordResetEmail,
   type User as FirebaseUser
 } from 'firebase/auth';
-import { auth, db } from '../services/firebase';
+import { auth, db, DEMO_MODE } from '../services/firebase';
 import type { User } from '../types';
 import { doc, setDoc } from 'firebase/firestore';
 
@@ -81,7 +81,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signIn: async (email, password) => {
     set({ loading: true, error: null });
     try {
-      // Check for demo credentials
+      // Check for demo credentials first
       if (email === 'demo@example.com' && password === 'password') {
         const demoUser = createDemoUser();
         
@@ -98,7 +98,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return;
       }
       
-      // Firebase login
+      // If Firebase is in demo mode and not demo credentials, show helpful error
+      if (DEMO_MODE) {
+        set({ 
+          error: "Firebase is in demo mode. Please use demo@example.com / password to sign in, or configure Firebase credentials in your .env file.",
+          loading: false 
+        });
+        return;
+      }
+      
+      // Firebase login for real credentials
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       set({ 
         user: convertFirebaseUser(userCredential.user),
@@ -107,6 +116,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         initialized: true
       });
     } catch (error) {
+      console.error('Sign in error:', error);
       set({ 
         error: (error as Error).message,
         loading: false 
@@ -117,12 +127,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signUp: async (email, password, displayName) => {
     set({ loading: true, error: null });
     try {
+      // If Firebase is in demo mode, prevent real registration
+      if (DEMO_MODE) {
+        set({ 
+          error: "Firebase is in demo mode. Registration is disabled. Please configure Firebase credentials in your .env file or use demo mode.",
+          loading: false 
+        });
+        return;
+      }
+      
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = { ...convertFirebaseUser(userCredential.user), planId: 'free' };
       set({ 
         user,
         loading: false,
-        initialized: true
+        initialized: true,
+        demoMode: false
       });
       
       await setDoc(doc(db, 'users', user.id), {
@@ -132,6 +152,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         planId: user.planId
       });
     } catch (error) {
+      console.error('Sign up error:', error);
       set({ 
         error: (error as Error).message,
         loading: false 
@@ -148,7 +169,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         localStorage.removeItem('demoUser');
         localStorage.removeItem('recipients');
         localStorage.removeItem('gifts');
-      } else {
+      } else if (!DEMO_MODE) {
         await firebaseSignOut(auth);
       }
       
@@ -159,6 +180,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         initialized: true
       });
     } catch (error) {
+      console.error('Sign out error:', error);
       set({ 
         error: (error as Error).message,
         loading: false 
@@ -177,9 +199,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return;
       }
       
+      if (DEMO_MODE) {
+        set({ 
+          error: "Firebase is in demo mode. Password reset is disabled. Please configure Firebase credentials in your .env file.",
+          loading: false 
+        });
+        return;
+      }
+      
       await sendPasswordResetEmail(auth, email);
       set({ loading: false });
     } catch (error) {
+      console.error('Reset password error:', error);
       set({ 
         error: (error as Error).message,
         loading: false 
