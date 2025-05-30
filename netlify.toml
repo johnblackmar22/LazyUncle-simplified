@@ -9,8 +9,9 @@
 [build.environment]
   # Node.js version to use
   NODE_VERSION = "18"
-  # Enable demo mode for deployment (since no Firebase config is provided)
-  VITE_DEMO_MODE = "true"
+  # Remove forced demo mode - let Firebase config determine mode
+  # Set VITE_DEMO_MODE=false to force Firebase mode (requires Firebase env vars)
+  VITE_DEMO_MODE = "false"
 
 # Redirect rules for SPA (Single Page Application)
 [[redirects]]

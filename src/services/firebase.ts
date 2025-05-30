@@ -70,10 +70,37 @@ const hasValidConfig = !!apiKey &&
 
 // Check for demo mode - prioritize environment variable, but fall back to smart detection
 export const DEMO_MODE = (() => {
-  // First, check the environment variable
+  // First, check the environment variable explicitly
   const envDemoMode = import.meta.env.VITE_DEMO_MODE;
-  if (envDemoMode === 'true') return true;
-  if (envDemoMode === 'false') return false;
+  
+  // If explicitly set to true, use demo mode
+  if (envDemoMode === 'true') {
+    console.log('🔧 VITE_DEMO_MODE=true - Using DEMO MODE');
+    return true;
+  }
+  
+  // If explicitly set to false, require Firebase config
+  if (envDemoMode === 'false') {
+    const hasFirebaseConfig = !!(
+      import.meta.env.VITE_FIREBASE_API_KEY &&
+      import.meta.env.VITE_FIREBASE_AUTH_DOMAIN &&
+      import.meta.env.VITE_FIREBASE_PROJECT_ID &&
+      import.meta.env.VITE_FIREBASE_APP_ID
+    );
+    
+    if (!hasFirebaseConfig) {
+      console.error('❌ VITE_DEMO_MODE=false but Firebase config is missing!');
+      console.error('Required environment variables:');
+      console.error('- VITE_FIREBASE_API_KEY');
+      console.error('- VITE_FIREBASE_AUTH_DOMAIN'); 
+      console.error('- VITE_FIREBASE_PROJECT_ID');
+      console.error('- VITE_FIREBASE_APP_ID');
+      throw new Error('Firebase configuration is required when VITE_DEMO_MODE=false');
+    }
+    
+    console.log('🔥 VITE_DEMO_MODE=false - Using FIREBASE MODE');
+    return false;
+  }
   
   // If no environment variable is set, check if we have Firebase config
   const hasFirebaseConfig = !!(
@@ -82,13 +109,14 @@ export const DEMO_MODE = (() => {
     import.meta.env.VITE_FIREBASE_PROJECT_ID
   );
   
-  // If no Firebase config is available, default to demo mode
+  // If no Firebase config is available, default to demo mode (local development)
   if (!hasFirebaseConfig) {
     console.log('🔧 No Firebase config found - defaulting to DEMO MODE');
     return true;
   }
   
   // If we have Firebase config but no explicit demo mode setting, use Firebase
+  console.log('🔥 Firebase config found - defaulting to FIREBASE MODE');
   return false;
 })();
 
