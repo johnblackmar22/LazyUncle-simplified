@@ -36,7 +36,9 @@ import { getPlanById } from '../services/subscription/plans';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { months, days, years } from '../utils/dateUtils';
 import { ArrowBackIcon, AddIcon } from '@chakra-ui/icons';
-import { FaUser, FaHeart } from 'react-icons/fa';
+import { FaUser, FaHeart, FaMapMarkerAlt } from 'react-icons/fa';
+import type { Address } from '../types';
+import AddressForm from '../components/AddressForm';
 
 const relationshipOptions = [
   'Nephew', 'Niece', 'Wife', 'Husband', 'Brother', 'Sister', 'Mom', 'Dad', 'Friend', 'Colleague', 'Other'
@@ -66,6 +68,7 @@ const AddRecipientPage: React.FC = () => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [description, setDescription] = useState('');
+  const [deliveryAddress, setDeliveryAddress] = useState<Address | undefined>(undefined);
 
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
@@ -115,6 +118,7 @@ const AddRecipientPage: React.FC = () => {
         name: fullName,
         birthdate: birthdateStr || undefined,
         description: description.trim() || undefined,
+        deliveryAddress,
       });
       toast({
         title: 'Recipient added!',
@@ -303,6 +307,24 @@ const AddRecipientPage: React.FC = () => {
                         ))}
                     </Flex>
                   </Box>
+                </FormControl>
+                
+                <Divider />
+                
+                <FormControl>
+                  <Flex align="center" gap={2} mb={2}>
+                    <Icon as={FaMapMarkerAlt} color="green.500" />
+                    <FormLabel mb={0}>Delivery Address (Optional)</FormLabel>
+                  </Flex>
+                  <Text fontSize="sm" color="gray.600" mb={3}>
+                    Where should gifts be delivered for this recipient?
+                  </Text>
+                  <AddressForm
+                    address={deliveryAddress}
+                    onChange={setDeliveryAddress}
+                    isRequired={false}
+                    helperText="We'll use this address to deliver gifts directly to your recipient."
+                  />
                 </FormControl>
                 
                 <Divider />

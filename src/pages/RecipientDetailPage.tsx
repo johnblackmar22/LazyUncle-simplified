@@ -42,7 +42,7 @@ import {
   AlertDialogOverlay,
 } from '@chakra-ui/react';
 import { EditIcon, DeleteIcon, ArrowBackIcon, AddIcon } from '@chakra-ui/icons';
-import { FaGift, FaCalendarAlt, FaDollarSign, FaUser, FaHeart, FaComments } from 'react-icons/fa';
+import { FaGift, FaCalendarAlt, FaDollarSign, FaUser, FaHeart, FaComments, FaMapMarkerAlt } from 'react-icons/fa';
 import { useRecipientStore } from '../store/recipientStore';
 import { format } from 'date-fns';
 import type { Recipient } from '../types';
@@ -290,6 +290,25 @@ export const RecipientDetailPage: React.FC = () => {
                   </>
                 );
               })()}
+              
+              {/* Delivery Address */}
+              {currentRecipient.deliveryAddress && (
+                <VStack align="start" spacing={1}>
+                  <HStack>
+                    <FaMapMarkerAlt color="green" />
+                    <Text fontWeight="bold">Delivery Address:</Text>
+                  </HStack>
+                  <Box pl={6} fontSize="sm">
+                    <Text>{currentRecipient.deliveryAddress.line1}</Text>
+                    {currentRecipient.deliveryAddress.line2 && (
+                      <Text>{currentRecipient.deliveryAddress.line2}</Text>
+                    )}
+                    <Text>
+                      {currentRecipient.deliveryAddress.city}, {currentRecipient.deliveryAddress.state} {currentRecipient.deliveryAddress.postalCode}
+                    </Text>
+                  </Box>
+                </VStack>
+              )}
               
               {currentRecipient.interests && currentRecipient.interests.length > 0 && (
                 <VStack align="start">

@@ -88,6 +88,14 @@ export const demoRecipients = [
     birthdate: formatDate(addDays(today, 10), 'yyyy-MM-dd'), // Birthday in 10 days
     anniversary: formatDate(addDays(today, 15), 'yyyy-MM-dd'), // Anniversary in 15 days
     interests: ["Books", "Hiking", "Yoga", "Cooking"],
+    deliveryAddress: {
+      line1: "123 Maple Street",
+      line2: "Apt 4B",
+      city: "Springfield",
+      state: "IL",
+      postalCode: "62701",
+      country: "US"
+    },
     giftPreferences: {
       priceRange: {
         min: 50,
@@ -115,6 +123,13 @@ export const demoRecipients = [
     relationship: "Son",
     birthdate: formatDate(addDays(today, 7), 'yyyy-MM-dd'), // Birthday coming up soon in 7 days
     interests: ["Video Games", "Soccer", "Science", "Drawing"],
+    deliveryAddress: {
+      line1: "456 Oak Avenue",
+      city: "Chicago",
+      state: "IL",
+      postalCode: "60601",
+      country: "US"
+    },
     giftPreferences: {
       priceRange: {
         min: 20,
@@ -142,6 +157,14 @@ export const demoRecipients = [
     relationship: "Friend",
     birthdate: formatDate(addDays(today, 22), 'yyyy-MM-dd'), // Birthday in 22 days
     interests: ["Technology", "Coffee", "Travel", "Photography"],
+    deliveryAddress: {
+      line1: "789 Pine Road",
+      line2: "Unit 12",
+      city: "San Francisco",
+      state: "CA",
+      postalCode: "94102",
+      country: "US"
+    },
     giftPreferences: {
       priceRange: {
         min: 30,
@@ -170,6 +193,13 @@ export const demoRecipients = [
     birthdate: formatDate(addDays(today, 3), 'yyyy-MM-dd'), // Birthday very soon - 3 days
     anniversary: formatDate(addDays(today, 28), 'yyyy-MM-dd'), // 28 days from now
     interests: ["Gardening", "Cooking", "Classical Music", "Painting"],
+    deliveryAddress: {
+      line1: "321 Elm Drive",
+      city: "Austin",
+      state: "TX",
+      postalCode: "73301",
+      country: "US"
+    },
     giftPreferences: {
       priceRange: {
         min: 40,

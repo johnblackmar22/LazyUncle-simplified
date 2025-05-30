@@ -33,10 +33,12 @@ import {
   Icon,
 } from '@chakra-ui/react';
 import { AddIcon, ArrowBackIcon } from '@chakra-ui/icons';
-import { FaUser, FaHeart } from 'react-icons/fa';
+import { FaUser, FaHeart, FaMapMarkerAlt } from 'react-icons/fa';
 import { useRecipientStore } from '../store/recipientStore';
 import { getCurrentDateISO, months, days, years } from '../utils/dateUtils';
 import { showErrorToast } from '../utils/toastUtils';
+import type { Address } from '../types';
+import AddressForm from '../components/AddressForm';
 
 const relationshipOptions = [
   'Nephew', 'Niece', 'Wife', 'Husband', 'Brother', 'Sister', 'Mom', 'Dad', 'Friend', 'Colleague', 'Other'
@@ -55,6 +57,7 @@ const EditRecipientPage: React.FC = () => {
   const [birthDay, setBirthDay] = useState<string>('');
   const [birthYear, setBirthYear] = useState<string>('');
   const [description, setDescription] = useState('');
+  const [deliveryAddress, setDeliveryAddress] = useState<Address | undefined>(undefined);
   
   // Interest management
   const [interest, setInterest] = useState('');
@@ -84,6 +87,7 @@ const EditRecipientPage: React.FC = () => {
         setName(recipient.name);
         setRelationship(recipient.relationship);
         setDescription(recipient.description || '');
+        setDeliveryAddress(recipient.deliveryAddress);
         if (recipient.birthdate) {
           let birthdateStr = '';
           if (typeof recipient.birthdate === 'string') {
@@ -150,7 +154,8 @@ const EditRecipientPage: React.FC = () => {
         relationship,
         birthdate: birthdateStr || undefined,
         interests,
-        description: description.trim() || undefined
+        description: description.trim() || undefined,
+        deliveryAddress,
       });
       
       toast({
@@ -346,6 +351,24 @@ const EditRecipientPage: React.FC = () => {
 
                 <Divider />
 
+                <FormControl>
+                  <Flex align="center" gap={2} mb={2}>
+                    <Icon as={FaMapMarkerAlt} color="green.500" />
+                    <FormLabel mb={0}>Delivery Address (Optional)</FormLabel>
+                  </Flex>
+                  <Text fontSize="sm" color="gray.600" mb={3}>
+                    Where should gifts be delivered for this recipient?
+                  </Text>
+                  <AddressForm
+                    address={deliveryAddress}
+                    onChange={setDeliveryAddress}
+                    isRequired={false}
+                    helperText="We'll use this address to deliver gifts directly to your recipient."
+                  />
+                </FormControl>
+                
+                <Divider />
+                
                 <FormControl>
                   <FormLabel>Tell us about them (Optional)</FormLabel>
                   <Text fontSize="sm" color="gray.600" mb={2}>
