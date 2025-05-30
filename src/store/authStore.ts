@@ -3,13 +3,11 @@ import {
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
-  onAuthStateChanged,
   sendPasswordResetEmail,
   type User as FirebaseUser
 } from 'firebase/auth';
 import { auth, db } from '../services/firebase';
 import type { User } from '../types';
-import { isDemoMode, initializeDemoData } from '../services/demoData';
 import { doc, setDoc } from 'firebase/firestore';
 
 interface AuthState {
@@ -52,38 +50,55 @@ function createDemoUser(): User {
   };
 }
 
-// Flag to track if auth listener has been set up
-let authListenerInitialized = false;
+// Check if we're in demo mode
+function checkDemoMode(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return localStorage.getItem('demoMode') === 'true';
+  } catch {
+    return false;
+  }
+}
+
+// Get stored demo user
+function getStoredDemoUser(): User | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = localStorage.getItem('demoUser');
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+}
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   loading: false,
   error: null,
   initialized: false,
-  demoMode: false,
+  demoMode: checkDemoMode(),
 
   signIn: async (email, password) => {
     set({ loading: true, error: null });
     try {
       // Check for demo credentials
       if (email === 'demo@example.com' && password === 'password') {
-        // Set demo mode and create demo user
         const demoUser = createDemoUser();
+        
+        // Store in localStorage
+        localStorage.setItem('demoMode', 'true');
+        localStorage.setItem('demoUser', JSON.stringify(demoUser));
+        
         set({ 
           user: demoUser,
           loading: false,
           demoMode: true,
           initialized: true
         });
-        
-        // Store demo user and initialize demo data
-        localStorage.setItem('demoMode', 'true');
-        localStorage.setItem('demoUser', JSON.stringify(demoUser));
-        initializeDemoData();
         return;
       }
       
-      // Otherwise, try Firebase login
+      // Firebase login
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       set({ 
         user: convertFirebaseUser(userCredential.user),
@@ -109,7 +124,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         loading: false,
         initialized: true
       });
-      // Create user profile in Firestore
+      
       await setDoc(doc(db, 'users', user.id), {
         email: user.email,
         displayName: user.displayName,
@@ -127,26 +142,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signOut: async () => {
     set({ loading: true, error: null });
     try {
-      // If in demo mode, just clear the state
+      // Clear demo data
       if (get().demoMode) {
-        set({ 
-          user: null, 
-          loading: false,
-          demoMode: false,
-          initialized: true
-        });
-        
-        // Clear demo data from localStorage
         localStorage.removeItem('demoMode');
         localStorage.removeItem('demoUser');
         localStorage.removeItem('recipients');
         localStorage.removeItem('gifts');
-        return;
+      } else {
+        await firebaseSignOut(auth);
       }
       
-      // Otherwise, sign out from Firebase
-      await firebaseSignOut(auth);
-      set({ user: null, loading: false });
+      set({ 
+        user: null, 
+        loading: false,
+        demoMode: false,
+        initialized: true
+      });
     } catch (error) {
       set({ 
         error: (error as Error).message,
@@ -158,7 +169,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   resetPassword: async (email) => {
     set({ loading: true, error: null });
     try {
-      // Don't try to reset password for demo account
       if (email === 'demo@example.com') {
         set({ 
           error: "Cannot reset password for demo account", 
@@ -188,61 +198,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   initializeAuth: () => {
-    const isDemo = isDemoMode();
+    // Check for demo mode first
+    const isDemoMode = checkDemoMode();
     
-    if (isDemo) {
-      // Get stored demo user or create one
-      const storedUser = localStorage.getItem('demoUser');
-      const demoUser = storedUser ? JSON.parse(storedUser) : createDemoUser();
-      
-      // Initialize demo data
-      initializeDemoData();
-      
-      // Update store state
-      set({
-        user: demoUser,
-        demoMode: true,
-        initialized: true
-      });
-      
-      console.log('Demo mode initialized with user:', demoUser);
-      return;
+    if (isDemoMode) {
+      const storedUser = getStoredDemoUser();
+      if (storedUser) {
+        set({
+          user: storedUser,
+          demoMode: true,
+          initialized: true
+        });
+        return;
+      }
     }
     
-    // Set up Firebase auth listener only once and only for non-demo mode
-    if (!authListenerInitialized) {
-      authListenerInitialized = true;
-      
-      console.log('Setting up Firebase auth listener');
-      onAuthStateChanged(auth, (firebaseUser) => {
-        const currentState = get();
-        
-        // Skip Firebase auth if we're in demo mode
-        if (currentState.demoMode) {
-          console.log('Skipping Firebase auth listener - demo mode active');
-          return;
-        }
-        
-        if (firebaseUser) {
-          console.log('Firebase user detected, updating auth state');
-          set({ 
-            user: convertFirebaseUser(firebaseUser),
-            initialized: true,
-            demoMode: false
-          });
-        } else {
-          console.log('No Firebase user, clearing auth state');
-          set({ 
-            user: null,
-            initialized: true,
-            demoMode: false
-          });
-        }
-      });
-    }
-    
-    // For non-demo mode, mark as initialized but wait for Firebase
+    // For Firebase auth, we'll handle it in the App component
+    // to avoid module-level listeners
     set({ initialized: true });
-    console.log('Non-demo mode initialized, waiting for Firebase auth');
   }
 })); 
