@@ -241,7 +241,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   initializeAuth: () => {
     console.log('=== AUTH INITIALIZATION ===');
     
-    // Check for demo mode first
+    // Check for demo mode first - this needs to be synchronous to prevent race conditions
     const isDemoMode = checkDemoMode();
     console.log('Demo mode detected:', isDemoMode);
     
@@ -249,12 +249,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const storedUser = getStoredDemoUser();
       console.log('Stored demo user:', storedUser);
       if (storedUser) {
+        // Set state synchronously to prevent redirect
         set({
           user: storedUser,
           demoMode: true,
-          initialized: true
+          initialized: true,
+          loading: false
         });
-        console.log('Demo user restored successfully');
+        console.log('Demo user restored successfully - auth initialized synchronously');
         return;
       } else {
         // Demo mode enabled but no user - this is an error state
@@ -262,7 +264,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({
           user: null,
           demoMode: true,
-          initialized: true
+          initialized: true,
+          loading: false
         });
         console.log('Demo mode active but no user - user needs to sign in');
         return;
@@ -270,7 +273,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
     
     // For Firebase auth, mark as initialized and let onAuthStateChanged handle the rest
-    set({ initialized: true, demoMode: false });
-    console.log('Auth initialization complete - Firebase mode');
+    // Don't wait for async Firebase auth check - mark as initialized immediately
+    set({ 
+      initialized: true, 
+      demoMode: false,
+      loading: false
+    });
+    console.log('Auth initialization complete - Firebase mode (will wait for onAuthStateChanged)');
   }
 })); 

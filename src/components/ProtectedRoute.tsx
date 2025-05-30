@@ -5,7 +5,7 @@ import { isDemoMode } from '../services/demoData';
 import { DEMO_MODE } from '../services/firebase';
 
 const ProtectedRoute = () => {
-  const { user, demoMode } = useAuthStore();
+  const { user, demoMode, initialized } = useAuthStore();
   const storedDemoMode = isDemoMode();
   const location = useLocation();
   const navigate = useNavigate();
@@ -17,28 +17,28 @@ const ProtectedRoute = () => {
       demoMode, 
       storedDemoMode,
       DEMO_MODE,
+      initialized,
       path: location.pathname
     });
-  }, [user, demoMode, storedDemoMode, location.pathname]);
+  }, [user, demoMode, storedDemoMode, initialized, location.pathname]);
   
-  useEffect(() => {
-    // If user signs out while on a protected route, redirect them immediately
-    if (!user && !demoMode && !storedDemoMode && !DEMO_MODE) {
-      console.log('No auth detected, redirecting to login');
-      navigate('/login', { replace: true });
-    }
-  }, [user, demoMode, storedDemoMode, navigate, location.pathname]);
+  // Don't redirect during initialization - wait for auth to be determined
+  if (!initialized) {
+    console.log('ProtectedRoute - Waiting for auth initialization...');
+    return null; // Or could return a loading spinner
+  }
   
   // Check if we have valid authentication
   const isAuthenticated = !!user || demoMode || storedDemoMode || DEMO_MODE;
   
   if (!isAuthenticated) {
-    console.log('Protected route accessed without auth, redirecting');
+    console.log('Protected route accessed without auth, redirecting to login');
     // Store the attempted location for potential redirect after login
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
   
   // User is authenticated, allow access to protected routes
+  console.log('ProtectedRoute - User authenticated, allowing access');
   return <Outlet />;
 };
 

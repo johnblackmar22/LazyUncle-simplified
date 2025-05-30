@@ -43,17 +43,26 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
         console.log('Found occasions data:', saved);
         const occasions = saved ? JSON.parse(saved) : [];
         console.log('Parsed occasions:', occasions);
-        set(state => ({ occasions: { ...state.occasions, [recipientId]: occasions }, loading: false }));
+        
+        // Always update the store state, even if empty array
+        set(state => ({ 
+          occasions: { ...state.occasions, [recipientId]: occasions }, 
+          loading: false 
+        }));
+        console.log('Demo occasions loaded successfully for recipient:', recipientId, 'Count:', occasions.length);
         return;
       }
+      
       if (!user) {
         console.log('No user found, setting empty occasions');
         set({ loading: false });
         return;
       }
+      
       const q = query(collection(db, 'occasions'), where('recipientId', '==', recipientId));
       const snapshot = await getDocs(q);
       const occasions: Occasion[] = [];
+      
       snapshot.forEach(docSnap => {
         const data = docSnap.data();
         occasions.push({
@@ -71,7 +80,9 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
           updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
         });
       });
+      
       set(state => ({ occasions: { ...state.occasions, [recipientId]: occasions }, loading: false }));
+      console.log('Firebase occasions loaded successfully for recipient:', recipientId, 'Count:', occasions.length);
     } catch (error) {
       console.error('Error fetching occasions:', error);
       set({ error: (error as Error).message, loading: false });

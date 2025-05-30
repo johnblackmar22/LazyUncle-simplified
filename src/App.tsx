@@ -24,24 +24,34 @@ function App() {
   const { initialized, user, demoMode, initializeAuth } = useAuthStore();
 
   useEffect(() => {
-    // Initialize auth store once
+    // Initialize auth store once - this should happen immediately and synchronously
     console.log('App.tsx - Initializing auth...');
     initializeAuth();
+  }, []); // Run only once on mount
 
-    // Set up Firebase listener only for non-demo mode
+  useEffect(() => {
+    // Set up Firebase listener only for non-demo mode, and only after auth is initialized
+    if (!initialized) return;
+
+    // If we're in demo mode, don't set up Firebase listener at all
+    if (demoMode) {
+      console.log('App.tsx - Skipping Firebase listener setup - in demo mode');
+      return;
+    }
+
+    console.log('App.tsx - Setting up Firebase auth listener for production mode');
+    
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       const store = useAuthStore.getState();
       
       console.log('App.tsx - Firebase auth state changed:', firebaseUser ? 'User logged in' : 'User logged out');
       console.log('App.tsx - Current store state:', { demoMode: store.demoMode, user: !!store.user });
       
-      // IMPORTANT: Skip if in demo mode to prevent overriding demo user
+      // Double-check: Skip if demo mode was enabled after initialization
       if (store.demoMode) {
-        console.log('App.tsx - Skipping Firebase auth state change - in demo mode');
+        console.log('App.tsx - Skipping Firebase auth state change - demo mode active');
         return;
       }
-      
-      console.log('Firebase auth state changed:', firebaseUser ? 'User logged in' : 'User logged out');
       
       if (firebaseUser) {
         useAuthStore.setState({
@@ -56,31 +66,30 @@ function App() {
           initialized: true,
           demoMode: false
         });
+        console.log('App.tsx - Firebase user set in store');
       } else {
         // Only clear user if not in demo mode
-        if (!store.demoMode) {
-          console.log('App.tsx - Clearing user (not in demo mode)');
-          useAuthStore.setState({
-            user: null,
-            initialized: true,
-            demoMode: false
-          });
-        } else {
-          console.log('App.tsx - Keeping demo user');
-        }
+        useAuthStore.setState({
+          user: null,
+          initialized: true,
+          demoMode: false
+        });
+        console.log('App.tsx - Firebase user cleared from store');
       }
     });
 
     return () => unsubscribe();
-  }, []); // Remove all dependencies to prevent re-initialization
+  }, [initialized, demoMode]); // Re-run if initialization state or demo mode changes
 
   // Initialize demo data separately when needed
   useEffect(() => {
     if (demoMode && user) {
+      console.log('App.tsx - Initializing demo data for user:', user.id);
       initializeDemoData();
     }
   }, [demoMode, user]);
 
+  // Show loading only if not initialized
   if (!initialized) {
     return (
       <Box
