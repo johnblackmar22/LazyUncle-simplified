@@ -70,6 +70,11 @@ const AddRecipientPage: React.FC = () => {
   const [description, setDescription] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState<Address | undefined>(undefined);
 
+  // Debug logging for delivery address
+  React.useEffect(() => {
+    console.log('AddRecipientPage - deliveryAddress changed:', deliveryAddress);
+  }, [deliveryAddress]);
+
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
@@ -111,6 +116,8 @@ const AddRecipientPage: React.FC = () => {
     }
     
     const fullName = `${firstName.trim()} ${lastName.trim()}`;
+    
+    console.log('AddRecipientPage - About to submit recipient with delivery address:', deliveryAddress);
     
     try {
       await addRecipient({

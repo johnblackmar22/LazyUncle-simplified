@@ -257,14 +257,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         console.log('Demo user restored successfully');
         return;
       } else {
-        // Demo mode enabled but no user - clear demo mode
-        localStorage.removeItem('lazyuncle_demoMode');
-        console.log('Demo mode cleared - no user found');
+        // Demo mode enabled but no user - this is an error state
+        // Don't clear demo mode, just mark as not authenticated
+        set({
+          user: null,
+          demoMode: true,
+          initialized: true
+        });
+        console.log('Demo mode active but no user - user needs to sign in');
+        return;
       }
     }
     
     // For Firebase auth, mark as initialized and let onAuthStateChanged handle the rest
     set({ initialized: true, demoMode: false });
-    console.log('Auth initialization complete');
+    console.log('Auth initialization complete - Firebase mode');
   }
 })); 

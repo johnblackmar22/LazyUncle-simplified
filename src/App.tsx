@@ -25,15 +25,19 @@ function App() {
 
   useEffect(() => {
     // Initialize auth store once
+    console.log('App.tsx - Initializing auth...');
     initializeAuth();
 
     // Set up Firebase listener only for non-demo mode
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       const store = useAuthStore.getState();
       
+      console.log('App.tsx - Firebase auth state changed:', firebaseUser ? 'User logged in' : 'User logged out');
+      console.log('App.tsx - Current store state:', { demoMode: store.demoMode, user: !!store.user });
+      
       // IMPORTANT: Skip if in demo mode to prevent overriding demo user
       if (store.demoMode) {
-        console.log('Skipping Firebase auth state change - in demo mode');
+        console.log('App.tsx - Skipping Firebase auth state change - in demo mode');
         return;
       }
       
@@ -55,11 +59,14 @@ function App() {
       } else {
         // Only clear user if not in demo mode
         if (!store.demoMode) {
+          console.log('App.tsx - Clearing user (not in demo mode)');
           useAuthStore.setState({
             user: null,
             initialized: true,
             demoMode: false
           });
+        } else {
+          console.log('App.tsx - Keeping demo user');
         }
       }
     });

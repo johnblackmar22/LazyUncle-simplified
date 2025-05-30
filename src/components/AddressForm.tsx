@@ -108,6 +108,8 @@ export const AddressForm: React.FC<AddressFormProps> = ({
   
   // Memoize the onChange callback to prevent infinite re-renders
   const handleAddressChange = useCallback(() => {
+    console.log('AddressForm - handleAddressChange called with:', { line1, line2, city, state, postalCode });
+    
     if (line1 || line2 || city || state || postalCode) {
       const newAddress: Address = {
         line1,
@@ -117,8 +119,10 @@ export const AddressForm: React.FC<AddressFormProps> = ({
         postalCode,
         country: 'US'
       };
+      console.log('AddressForm - Calling onChange with:', newAddress);
       onChange(newAddress);
     } else {
+      console.log('AddressForm - Calling onChange with undefined (empty address)');
       onChange(undefined);
     }
   }, [line1, line2, city, state, postalCode, onChange]);
