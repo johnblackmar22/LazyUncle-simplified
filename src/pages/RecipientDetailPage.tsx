@@ -104,8 +104,16 @@ export const RecipientDetailPage: React.FC = () => {
   } | null>(null);
   const cancelRef = React.useRef<HTMLButtonElement>(null);
 
-  const openOccasionModal = () => setOccasionModalOpen(true);
-  const closeOccasionModal = () => { setOccasionModalOpen(false); };
+  const openOccasionModal = () => {
+    console.log('Opening occasion modal. Current recipient:', currentRecipient);
+    console.log('Modal state before:', isOccasionModalOpen);
+    setOccasionModalOpen(true);
+  };
+  
+  const closeOccasionModal = () => { 
+    console.log('Closing occasion modal');
+    setOccasionModalOpen(false); 
+  };
 
   const handleDeleteOccasion = async (occasionId: string) => {
     if (!id) return;
@@ -187,12 +195,14 @@ export const RecipientDetailPage: React.FC = () => {
   };
 
   useEffect(() => {
+    console.log('RecipientDetailPage useEffect triggered. ID:', id, 'Location search:', location.search);
     fetchRecipients();
     if (id) {
       fetchOccasions(id);
     }
     // Open modal if addOccasion query param is present
     if (location.search.includes('addOccasion=true')) {
+      console.log('Found addOccasion=true in query params, opening modal');
       setOccasionModalOpen(true);
     }
   }, [fetchRecipients, fetchOccasions, id, location.search]);
@@ -425,14 +435,17 @@ export const RecipientDetailPage: React.FC = () => {
           <ModalHeader>Add Occasion</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            {currentRecipient && (
-              <OccasionForm
-                recipient={currentRecipient}
-                loading={occasionLoading}
-                onSubmit={handleOccasionSubmit}
-                onCancel={closeOccasionModal}
-              />
-            )}
+            {(() => {
+              console.log('Modal rendering. Modal open:', isOccasionModalOpen, 'Current recipient:', currentRecipient);
+              return currentRecipient && (
+                <OccasionForm
+                  recipient={currentRecipient}
+                  loading={occasionLoading}
+                  onSubmit={handleOccasionSubmit}
+                  onCancel={closeOccasionModal}
+                />
+              );
+            })()}
           </ModalBody>
         </ModalContent>
       </Modal>
