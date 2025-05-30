@@ -181,7 +181,7 @@ export const Navbar: React.FC = () => {
       <Container maxW="container.xl">
         <Flex justify="space-between" align="center">
           <Box>
-            <RouterLink to="/">
+            <RouterLink to={user ? "/dashboard" : "/"}>
               <BrandLogo size={36} />
             </RouterLink>
           </Box>

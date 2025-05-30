@@ -18,7 +18,8 @@ import {
   AlertDialogHeader,
   AlertDialogContent,
   AlertDialogOverlay,
-  HStack
+  HStack,
+  Textarea
 } from '@chakra-ui/react';
 import { useRecipientStore } from '../store/recipientStore';
 import { useAuthStore } from '../store/authStore';
@@ -27,7 +28,7 @@ import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { months, days, years } from '../utils/dateUtils';
 
 const relationshipOptions = [
-  'Nephew', 'Niece', 'Family', 'Friend', 'Colleague', 'Other'
+  'Wife', 'Husband', 'Brother', 'Sister', 'Mom', 'Dad', 'Nephew', 'Niece', 'Friend', 'Colleague', 'Other'
 ];
 const suggestedInterests = ['Gaming', 'Music', 'Tech', 'Travel', 'Sports', 'Food', 'Books', 'Movies', 'Fashion', 'Outdoors'];
 
@@ -50,6 +51,10 @@ const AddRecipientPage: React.FC = () => {
   const [birthMonth, setBirthMonth] = useState<string>('');
   const [birthDay, setBirthDay] = useState<string>('');
   const [birthYear, setBirthYear] = useState<string>('');
+  
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [description, setDescription] = useState('');
 
   // Add/Remove Interests
   const addInterest = () => {
@@ -66,7 +71,7 @@ const AddRecipientPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!recipient.name.trim() || !recipient.relationship.trim()) {
+    if (!firstName.trim() || !lastName.trim() || !recipient.relationship.trim()) {
       toast({
         title: 'Please fill in all required fields',
         status: 'warning',
@@ -81,10 +86,15 @@ const AddRecipientPage: React.FC = () => {
     if (birthYear && birthMonth && birthDay) {
       birthdateStr = `${birthYear}-${birthMonth}-${birthDay}`;
     }
+    
+    const fullName = `${firstName.trim()} ${lastName.trim()}`;
+    
     try {
       await addRecipient({
         ...recipient,
+        name: fullName,
         birthdate: birthdateStr || undefined,
+        description: description.trim() || undefined,
       });
       toast({
         title: 'Recipient added!',
@@ -114,8 +124,12 @@ const AddRecipientPage: React.FC = () => {
           <form onSubmit={handleSubmit}>
             <VStack spacing={6} align="stretch" mt={4}>
               <FormControl isRequired>
-                <FormLabel>Name</FormLabel>
-                <Input value={recipient.name} onChange={e => setRecipient(r => ({ ...r, name: e.target.value }))} placeholder="Their name" />
+                <FormLabel>First Name</FormLabel>
+                <Input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Their first name" />
+              </FormControl>
+              <FormControl isRequired>
+                <FormLabel>Last Name</FormLabel>
+                <Input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Their last name" />
               </FormControl>
               <FormControl isRequired>
                 <FormLabel>Relationship</FormLabel>
@@ -124,7 +138,10 @@ const AddRecipientPage: React.FC = () => {
                 </Select>
               </FormControl>
               <FormControl>
-                <FormLabel>Birthday (Optional)</FormLabel>
+                <FormLabel>Birthdate (Optional)</FormLabel>
+                <Text fontSize="sm" color="gray.600" mb={2}>
+                  This helps us recommend age-appropriate gifts and remember important dates.
+                </Text>
                 <HStack>
                   <Select placeholder="Month" value={birthMonth} onChange={e => setBirthMonth(e.target.value)}>{months.map((m: string, i: number) => <option key={i} value={String(i+1).padStart(2, '0')}>{m}</option>)}</Select>
                   <Select placeholder="Day" value={birthDay} onChange={e => setBirthDay(e.target.value)}>{days.map((d: number) => <option key={d} value={String(d).padStart(2, '0')}>{d}</option>)}</Select>
@@ -147,6 +164,18 @@ const AddRecipientPage: React.FC = () => {
                     <Button key={si} size="xs" variant={recipient.interests.includes(si) ? 'solid' : 'outline'} colorScheme="gray" onClick={() => !recipient.interests.includes(si) && setRecipient(r => ({ ...r, interests: [...r.interests, si] }))}>{si}</Button>
                   ))}
                 </Flex>
+              </FormControl>
+              <FormControl>
+                <FormLabel>Tell us about them (Optional)</FormLabel>
+                <Text fontSize="sm" color="gray.600" mb={2}>
+                  Share a few sentences about this person and your relationship with them. This helps us understand their personality and recommend more thoughtful, personalized gifts.
+                </Text>
+                <Textarea 
+                  value={description} 
+                  onChange={e => setDescription(e.target.value)} 
+                  placeholder="For example: 'My brother loves outdoor adventures and craft beer. He's always been the adventurous one in our family and enjoys trying new things...'"
+                  rows={4}
+                />
               </FormControl>
               <Flex justify="space-between">
                 <Button variant="ghost" as={RouterLink} to="/recipients">Cancel</Button>

@@ -153,17 +153,7 @@ export default function SettingsPage() {
 
   // Update handleTestNotifications to validate phone number if text notifications are enabled
   const handleTestNotifications = async () => {
-    if (!settings.notificationsEnabled) {
-      toast({
-        title: 'Notifications disabled',
-        description: 'Please enable notifications to test them',
-        status: 'warning',
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
-    if (settings.emailNotifications && !settings.email) {
+    if (settings.emailNotifications && !user?.email) {
       toast({
         title: 'Email required',
         description: 'Please add your email address to receive email notifications',
@@ -375,21 +365,11 @@ export default function SettingsPage() {
           <Heading as="h2" size="md" mb={4}>Notifications</Heading>
           
           <FormControl display="flex" alignItems="center" mb={4}>
-            <FormLabel mb="0">Enable Notifications</FormLabel>
-            <Switch 
-              isChecked={settings.notificationsEnabled}
-              onChange={handleSwitchChange('notificationsEnabled')}
-              colorScheme="blue"
-            />
-          </FormControl>
-          
-          <FormControl display="flex" alignItems="center" mb={4}>
             <FormLabel mb="0">Email Notifications</FormLabel>
             <Switch 
               isChecked={settings.emailNotifications}
               onChange={handleSwitchChange('emailNotifications')}
               colorScheme="blue"
-              isDisabled={!settings.notificationsEnabled}
             />
           </FormControl>
           
@@ -399,7 +379,6 @@ export default function SettingsPage() {
               isChecked={settings.textNotifications}
               onChange={handleTextNotificationsToggle}
               colorScheme="blue"
-              isDisabled={!settings.notificationsEnabled}
             />
           </FormControl>
           
@@ -426,7 +405,6 @@ export default function SettingsPage() {
               value={settings.reminderDays} 
               min={1} 
               max={90}
-              isDisabled={!settings.notificationsEnabled}
               onChange={(_, value) => handleSettingChange('reminderDays', value)}
             >
               <NumberInputField />
@@ -441,7 +419,6 @@ export default function SettingsPage() {
           <Button 
             onClick={handleTestNotifications}
             colorScheme="blue"
-            isDisabled={!settings.notificationsEnabled}
             mt={4}
           >
             Test Notifications

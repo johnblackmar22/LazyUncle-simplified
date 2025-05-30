@@ -2,7 +2,6 @@
 
 export interface UserSettings {
   theme: 'light' | 'dark' | 'system';
-  notificationsEnabled: boolean;
   reminderDays: number;
   emailNotifications: boolean;
   textNotifications: boolean;
@@ -17,7 +16,6 @@ export interface UserSettings {
 // Default settings that can be used throughout the app
 export const DEFAULT_SETTINGS: UserSettings = {
   theme: 'system',
-  notificationsEnabled: true,
   reminderDays: 7,
   emailNotifications: true,
   textNotifications: false,

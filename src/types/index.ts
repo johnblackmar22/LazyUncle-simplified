@@ -45,6 +45,7 @@ export interface Recipient {
   relationship: string;
   birthdate?: string; // Format: 'YYYY-MM-DD'
   interests: string[];
+  description?: string; // Free text description about the recipient and relationship
   giftPreferences?: {
     priceRange?: {
       min: number;
