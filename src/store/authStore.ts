@@ -52,12 +52,35 @@ function createDemoUser(): User {
   };
 }
 
+// Check if we're in demo mode and restore demo user if needed
+const initializeDemoState = () => {
+  const isDemo = isDemoMode();
+  if (isDemo) {
+    // Get stored demo user or create one
+    const storedUser = localStorage.getItem('demoUser');
+    const demoUser = storedUser ? JSON.parse(storedUser) : createDemoUser();
+    
+    // Ensure demo data is initialized
+    initializeDemoData();
+    
+    return {
+      user: demoUser,
+      demoMode: true,
+      initialized: true
+    };
+  }
+  
+  return {
+    user: null,
+    demoMode: false,
+    initialized: false // Will be set to true by Firebase auth listener
+  };
+};
+
 export const useAuthStore = create<AuthState>((set, get) => ({
-  user: null,
+  ...initializeDemoState(),
   loading: false,
   error: null,
-  initialized: true,
-  demoMode: isDemoMode(),
 
   signIn: async (email, password) => {
     set({ loading: true, error: null });
@@ -65,13 +88,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Check for demo credentials
       if (email === 'demo@example.com' && password === 'password') {
         // Set demo mode and create demo user
+        const demoUser = createDemoUser();
         set({ 
-          user: { ...createDemoUser(), planId: 'free' },
+          user: demoUser,
           loading: false,
-          demoMode: true
+          demoMode: true,
+          initialized: true
         });
         
-        // Initialize demo data
+        // Store demo user and initialize demo data
+        localStorage.setItem('demoUser', JSON.stringify(demoUser));
         initializeDemoData();
         return;
       }
@@ -81,7 +107,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ 
         user: convertFirebaseUser(userCredential.user),
         loading: false,
-        demoMode: false
+        demoMode: false,
+        initialized: true
       });
     } catch (error) {
       set({ 
@@ -98,7 +125,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const user = { ...convertFirebaseUser(userCredential.user), planId: 'free' };
       set({ 
         user,
-        loading: false 
+        loading: false,
+        initialized: true
       });
       // Create user profile in Firestore
       await setDoc(doc(db, 'users', user.id), {
@@ -123,11 +151,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({ 
           user: null, 
           loading: false,
-          demoMode: false
+          demoMode: false,
+          initialized: true
         });
         
         // Clear demo data from localStorage
         localStorage.removeItem('demoMode');
+        localStorage.removeItem('demoUser');
         localStorage.removeItem('recipients');
         localStorage.removeItem('gifts');
         return;
@@ -179,20 +209,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
 // Initialize auth state listener
 onAuthStateChanged(auth, (firebaseUser) => {
-  // Skip this if we're in demo mode
-  if (useAuthStore.getState().demoMode) {
+  const currentState = useAuthStore.getState();
+  
+  // Skip Firebase auth if we're in demo mode
+  if (currentState.demoMode) {
+    console.log('Skipping Firebase auth listener - demo mode active');
     return;
   }
   
   if (firebaseUser) {
+    console.log('Firebase user detected, updating auth state');
     useAuthStore.setState({ 
       user: convertFirebaseUser(firebaseUser),
-      initialized: true
+      initialized: true,
+      demoMode: false
     });
   } else {
+    console.log('No Firebase user, clearing auth state');
     useAuthStore.setState({ 
       user: null,
-      initialized: true
+      initialized: true,
+      demoMode: false
     });
   }
 }); 
