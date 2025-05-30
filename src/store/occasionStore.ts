@@ -48,6 +48,10 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
           date: data.date,
           type: data.type,
           notes: data.notes,
+          budget: data.budget,
+          giftWrap: data.giftWrap,
+          personalizedNote: data.personalizedNote,
+          noteText: data.noteText,
           createdAt: data.createdAt?.toDate?.() || data.createdAt,
           updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
         });

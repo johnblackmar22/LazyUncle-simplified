@@ -77,6 +77,10 @@ export interface Occasion {
   date: string; // Format: 'YYYY-MM-DD'
   type: 'birthday' | 'anniversary' | 'custom' | 'christmas';
   notes?: string;
+  budget?: number; // Gift budget for this occasion
+  giftWrap?: boolean; // Whether to gift wrap
+  personalizedNote?: boolean; // Whether to include a personalized note
+  noteText?: string; // Custom note text
   createdAt: Date | number;
   updatedAt: Date | number;
 }
