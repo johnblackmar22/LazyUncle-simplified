@@ -52,35 +52,12 @@ function createDemoUser(): User {
   };
 }
 
-// Check if we're in demo mode and restore demo user if needed
-const initializeDemoState = () => {
-  const isDemo = isDemoMode();
-  if (isDemo) {
-    // Get stored demo user or create one
-    const storedUser = localStorage.getItem('demoUser');
-    const demoUser = storedUser ? JSON.parse(storedUser) : createDemoUser();
-    
-    // Ensure demo data is initialized
-    initializeDemoData();
-    
-    return {
-      user: demoUser,
-      demoMode: true,
-      initialized: true
-    };
-  }
-  
-  return {
-    user: null,
-    demoMode: false,
-    initialized: false // Will be set to true by Firebase auth listener
-  };
-};
-
 export const useAuthStore = create<AuthState>((set, get) => ({
-  ...initializeDemoState(),
+  user: null,
   loading: false,
   error: null,
+  initialized: false,
+  demoMode: isDemoMode(),
 
   signIn: async (email, password) => {
     set({ loading: true, error: null });
@@ -207,6 +184,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   }
 }));
 
+// Initialize demo mode if needed
+const initializeStore = () => {
+  const isDemo = isDemoMode();
+  if (isDemo) {
+    // Get stored demo user or create one
+    const storedUser = localStorage.getItem('demoUser');
+    const demoUser = storedUser ? JSON.parse(storedUser) : createDemoUser();
+    
+    // Initialize demo data
+    initializeDemoData();
+    
+    // Update store state
+    useAuthStore.setState({
+      user: demoUser,
+      demoMode: true,
+      initialized: true
+    });
+    
+    console.log('Demo mode initialized with user:', demoUser);
+    return;
+  }
+  
+  // For non-demo mode, we'll wait for Firebase auth
+  console.log('Non-demo mode, waiting for Firebase auth');
+};
+
 // Initialize auth state listener
 onAuthStateChanged(auth, (firebaseUser) => {
   const currentState = useAuthStore.getState();
@@ -232,4 +235,7 @@ onAuthStateChanged(auth, (firebaseUser) => {
       demoMode: false
     });
   }
-}); 
+});
+
+// Initialize store after auth listener is set up
+initializeStore(); 
