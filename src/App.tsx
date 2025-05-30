@@ -21,9 +21,16 @@ import { isDemoMode } from './services/demoData';
 import { DEMO_MODE } from './services/firebase';
 
 function App() {
-  const { initialized, user, demoMode } = useAuthStore();
+  const { initialized, user, demoMode, initializeAuth } = useAuthStore();
   const storedDemoMode = isDemoMode();
   const location = useLocation();
+  
+  // Initialize auth when the component mounts
+  useEffect(() => {
+    if (!initialized) {
+      initializeAuth();
+    }
+  }, [initialized, initializeAuth]);
   
   // List ALL paths that should NEVER have the main navbar
   const noNavbarPaths = [

@@ -25,17 +25,17 @@ interface AuthState {
   resetError: () => void;
   setDemoMode: (isDemo: boolean) => void;
   setPlanId: (planId: string) => void;
+  initializeAuth: () => void;
 }
 
+// Helper function to convert Firebase user to app user
 function convertFirebaseUser(firebaseUser: FirebaseUser): User {
   return {
     id: firebaseUser.uid,
     email: firebaseUser.email || '',
     displayName: firebaseUser.displayName || '',
     photoURL: firebaseUser.photoURL || '',
-    createdAt: firebaseUser.metadata.creationTime 
-      ? new Date(firebaseUser.metadata.creationTime).getTime() 
-      : Date.now(),
+    createdAt: Date.now(),
     planId: 'free',
   };
 }
@@ -57,7 +57,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   loading: false,
   error: null,
   initialized: false,
-  demoMode: isDemoMode(),
+  demoMode: false,
 
   signIn: async (email, password) => {
     set({ loading: true, error: null });
@@ -74,6 +74,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         });
         
         // Store demo user and initialize demo data
+        localStorage.setItem('demoMode', 'true');
         localStorage.setItem('demoUser', JSON.stringify(demoUser));
         initializeDemoData();
         return;
@@ -181,34 +182,34 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set(state => ({
       user: state.user ? { ...state.user, planId } : null
     }));
+  },
+
+  initializeAuth: () => {
+    const isDemo = isDemoMode();
+    if (isDemo) {
+      // Get stored demo user or create one
+      const storedUser = localStorage.getItem('demoUser');
+      const demoUser = storedUser ? JSON.parse(storedUser) : createDemoUser();
+      
+      // Initialize demo data
+      initializeDemoData();
+      
+      // Update store state
+      set({
+        user: demoUser,
+        demoMode: true,
+        initialized: true
+      });
+      
+      console.log('Demo mode initialized with user:', demoUser);
+      return;
+    }
+    
+    // For non-demo mode, mark as initialized but wait for Firebase
+    set({ initialized: true });
+    console.log('Non-demo mode initialized, waiting for Firebase auth');
   }
 }));
-
-// Initialize demo mode if needed
-const initializeStore = () => {
-  const isDemo = isDemoMode();
-  if (isDemo) {
-    // Get stored demo user or create one
-    const storedUser = localStorage.getItem('demoUser');
-    const demoUser = storedUser ? JSON.parse(storedUser) : createDemoUser();
-    
-    // Initialize demo data
-    initializeDemoData();
-    
-    // Update store state
-    useAuthStore.setState({
-      user: demoUser,
-      demoMode: true,
-      initialized: true
-    });
-    
-    console.log('Demo mode initialized with user:', demoUser);
-    return;
-  }
-  
-  // For non-demo mode, we'll wait for Firebase auth
-  console.log('Non-demo mode, waiting for Firebase auth');
-};
 
 // Initialize auth state listener
 onAuthStateChanged(auth, (firebaseUser) => {
@@ -235,7 +236,4 @@ onAuthStateChanged(auth, (firebaseUser) => {
       demoMode: false
     });
   }
-});
-
-// Initialize store after auth listener is set up
-initializeStore(); 
+}); 
