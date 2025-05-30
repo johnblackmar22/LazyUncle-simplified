@@ -156,7 +156,12 @@ export const RecipientDetailPage: React.FC = () => {
   };
 
   const handleOccasionSubmit = async (occasionData: any) => {
+    console.log('=== OCCASION SUBMIT ===');
+    console.log('Occasion data received:', occasionData);
+    console.log('Recipient ID:', id);
+    
     if (checkForDuplicateOccasion(occasionData)) {
+      console.log('Duplicate occasion detected, stopping submission');
       return; // Stop here, let user confirm via dialog
     }
     
@@ -164,17 +169,23 @@ export const RecipientDetailPage: React.FC = () => {
   };
 
   const proceedWithOccasionAdd = async (occasionData: any) => {
+    console.log('=== PROCEEDING WITH OCCASION ADD ===');
+    console.log('Final occasion data:', occasionData);
     setOccasionLoading(true);
     try {
       const result = await addOccasion(id || '', occasionData);
+      console.log('Add occasion result:', result);
       if (!result) {
+        console.error('addOccasion returned null/falsy result');
         toast({ title: 'Failed to add occasion', status: 'error', duration: 4000, isClosable: true });
       } else {
+        console.log('Occasion added successfully');
         toast({ title: 'Occasion added', status: 'success', duration: 2000, isClosable: true });
         await fetchOccasions(id || '');
         closeOccasionModal();
       }
     } catch (error) {
+      console.error('Error in proceedWithOccasionAdd:', error);
       showErrorToast(toast, error, { title: 'Error adding occasion' });
     } finally {
       setOccasionLoading(false);

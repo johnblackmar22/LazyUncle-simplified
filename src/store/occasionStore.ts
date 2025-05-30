@@ -65,10 +65,17 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
   addOccasion: async (recipientId, occasionData) => {
     const user = useAuthStore.getState().user;
     const demoMode = useAuthStore.getState().demoMode;
+    console.log('=== OCCASION STORE ADD ===');
+    console.log('Recipient ID:', recipientId);
+    console.log('Occasion data:', occasionData);
+    console.log('Demo mode:', demoMode);
+    console.log('User:', user);
+    
     set({ loading: true, error: null });
     try {
       const timestamp = Timestamp.now();
       if (demoMode) {
+        console.log('Using demo mode for occasion creation');
         const newOccasion: Occasion = {
           id: `demo-${Date.now()}`,
           recipientId,
@@ -76,14 +83,20 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
           createdAt: Date.now(),
           updatedAt: Date.now(),
         };
+        console.log('Demo occasion created:', newOccasion);
         const saved = localStorage.getItem(`occasions-${recipientId}`);
         const occasions = saved ? JSON.parse(saved) : [];
         const updated = [...occasions, newOccasion];
         localStorage.setItem(`occasions-${recipientId}`, JSON.stringify(updated));
         set(state => ({ occasions: { ...state.occasions, [recipientId]: updated }, loading: false }));
+        console.log('Demo occasion saved successfully');
         return newOccasion;
       }
-      if (!user) throw new Error('User not authenticated');
+      if (!user) {
+        console.error('User not authenticated for Firebase mode');
+        throw new Error('User not authenticated');
+      }
+      console.log('Using Firebase mode for occasion creation');
       const newOccasion = {
         ...occasionData,
         recipientId,
@@ -91,6 +104,7 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
         createdAt: timestamp,
         updatedAt: timestamp,
       };
+      console.log('Firebase occasion to save:', newOccasion);
       const docRef = await addDoc(collection(db, 'occasions'), newOccasion);
       const occasion: Occasion = {
         id: docRef.id,
@@ -102,8 +116,10 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
         const prev = state.occasions[recipientId] || [];
         return { occasions: { ...state.occasions, [recipientId]: [...prev, occasion] }, loading: false };
       });
+      console.log('Firebase occasion saved successfully:', occasion);
       return occasion;
     } catch (error) {
+      console.error('Error in addOccasion store:', error);
       set({ error: (error as Error).message, loading: false });
       return null;
     }
