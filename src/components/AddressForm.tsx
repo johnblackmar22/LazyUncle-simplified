@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   FormControl,
@@ -106,8 +106,8 @@ export const AddressForm: React.FC<AddressFormProps> = ({
   const [isValidating, setIsValidating] = useState(false);
   const [hasBeenValidated, setHasBeenValidated] = useState(false);
   
-  // Update parent when local state changes
-  useEffect(() => {
+  // Memoize the onChange callback to prevent infinite re-renders
+  const handleAddressChange = useCallback(() => {
     if (line1 || line2 || city || state || postalCode) {
       const newAddress: Address = {
         line1,
@@ -122,6 +122,11 @@ export const AddressForm: React.FC<AddressFormProps> = ({
       onChange(undefined);
     }
   }, [line1, line2, city, state, postalCode, onChange]);
+  
+  // Update parent when local state changes
+  useEffect(() => {
+    handleAddressChange();
+  }, [handleAddressChange]);
   
   // Update local state when address prop changes
   useEffect(() => {

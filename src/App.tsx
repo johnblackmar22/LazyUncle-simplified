@@ -31,8 +31,13 @@ function App() {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       const store = useAuthStore.getState();
       
-      // Skip if in demo mode
-      if (store.demoMode) return;
+      // IMPORTANT: Skip if in demo mode to prevent overriding demo user
+      if (store.demoMode) {
+        console.log('Skipping Firebase auth state change - in demo mode');
+        return;
+      }
+      
+      console.log('Firebase auth state changed:', firebaseUser ? 'User logged in' : 'User logged out');
       
       if (firebaseUser) {
         useAuthStore.setState({
@@ -44,13 +49,18 @@ function App() {
             createdAt: Date.now(),
             planId: 'free',
           },
-          initialized: true
+          initialized: true,
+          demoMode: false
         });
       } else {
-        useAuthStore.setState({
-          user: null,
-          initialized: true
-        });
+        // Only clear user if not in demo mode
+        if (!store.demoMode) {
+          useAuthStore.setState({
+            user: null,
+            initialized: true,
+            demoMode: false
+          });
+        }
       }
     });
 

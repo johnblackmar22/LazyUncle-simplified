@@ -71,10 +71,10 @@
     "setupFilesAfterEnv": [
       "<rootDir>/jest.setup.js"
     ],
-    "globals": {
-      "ts-jest": {
+    "transform": {
+      "^.+\\.(ts|tsx)$": ["ts-jest", {
         "tsconfig": "tsconfig.test.json"
-      }
+      }]
     },
     "moduleFileExtensions": [
       "ts",
@@ -86,6 +86,14 @@
     ],
     "moduleNameMapper": {
       "\\.(jpg|jpeg|png|svg|gif|webp)$": "<rootDir>/__mocks__/fileMock.js"
+    },
+    "transformIgnorePatterns": [
+      "node_modules/(?!(firebase|@firebase)/)"
+    ],
+    "globals": {
+      "ts-jest": {
+        "useESM": true
+      }
     }
   }
 }

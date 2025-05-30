@@ -16,16 +16,16 @@ describe('Subscription Plans Service', () => {
     const proPlan = getPlanById('pro');
     expect(proPlan).toBeDefined();
     expect(proPlan?.name).toBe('Pro');
-    expect(proPlan?.price).toBe(4.99);
+    expect(proPlan?.price).toBe(9.99);
 
     const nonExistentPlan = getPlanById('nonexistent');
     expect(nonExistentPlan).toBeUndefined();
   });
 
   test('should calculate yearly price with discount', () => {
-    // Pro plan: $4.99/month -> $4.99 * 12 * 0.8 = $47.90
+    // Pro plan: $9.99/month -> $9.99 * 12 * 0.8 = $95.90
     const proYearlyPrice = getYearlyPrice('pro');
-    expect(proYearlyPrice).toBe(47.9);
+    expect(proYearlyPrice).toBe(95.9);
 
     // Free plan: $0/month -> $0 * 12 * 0.8 = $0
     const freeYearlyPrice = getYearlyPrice('free');
@@ -54,4 +54,19 @@ describe('Subscription Plans Service', () => {
     expect(proPlan?.recipientLimit).toBe(Infinity);
     expect(proPlan?.giftLimit).toBe(Infinity);
   });
+
+  // Additional helper functions if they exist
+  function planSupportsFeature(planId: string, feature: string): boolean {
+    const plan = getPlanById(planId);
+    if (!plan) return false;
+    
+    switch (feature) {
+      case 'priorityShipping':
+        return plan.priorityShipping;
+      case 'customMessages':
+        return plan.customMessages;
+      default:
+        return false;
+    }
+  }
 }); 

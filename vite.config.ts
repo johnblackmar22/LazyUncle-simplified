@@ -33,14 +33,19 @@ export default defineConfig({
       '@emotion/styled',
       'framer-motion',
       'date-fns',
-      'zustand'
+      'zustand',
+      'firebase/app',
+      'firebase/auth',
+      'firebase/firestore'
     ],
-    exclude: [
-      'firebase'
-    ],
+    exclude: [],
     force: true
   },
   esbuild: {
     logOverride: { 'this-is-undefined-in-esm': 'silent' }
+  },
+  define: {
+    // Ensure process.env is available in browser
+    global: 'globalThis',
   }
 })
