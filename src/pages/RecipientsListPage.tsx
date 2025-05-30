@@ -129,10 +129,7 @@ const RecipientsListPage: React.FC = () => {
     <Box mt={2}>
       <Flex justify="space-between" align="center" mb={6}>
         <Heading size="xl">Recipients</Heading>
-        <Tooltip
-          label={''}
-          isDisabled={true}
-        >
+        <Flex gap={3}>
           <Button
             as={RouterLink}
             to="/recipients/add"
@@ -141,7 +138,7 @@ const RecipientsListPage: React.FC = () => {
           >
             Add Recipient
           </Button>
-        </Tooltip>
+        </Flex>
       </Flex>
 
       <InputGroup mb={4}>

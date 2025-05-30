@@ -24,6 +24,7 @@ import {
   Divider,
   InputGroup,
   InputLeftAddon,
+  Flex,
 } from '@chakra-ui/react';
 import type { UserSettings } from '../types/settings';
 import { DEFAULT_SETTINGS } from '../types/settings';
@@ -293,16 +294,18 @@ export default function SettingsPage() {
 
   return (
     <Container maxW="container.md" py={4}>
-      <Box mb={4} textAlign="right">
-        <Button as={RouterLink} to="/subscription/plans" colorScheme="blue" variant="solid" size="md">
-          Manage Subscription
-        </Button>
-      </Box>
       <Stack spacing={6}>
-        <Box>
-          <Heading as="h1" size="xl">Settings</Heading>
-          <Text mt={2} color="gray.500">Customize your LazyUncle experience</Text>
-        </Box>
+        <Flex justify="space-between" align="center">
+          <Box>
+            <Heading as="h1" size="xl">Settings</Heading>
+            <Text mt={2} color="gray.500">Customize your LazyUncle experience</Text>
+          </Box>
+          <Flex gap={3}>
+            <Button as={RouterLink} to="/subscription/plans" colorScheme="blue" variant="solid" size="md">
+              Manage Subscription
+            </Button>
+          </Flex>
+        </Flex>
 
         {/* Account Settings */}
         <Box bg="white" shadow="md" borderRadius="md" p={6}>
