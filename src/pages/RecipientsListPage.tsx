@@ -98,14 +98,16 @@ const RecipientsListPage: React.FC = () => {
   // Load recipients on mount
   useEffect(() => {
     fetchRecipients();
-  }, [fetchRecipients]);
+  }, []);
 
-  // Load occasions for all recipients
+  // Load occasions for all recipients - only when recipients change
   useEffect(() => {
-    recipients.forEach(recipient => {
-      fetchOccasions(recipient.id);
-    });
-  }, [recipients, fetchOccasions]);
+    if (recipients.length > 0) {
+      recipients.forEach(recipient => {
+        fetchOccasions(recipient.id);
+      });
+    }
+  }, [recipients.length]);
 
   // Monitor recipients changes
   useEffect(() => {
@@ -118,7 +120,7 @@ const RecipientsListPage: React.FC = () => {
       });
       firstLoad.current = false;
     }
-  }, [recipients, toast]);
+  }, [recipients.length]);
 
   // Filter recipients by search query
   const filteredRecipients = recipients.filter(recipient => 

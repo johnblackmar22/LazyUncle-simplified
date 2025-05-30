@@ -1,29 +1,29 @@
 import React, { useEffect } from 'react';
-import { Box, Spinner } from '@chakra-ui/react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
+import { Box, Spinner, ChakraProvider } from '@chakra-ui/react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from './services/firebase';
+import { useAuthStore } from './store/authStore';
+import { initializeDemoData } from './services/demoData';
+import Layout from './components/Layout';
+import ProtectedRoute from './components/ProtectedRoute';
+
+// Pages
 import HomePage from './pages/HomePage';
-import LoginPage from './pages/auth/LoginPage';
-import RegisterPage from './pages/auth/RegisterPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
 import RecipientsListPage from './pages/RecipientsListPage';
 import AddRecipientPage from './pages/AddRecipientPage';
-import { RecipientDetailPage } from './pages/RecipientDetailPage';
 import EditRecipientPage from './pages/EditRecipientPage';
+import { RecipientDetailPage } from './pages/RecipientDetailPage';
+import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/auth/RegisterPage';
 import SettingsPage from './pages/SettingsPage';
-import ProtectedRoute from './components/ProtectedRoute';
-import Layout from './components/Layout';
-import { useAuthStore } from './store/authStore';
-import OnboardingWizard from './components/OnboardingWizard';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from './services/firebase';
-import { initializeDemoData } from './services/demoData';
 
 function App() {
   const { initialized, user, demoMode, initializeAuth } = useAuthStore();
-  const location = useLocation();
 
   useEffect(() => {
-    // Initialize auth store
+    // Initialize auth store once
     initializeAuth();
 
     // Set up Firebase listener only for non-demo mode
@@ -53,13 +53,15 @@ function App() {
       }
     });
 
-    // Initialize demo data if in demo mode
+    return () => unsubscribe();
+  }, []); // Remove all dependencies to prevent re-initialization
+
+  // Initialize demo data separately when needed
+  useEffect(() => {
     if (demoMode && user) {
       initializeDemoData();
     }
-
-    return () => unsubscribe();
-  }, [initializeAuth, demoMode, user]);
+  }, [demoMode, user]);
 
   if (!initialized) {
     return (
@@ -75,25 +77,28 @@ function App() {
   }
 
   return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      
-      <Route element={<ProtectedRoute />}>
+    <ChakraProvider>
+      <Routes>
+        {/* Public Routes */}
         <Route element={<Layout />}>
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/recipients" element={<RecipientsListPage />} />
-          <Route path="/recipients/add" element={<AddRecipientPage />} />
-          <Route path="/recipients/:id" element={<RecipientDetailPage />} />
-          <Route path="/recipients/:id/edit" element={<EditRecipientPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/onboarding" element={<OnboardingWizard />} />
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
         </Route>
-      </Route>
-      
-      <Route path="*" element={<Navigate to="/dashboard" />} />
-    </Routes>
+        
+        {/* Protected Routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<Layout />}>
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/recipients" element={<RecipientsListPage />} />
+            <Route path="/recipients/add" element={<AddRecipientPage />} />
+            <Route path="/recipients/:id" element={<RecipientDetailPage />} />
+            <Route path="/recipients/:id/edit" element={<EditRecipientPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Route>
+        </Route>
+      </Routes>
+    </ChakraProvider>
   );
 }
 
