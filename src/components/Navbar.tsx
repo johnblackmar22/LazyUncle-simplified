@@ -177,12 +177,12 @@ export const Navbar: React.FC = () => {
     );
 
   return (
-    <Box as="nav" bg={bgColor} py={4} boxShadow="sm" position="fixed" top="0" left="0" right="0" zIndex="sticky">
+    <Box as="nav" bg={bgColor} py={2} boxShadow="sm" position="fixed" top="0" left="0" right="0" zIndex="sticky">
       <Container maxW="container.xl">
         <Flex justify="space-between" align="center">
           <Box>
             <RouterLink to={user ? "/dashboard" : "/"}>
-              <BrandLogo size={36} />
+              <BrandLogo size={32} />
             </RouterLink>
           </Box>
           {/* Desktop Nav */}

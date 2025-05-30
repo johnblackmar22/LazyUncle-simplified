@@ -294,7 +294,7 @@ export const RecipientDetailPage: React.FC = () => {
 
   return (
     <Box bg="gray.100" minH="100vh">
-      <Container maxW="container.lg" py={{ base: 4, md: 12 }} px={{ base: 2, md: 0 }}>
+      <Container maxW="container.lg" py={{ base: 4, md: 6 }} px={{ base: 2, md: 0 }}>
         <VStack spacing={{ base: 4, md: 8 }} align="stretch">
           <Box>
             <Button 

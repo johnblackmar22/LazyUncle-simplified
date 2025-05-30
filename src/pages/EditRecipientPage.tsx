@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -31,6 +31,10 @@ import { useRecipientStore } from '../store/recipientStore';
 import { getCurrentDateISO, months, days, years } from '../utils/dateUtils';
 import { showErrorToast } from '../utils/toastUtils';
 
+const relationshipOptions = [
+  'Nephew', 'Niece', 'Wife', 'Husband', 'Brother', 'Sister', 'Mom', 'Dad', 'Friend', 'Colleague', 'Other'
+];
+
 const EditRecipientPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -43,6 +47,7 @@ const EditRecipientPage: React.FC = () => {
   const [birthMonth, setBirthMonth] = useState<string>('');
   const [birthDay, setBirthDay] = useState<string>('');
   const [birthYear, setBirthYear] = useState<string>('');
+  const [description, setDescription] = useState('');
   
   // Interest management
   const [interest, setInterest] = useState('');
@@ -65,6 +70,7 @@ const EditRecipientPage: React.FC = () => {
       if (recipient) {
         setName(recipient.name);
         setRelationship(recipient.relationship);
+        setDescription(recipient.description || '');
         if (recipient.birthdate) {
           let birthdateStr = '';
           if (typeof recipient.birthdate === 'string') {
@@ -130,7 +136,8 @@ const EditRecipientPage: React.FC = () => {
         name,
         relationship,
         birthdate: birthdateStr || undefined,
-        interests
+        interests,
+        description: description.trim() || undefined
       });
       
       toast({
@@ -156,16 +163,17 @@ const EditRecipientPage: React.FC = () => {
   }
 
   return (
-    <Container maxW="container.md" py={8}>
-      <VStack spacing={8} align="stretch">
+    <Container maxW="container.md" py={4}>
+      <VStack spacing={6} align="stretch">
         <Box>
           <Button 
             leftIcon={<ArrowBackIcon />} 
             variant="ghost" 
-            onClick={() => navigate(`/recipients/${id}`)}
+            as={RouterLink}
+            to="/recipients"
             mb={4}
           >
-            Back to Recipient
+            Back to Recipients
           </Button>
           <Heading size="xl" mb={2}>Edit {name}</Heading>
         </Box>
@@ -190,12 +198,16 @@ const EditRecipientPage: React.FC = () => {
               
               <FormControl isRequired isInvalid={isRelationshipInvalid}>
                 <FormLabel>Relationship</FormLabel>
-                <Input 
+                <Select 
                   value={relationship}
                   onChange={(e) => setRelationship(e.target.value)}
                   onBlur={() => setTouched({ ...touched, relationship: true })}
-                  placeholder="e.g., Friend, Family, Colleague"
-                />
+                  placeholder="Select relationship"
+                >
+                  {relationshipOptions.map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </Select>
                 {isRelationshipInvalid && (
                   <FormErrorMessage>Relationship is required</FormErrorMessage>
                 )}
@@ -208,6 +220,19 @@ const EditRecipientPage: React.FC = () => {
                   <Select placeholder="Day" value={birthDay} onChange={e => setBirthDay(e.target.value)}>{days.map((d: number) => <option key={d} value={String(d).padStart(2, '0')}>{d}</option>)}</Select>
                   <Select placeholder="Year" value={birthYear} onChange={e => setBirthYear(e.target.value)}>{years.map((y: number) => <option key={y} value={y}>{y}</option>)}</Select>
                 </HStack>
+              </FormControl>
+              
+              <FormControl>
+                <FormLabel>Tell us about them (Optional)</FormLabel>
+                <Text fontSize="sm" color="gray.600" mb={2}>
+                  Share a few sentences about this person and your relationship with them. This helps us understand their personality and recommend more thoughtful, personalized gifts.
+                </Text>
+                <Textarea 
+                  value={description} 
+                  onChange={e => setDescription(e.target.value)} 
+                  placeholder="For example: 'My brother loves outdoor adventures and craft beer. He's always been the adventurous one in our family and enjoys trying new things...'"
+                  rows={4}
+                />
               </FormControl>
               
               <Divider my={2} />

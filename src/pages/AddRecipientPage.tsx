@@ -117,8 +117,8 @@ const AddRecipientPage: React.FC = () => {
   };
 
   return (
-    <Container maxW="container.md" py={8}>
-      <VStack spacing={8} align="stretch">
+    <Container maxW="container.md" py={4}>
+      <VStack spacing={6} align="stretch">
         <Box>
           <Heading>Add Recipient</Heading>
           <form onSubmit={handleSubmit}>

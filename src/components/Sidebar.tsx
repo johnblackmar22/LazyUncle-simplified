@@ -39,11 +39,11 @@ export const Sidebar: React.FC = () => {
       borderRight="1px" 
       borderColor={borderColor}
       h="calc(100vh - 4rem)"
-      pt={6}
+      pt={3}
       data-testid="sidebar"
       className="sidebar"
     >
-      <VStack spacing={1} align="stretch" px={4}>
+      <VStack spacing={1} align="stretch" px={3}>
         {navItems.map((item) => (
           <Link
             key={item.path}
@@ -54,7 +54,7 @@ export const Sidebar: React.FC = () => {
           >
             <Flex
               align="center"
-              p={3}
+              p={2.5}
               borderRadius="md"
               transition="all 0.2s"
               bg={isActive(item.path) ? 'brand.50' : 'transparent'}

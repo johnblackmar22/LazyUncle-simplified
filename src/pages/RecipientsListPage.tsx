@@ -126,8 +126,8 @@ const RecipientsListPage: React.FC = () => {
   };
 
   return (
-    <Box>
-      <Flex justify="space-between" align="center" mb={8}>
+    <Box mt={2}>
+      <Flex justify="space-between" align="center" mb={6}>
         <Heading size="xl">Recipients</Heading>
         <Tooltip
           label={''}
@@ -144,7 +144,7 @@ const RecipientsListPage: React.FC = () => {
         </Tooltip>
       </Flex>
 
-      <InputGroup mb={6}>
+      <InputGroup mb={4}>
         <InputLeftElement pointerEvents="none">
           <SearchIcon color="gray.400" />
         </InputLeftElement>

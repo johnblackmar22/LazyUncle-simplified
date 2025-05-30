@@ -292,13 +292,13 @@ export default function SettingsPage() {
   const isValidPhone = (phone: string) => /^(\(\d{3}\)\s?|\d{3}-)\d{3}-\d{4}$/.test(phone) || /^\d{10}$/.test(phone.replace(/\D/g, ''));
 
   return (
-    <Container maxW="container.md" py={8}>
-      <Box mb={6} textAlign="right">
+    <Container maxW="container.md" py={4}>
+      <Box mb={4} textAlign="right">
         <Button as={RouterLink} to="/subscription/plans" colorScheme="blue" variant="solid" size="md">
           Manage Subscription
         </Button>
       </Box>
-      <Stack spacing={8}>
+      <Stack spacing={6}>
         <Box>
           <Heading as="h1" size="xl">Settings</Heading>
           <Text mt={2} color="gray.500">Customize your LazyUncle experience</Text>
