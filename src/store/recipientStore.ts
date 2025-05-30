@@ -102,6 +102,7 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
           relationship: data.relationship,
           birthdate: data.birthdate?.toDate?.() || data.birthdate,
           interests: data.interests || [],
+          description: data.description,
           giftPreferences: data.giftPreferences,
           createdAt: data.createdAt?.toDate?.() || data.createdAt,
           updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
