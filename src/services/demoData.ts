@@ -368,11 +368,12 @@ let getEnv: (key: string) => string | undefined = browserGetEnv;
 export const initializeDemoData = () => {
   try {
     // Check if demo data already exists
-    const hasUser = !!safeGetItem('demoUser');
-    const hasRecipients = !!safeGetItem('recipients');
-    const hasGifts = !!safeGetItem('gifts');
+    const hasUser = !!safeGetItem('lazyuncle_demoUser');
+    const hasRecipients = !!safeGetItem('lazyuncle_recipients');
+    const hasGifts = !!safeGetItem('lazyuncle_gifts');
     
-    console.log('Initializing demo data:', { hasUser, hasRecipients, hasGifts });
+    console.log('=== INITIALIZING DEMO DATA ===');
+    console.log('Data status:', { hasUser, hasRecipients, hasGifts });
     
     // Initialize the demo user if it doesn't exist
     if (!hasUser) {
@@ -384,24 +385,24 @@ export const initializeDemoData = () => {
         createdAt: Date.now(),
         updatedAt: Date.now()
       };
-      safeSetItem('demoUser', demoUser);
+      safeSetItem('lazyuncle_demoUser', demoUser);
       console.log('Demo user created');
     }
     
     // Initialize recipients if they don't exist
     if (!hasRecipients) {
-      safeSetItem('recipients', demoRecipients);
+      safeSetItem('lazyuncle_recipients', demoRecipients);
       console.log('Demo recipients created:', demoRecipients.length);
     }
     
     // Initialize gifts if they don't exist
     if (!hasGifts) {
-      safeSetItem('gifts', demoGifts);
+      safeSetItem('lazyuncle_gifts', demoGifts);
       console.log('Demo gifts created:', demoGifts.length);
     }
     
     // Set demo mode flag
-    safeSetItem('demoMode', true);
+    safeSetItem('lazyuncle_demoMode', true);
     console.log('Demo mode initialized successfully');
     
     return true;
@@ -417,12 +418,12 @@ export const isDemoMode = () => {
     // Check for explicit env setting first
     if (getEnv('VITE_DEMO_MODE') === 'true') {
       // If demo mode is enabled via environment, store it in localStorage for persistence
-      localStorage.setItem('demoMode', 'true');
+      localStorage.setItem('lazyuncle_demoMode', 'true');
       return true;
     }
     
     // Then check for persisted demo mode in localStorage (using the correct key)
-    return localStorage.getItem('demoMode') === 'true';
+    return localStorage.getItem('lazyuncle_demoMode') === 'true';
   } catch (error) {
     console.error('Error checking demo mode:', error);
     return false;
@@ -433,10 +434,17 @@ export const isDemoMode = () => {
 export const clearDemoData = () => {
   try {
     // Clear localStorage
-    localStorage.removeItem('demoMode');
-    localStorage.removeItem('demoUser');
-    localStorage.removeItem('recipients');
-    localStorage.removeItem('gifts');
+    localStorage.removeItem('lazyuncle_demoMode');
+    localStorage.removeItem('lazyuncle_demoUser');
+    localStorage.removeItem('lazyuncle_recipients');
+    localStorage.removeItem('lazyuncle_gifts');
+    
+    // Clear all occasion data
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('lazyuncle_occasions_')) {
+        localStorage.removeItem(key);
+      }
+    });
     
     console.log('Demo data cleared successfully');
   } catch (error) {

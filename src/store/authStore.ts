@@ -54,7 +54,7 @@ function createDemoUser(): User {
 function checkDemoMode(): boolean {
   if (typeof window === 'undefined') return false;
   try {
-    return localStorage.getItem('demoMode') === 'true';
+    return localStorage.getItem('lazyuncle_demoMode') === 'true';
   } catch {
     return false;
   }
@@ -64,7 +64,7 @@ function checkDemoMode(): boolean {
 function getStoredDemoUser(): User | null {
   if (typeof window === 'undefined') return null;
   try {
-    const stored = localStorage.getItem('demoUser');
+    const stored = localStorage.getItem('lazyuncle_demoUser');
     return stored ? JSON.parse(stored) : null;
   } catch {
     return null;
@@ -85,9 +85,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (email === 'demo@example.com' && password === 'password') {
         const demoUser = createDemoUser();
         
-        // Store in localStorage
-        localStorage.setItem('demoMode', 'true');
-        localStorage.setItem('demoUser', JSON.stringify(demoUser));
+        // Store in localStorage with prefixed keys
+        localStorage.setItem('lazyuncle_demoMode', 'true');
+        localStorage.setItem('lazyuncle_demoUser', JSON.stringify(demoUser));
         
         set({ 
           user: demoUser,
@@ -163,12 +163,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signOut: async () => {
     set({ loading: true, error: null });
     try {
-      // Clear demo data
+      // Clear demo data with proper keys
       if (get().demoMode) {
-        localStorage.removeItem('demoMode');
-        localStorage.removeItem('demoUser');
-        localStorage.removeItem('recipients');
-        localStorage.removeItem('gifts');
+        console.log('=== CLEARING DEMO DATA ===');
+        localStorage.removeItem('lazyuncle_demoMode');
+        localStorage.removeItem('lazyuncle_demoUser');
+        localStorage.removeItem('lazyuncle_recipients');
+        
+        // Clear all occasion data
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('lazyuncle_occasions_')) {
+            console.log('Removing occasion data:', key);
+            localStorage.removeItem(key);
+          }
+        });
+        
+        console.log('Demo data cleared successfully');
       } else if (!DEMO_MODE) {
         await firebaseSignOut(auth);
       }
@@ -229,23 +239,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   initializeAuth: () => {
+    console.log('=== AUTH INITIALIZATION ===');
+    
     // Check for demo mode first
     const isDemoMode = checkDemoMode();
+    console.log('Demo mode detected:', isDemoMode);
     
     if (isDemoMode) {
       const storedUser = getStoredDemoUser();
+      console.log('Stored demo user:', storedUser);
       if (storedUser) {
         set({
           user: storedUser,
           demoMode: true,
           initialized: true
         });
+        console.log('Demo user restored successfully');
         return;
+      } else {
+        // Demo mode enabled but no user - clear demo mode
+        localStorage.removeItem('lazyuncle_demoMode');
+        console.log('Demo mode cleared - no user found');
       }
     }
     
-    // For Firebase auth, we'll handle it in the App component
-    // to avoid module-level listeners
-    set({ initialized: true });
+    // For Firebase auth, mark as initialized and let onAuthStateChanged handle the rest
+    set({ initialized: true, demoMode: false });
+    console.log('Auth initialization complete');
   }
 })); 

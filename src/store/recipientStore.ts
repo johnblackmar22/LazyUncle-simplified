@@ -32,6 +32,9 @@ interface RecipientState {
   toggleApprovalRequirement: (id: string, requireApproval: boolean) => Promise<void>;
 }
 
+// Constants for localStorage keys
+const RECIPIENTS_STORAGE_KEY = 'lazyuncle_recipients';
+
 const defaultAutoSendPreferences = {
   enabled: false,
   defaultBudget: 50,
@@ -63,6 +66,7 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
     const user = useAuthStore.getState().user;
     const demoMode = useAuthStore.getState().demoMode;
     
+    console.log('=== FETCH RECIPIENTS ===');
     console.log('Fetching recipients with user:', user?.id, 'Demo mode:', demoMode);
     
     set({ loading: true, error: null });
@@ -71,7 +75,7 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
       // If in demo mode, get data from localStorage
       if (demoMode) {
         console.log('Using demo mode for recipients');
-        const savedRecipients = localStorage.getItem('recipients');
+        const savedRecipients = localStorage.getItem(RECIPIENTS_STORAGE_KEY);
         const recipients = savedRecipients ? JSON.parse(savedRecipients) : [];
         console.log('Found demo recipients:', recipients.length);
         set({ recipients, loading: false });
@@ -122,6 +126,7 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
     const user = useAuthStore.getState().user;
     const demoMode = useAuthStore.getState().demoMode;
     
+    console.log('=== ADD RECIPIENT ===');
     console.log('Adding recipient in mode:', demoMode ? 'demo' : 'firebase', 'User:', user?.id);
     
     set({ loading: true, error: null });
@@ -132,7 +137,7 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
         console.log('Creating demo recipient with data:', recipientData);
         // Handle demo mode recipient creation
         const newRecipient: Recipient = {
-          id: `demo-${Date.now()}`,
+          id: `demo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           userId: 'demo-user',
           ...recipientData,
           interests: recipientData.interests || [],
@@ -140,10 +145,12 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
           updatedAt: Date.now()
         };
         
-        // Save to localStorage
-        const savedRecipients = localStorage.getItem('recipients');
+        // Save to localStorage with consistent key
+        const savedRecipients = localStorage.getItem(RECIPIENTS_STORAGE_KEY);
         const existingRecipients = savedRecipients ? JSON.parse(savedRecipients) : [];
-        localStorage.setItem('recipients', JSON.stringify([...existingRecipients, newRecipient]));
+        const updatedRecipients = [...existingRecipients, newRecipient];
+        localStorage.setItem(RECIPIENTS_STORAGE_KEY, JSON.stringify(updatedRecipients));
+        console.log('Saved to localStorage with key:', RECIPIENTS_STORAGE_KEY);
         
         set(state => ({ 
           recipients: [...state.recipients, newRecipient],
@@ -208,7 +215,7 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
           );
           
           // Update localStorage
-          localStorage.setItem('recipients', JSON.stringify(updatedRecipients));
+          localStorage.setItem(RECIPIENTS_STORAGE_KEY, JSON.stringify(updatedRecipients));
           
           return {
             recipients: updatedRecipients,
@@ -254,7 +261,7 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
           const filteredRecipients = state.recipients.filter(recipient => recipient.id !== id);
           
           // Update localStorage
-          localStorage.setItem('recipients', JSON.stringify(filteredRecipients));
+          localStorage.setItem(RECIPIENTS_STORAGE_KEY, JSON.stringify(filteredRecipients));
           
           return {
             recipients: filteredRecipients,
@@ -293,7 +300,7 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
             } as Recipient
           : recipient
       );
-      localStorage.setItem('recipients', JSON.stringify(updatedRecipients));
+      localStorage.setItem(RECIPIENTS_STORAGE_KEY, JSON.stringify(updatedRecipients));
       return { recipients: updatedRecipients };
     });
   },
@@ -318,7 +325,7 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
           }
         } as Recipient;
       });
-      localStorage.setItem('recipients', JSON.stringify(updatedRecipients));
+      localStorage.setItem(RECIPIENTS_STORAGE_KEY, JSON.stringify(updatedRecipients));
       return { recipients: updatedRecipients };
     });
   },
@@ -335,7 +342,7 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
           }
         } as Recipient;
       });
-      localStorage.setItem('recipients', JSON.stringify(updatedRecipients));
+      localStorage.setItem(RECIPIENTS_STORAGE_KEY, JSON.stringify(updatedRecipients));
       return { recipients: updatedRecipients };
     });
   },
@@ -359,7 +366,7 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
           }
         } as Recipient;
       });
-      localStorage.setItem('recipients', JSON.stringify(updatedRecipients));
+      localStorage.setItem(RECIPIENTS_STORAGE_KEY, JSON.stringify(updatedRecipients));
       return { recipients: updatedRecipients };
     });
   },
@@ -376,7 +383,7 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
           }
         } as Recipient;
       });
-      localStorage.setItem('recipients', JSON.stringify(updatedRecipients));
+      localStorage.setItem(RECIPIENTS_STORAGE_KEY, JSON.stringify(updatedRecipients));
       return { recipients: updatedRecipients };
     });
   },
@@ -393,7 +400,7 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
           }
         } as Recipient;
       });
-      localStorage.setItem('recipients', JSON.stringify(updatedRecipients));
+      localStorage.setItem(RECIPIENTS_STORAGE_KEY, JSON.stringify(updatedRecipients));
       return { recipients: updatedRecipients };
     });
   }

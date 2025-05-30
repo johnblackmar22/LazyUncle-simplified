@@ -16,6 +16,11 @@ interface OccasionState {
   resetError: () => void;
 }
 
+// Helper function to get localStorage key
+function getOccasionsStorageKey(recipientId: string): string {
+  return `lazyuncle_occasions_${recipientId}`;
+}
+
 export const useOccasionStore = create<OccasionState>((set, get) => ({
   occasions: {},
   loading: false,
@@ -24,15 +29,25 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
   fetchOccasions: async (recipientId) => {
     const user = useAuthStore.getState().user;
     const demoMode = useAuthStore.getState().demoMode;
+    console.log('=== FETCH OCCASIONS ===');
+    console.log('Recipient ID:', recipientId);
+    console.log('Demo mode:', demoMode);
+    console.log('User:', user);
+    
     set({ loading: true, error: null });
     try {
       if (demoMode) {
-        const saved = localStorage.getItem(`occasions-${recipientId}`);
+        const storageKey = getOccasionsStorageKey(recipientId);
+        console.log('Looking for occasions in localStorage with key:', storageKey);
+        const saved = localStorage.getItem(storageKey);
+        console.log('Found occasions data:', saved);
         const occasions = saved ? JSON.parse(saved) : [];
+        console.log('Parsed occasions:', occasions);
         set(state => ({ occasions: { ...state.occasions, [recipientId]: occasions }, loading: false }));
         return;
       }
       if (!user) {
+        console.log('No user found, setting empty occasions');
         set({ loading: false });
         return;
       }
@@ -58,6 +73,7 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
       });
       set(state => ({ occasions: { ...state.occasions, [recipientId]: occasions }, loading: false }));
     } catch (error) {
+      console.error('Error fetching occasions:', error);
       set({ error: (error as Error).message, loading: false });
     }
   },
@@ -77,18 +93,30 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
       if (demoMode) {
         console.log('Using demo mode for occasion creation');
         const newOccasion: Occasion = {
-          id: `demo-${Date.now()}`,
+          id: `demo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           recipientId,
           ...occasionData,
           createdAt: Date.now(),
           updatedAt: Date.now(),
         };
         console.log('Demo occasion created:', newOccasion);
-        const saved = localStorage.getItem(`occasions-${recipientId}`);
-        const occasions = saved ? JSON.parse(saved) : [];
-        const updated = [...occasions, newOccasion];
-        localStorage.setItem(`occasions-${recipientId}`, JSON.stringify(updated));
-        set(state => ({ occasions: { ...state.occasions, [recipientId]: updated }, loading: false }));
+        
+        // Get existing occasions and add the new one
+        const storageKey = getOccasionsStorageKey(recipientId);
+        const saved = localStorage.getItem(storageKey);
+        const existingOccasions = saved ? JSON.parse(saved) : [];
+        const updatedOccasions = [...existingOccasions, newOccasion];
+        
+        // Save to localStorage
+        localStorage.setItem(storageKey, JSON.stringify(updatedOccasions));
+        console.log('Saved to localStorage with key:', storageKey);
+        console.log('Updated occasions:', updatedOccasions);
+        
+        // Update store state
+        set(state => ({ 
+          occasions: { ...state.occasions, [recipientId]: updatedOccasions }, 
+          loading: false 
+        }));
         console.log('Demo occasion saved successfully');
         return newOccasion;
       }
@@ -143,8 +171,13 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
           if (occs.some(o => o.id === occasionId)) foundRecipientId = rid;
         });
         if (!foundRecipientId) throw new Error('Occasion not found');
-        const updated = get().occasions[foundRecipientId].map(o => o.id === occasionId ? { ...o, ...data, updatedAt: Date.now() } : o);
-        localStorage.setItem(`occasions-${foundRecipientId as string}`, JSON.stringify(updated));
+        
+        const updated = get().occasions[foundRecipientId].map(o => 
+          o.id === occasionId ? { ...o, ...data, updatedAt: Date.now() } : o
+        );
+        
+        const storageKey = getOccasionsStorageKey(foundRecipientId);
+        localStorage.setItem(storageKey, JSON.stringify(updated));
         set(state => ({ occasions: { ...state.occasions, [foundRecipientId as string]: updated }, loading: false }));
         return;
       }
@@ -156,7 +189,9 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
         if (occs.some(o => o.id === occasionId)) foundRecipientId = rid;
       });
       if (!foundRecipientId) throw new Error('Occasion not found');
-      const updated = get().occasions[foundRecipientId].map(o => o.id === occasionId ? { ...o, ...data, updatedAt: timestamp.toDate().getTime() } : o);
+      const updated = get().occasions[foundRecipientId].map(o => 
+        o.id === occasionId ? { ...o, ...data, updatedAt: timestamp.toDate().getTime() } : o
+      );
       set(state => ({ occasions: { ...state.occasions, [foundRecipientId as string]: updated }, loading: false }));
     } catch (error) {
       set({ error: (error as Error).message, loading: false });
@@ -170,7 +205,8 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
       if (demoMode) {
         const occasions = get().occasions[recipientId] || [];
         const updated = occasions.filter(o => o.id !== occasionId);
-        localStorage.setItem(`occasions-${recipientId}`, JSON.stringify(updated));
+        const storageKey = getOccasionsStorageKey(recipientId);
+        localStorage.setItem(storageKey, JSON.stringify(updated));
         set(state => ({ occasions: { ...state.occasions, [recipientId]: updated }, loading: false }));
         return;
       }
