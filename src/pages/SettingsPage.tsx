@@ -42,18 +42,25 @@ export default function SettingsPage() {
   const { user, demoMode } = useAuthStore();
   const [editingEmail, setEditingEmail] = useState(false);
   const [newEmail, setNewEmail] = useState(user?.email || '');
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [tempPhoneNumber, setTempPhoneNumber] = useState('');
 
   // Load settings from localStorage when component mounts
   useEffect(() => {
     const savedSettings = localStorage.getItem('lazyuncle-settings');
     if (savedSettings) {
       try {
-        setSettings(JSON.parse(savedSettings));
+        const parsedSettings = JSON.parse(savedSettings);
+        setSettings(parsedSettings);
+        setTempPhoneNumber(parsedSettings.phoneNumber || '');
       } catch (error) {
         console.error('Error parsing settings:', error);
         // If parsing fails, use default settings
         setSettings(DEFAULT_SETTINGS);
+        setTempPhoneNumber('');
       }
+    } else {
+      setTempPhoneNumber('');
     }
   }, []);
 
@@ -61,21 +68,61 @@ export default function SettingsPage() {
   const saveSettings = (newSettings: UserSettings) => {
     localStorage.setItem('lazyuncle-settings', JSON.stringify(newSettings));
     setSettings(newSettings);
+    setHasUnsavedChanges(false);
   };
 
-  // Creates a handler for any setting update
-  const handleSettingChange = (key: keyof UserSettings, value: any) => {
-    const newSettings = { ...settings, [key]: value };
+  // Save all settings including phone number
+  const handleSaveAllSettings = () => {
+    if (!validatePhoneNumber()) return;
+    
+    const newSettings = { ...settings, phoneNumber: tempPhoneNumber };
     saveSettings(newSettings);
     
     toast({
-      title: 'Settings updated',
-      description: `${key} has been updated`,
+      title: 'Settings saved',
+      description: 'All settings have been saved successfully',
       status: 'success',
       duration: 2000,
       isClosable: true,
       position: 'top-right',
     });
+  };
+
+  // Validate phone number (10 digits)
+  const validatePhoneNumber = () => {
+    if (settings.textNotifications && tempPhoneNumber) {
+      const digitsOnly = tempPhoneNumber.replace(/\D/g, '');
+      if (digitsOnly.length !== 10) {
+        toast({
+          title: 'Invalid phone number',
+          description: 'Please enter a valid 10-digit phone number',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // Creates a handler for any setting update
+  const handleSettingChange = (key: keyof UserSettings, value: any) => {
+    const newSettings = { ...settings, [key]: value };
+    setSettings(newSettings);
+    setHasUnsavedChanges(true);
+    
+    // Only show toast for non-phone number changes
+    if (key !== 'phoneNumber') {
+      toast({
+        title: 'Settings updated',
+        description: `${key} has been updated`,
+        status: 'success',
+        duration: 2000,
+        isClosable: true,
+        position: 'top-right',
+      });
+    }
   };
 
   // Handle theme change
@@ -145,10 +192,11 @@ export default function SettingsPage() {
     handleSettingChange('textNotifications', checked);
   };
 
-  // Handle phone number change
+  // Handle phone number change without saving immediately
   const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    handleSettingChange('phoneNumber', value);
+    setTempPhoneNumber(value);
+    setHasUnsavedChanges(true);
   };
 
   // Update handleTestNotifications to validate phone number if text notifications are enabled
@@ -164,7 +212,7 @@ export default function SettingsPage() {
       return;
     }
     if (settings.textNotifications) {
-      if (!isValidPhone(settings.phoneNumber)) {
+      if (!isValidPhone(tempPhoneNumber)) {
         toast({
           title: 'Phone number required',
           description: 'Please enter a valid phone number to receive text notifications',
@@ -390,12 +438,12 @@ export default function SettingsPage() {
                 <InputLeftAddon>+1</InputLeftAddon>
                 <Input 
                   type="tel" 
-                  value={settings.phoneNumber} 
+                  value={tempPhoneNumber} 
                   onChange={handlePhoneNumberChange}
                   placeholder="(555) 123-4567"
                 />
               </InputGroup>
-              <FormHelperText>Your phone number is used for text notifications</FormHelperText>
+              <FormHelperText>Your phone number is used for text notifications (10 digits required)</FormHelperText>
             </FormControl>
           )}
 
@@ -416,13 +464,24 @@ export default function SettingsPage() {
             <FormHelperText>How many days before an event to send a reminder</FormHelperText>
           </FormControl>
 
-          <Button 
-            onClick={handleTestNotifications}
-            colorScheme="blue"
-            mt={4}
-          >
-            Test Notifications
-          </Button>
+          <HStack spacing={4}>
+            <Button 
+              onClick={handleTestNotifications}
+              colorScheme="blue"
+              variant="outline"
+            >
+              Test Notifications
+            </Button>
+            
+            {hasUnsavedChanges && (
+              <Button 
+                onClick={handleSaveAllSettings}
+                colorScheme="green"
+              >
+                Save Settings
+              </Button>
+            )}
+          </HStack>
         </Box>
 
         <Box textAlign="right">

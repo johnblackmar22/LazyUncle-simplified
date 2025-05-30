@@ -33,7 +33,13 @@ import {
   FormLabel,
   Input,
   Select,
-  Textarea
+  Textarea,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogOverlay,
 } from '@chakra-ui/react';
 import { EditIcon, DeleteIcon, ArrowBackIcon, AddIcon } from '@chakra-ui/icons';
 import { useRecipientStore } from '../store/recipientStore';
@@ -90,6 +96,13 @@ export const RecipientDetailPage: React.FC = () => {
 
   const [isOccasionModalOpen, setOccasionModalOpen] = useState(false);
   const [occasionLoading, setOccasionLoading] = useState(false);
+  const [isDuplicateAlertOpen, setDuplicateAlertOpen] = useState(false);
+  const [duplicateInfo, setDuplicateInfo] = useState<{ 
+    occasionName: string; 
+    existingCount: number; 
+    pendingOccasionData: any;
+  } | null>(null);
+  const cancelRef = React.useRef<HTMLButtonElement>(null);
 
   const openOccasionModal = () => setOccasionModalOpen(true);
   const closeOccasionModal = () => { setOccasionModalOpen(false); };
@@ -112,6 +125,65 @@ export const RecipientDetailPage: React.FC = () => {
         showErrorToast(toast, error, { title: 'Error deleting occasion' });
       }
     }
+  };
+
+  const checkForDuplicateOccasion = (occasionData: any) => {
+    if (!id || !occasions || !occasions[id]) return false;
+    
+    const existingOccasions = occasions[id];
+    const duplicates = existingOccasions.filter((occasion: any) => 
+      occasion.name.toLowerCase() === occasionData.name.toLowerCase()
+    );
+    
+    if (duplicates.length > 0) {
+      setDuplicateInfo({
+        occasionName: occasionData.name,
+        existingCount: duplicates.length,
+        pendingOccasionData: occasionData
+      });
+      setDuplicateAlertOpen(true);
+      return true;
+    }
+    return false;
+  };
+
+  const handleOccasionSubmit = async (occasionData: any) => {
+    if (checkForDuplicateOccasion(occasionData)) {
+      return; // Stop here, let user confirm via dialog
+    }
+    
+    await proceedWithOccasionAdd(occasionData);
+  };
+
+  const proceedWithOccasionAdd = async (occasionData: any) => {
+    setOccasionLoading(true);
+    try {
+      const result = await addOccasion(id || '', occasionData);
+      if (!result) {
+        toast({ title: 'Failed to add occasion', status: 'error', duration: 4000, isClosable: true });
+      } else {
+        toast({ title: 'Occasion added', status: 'success', duration: 2000, isClosable: true });
+        await fetchOccasions(id || '');
+        closeOccasionModal();
+      }
+    } catch (error) {
+      showErrorToast(toast, error, { title: 'Error adding occasion' });
+    } finally {
+      setOccasionLoading(false);
+    }
+  };
+
+  const handleDuplicateConfirm = async () => {
+    if (duplicateInfo?.pendingOccasionData) {
+      setDuplicateAlertOpen(false);
+      await proceedWithOccasionAdd(duplicateInfo.pendingOccasionData);
+      setDuplicateInfo(null);
+    }
+  };
+
+  const handleDuplicateCancel = () => {
+    setDuplicateAlertOpen(false);
+    setDuplicateInfo(null);
   };
 
   useEffect(() => {
@@ -346,24 +418,43 @@ export const RecipientDetailPage: React.FC = () => {
               <OccasionForm
                 recipient={currentRecipient}
                 loading={occasionLoading}
-                onSubmit={async (occasionData) => {
-                  setOccasionLoading(true);
-                  const result = await addOccasion(id || '', occasionData);
-                  if (!result) {
-                    toast({ title: 'Failed to add occasion', status: 'error', duration: 4000, isClosable: true });
-                  } else {
-                    toast({ title: 'Occasion added', status: 'success', duration: 2000, isClosable: true });
-                    await fetchOccasions(id || '');
-                    closeOccasionModal();
-                  }
-                  setOccasionLoading(false);
-                }}
+                onSubmit={handleOccasionSubmit}
                 onCancel={closeOccasionModal}
               />
             )}
           </ModalBody>
         </ModalContent>
       </Modal>
+      <AlertDialog
+        isOpen={isDuplicateAlertOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={handleDuplicateCancel}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Duplicate Occasion
+            </AlertDialogHeader>
+            <AlertDialogBody>
+              An occasion with the name "{duplicateInfo?.occasionName}" already exists. 
+              {duplicateInfo && (
+                <Text mt={2}>
+                  You will be sending <strong>{duplicateInfo.existingCount + 1}</strong> gifts for this occasion. 
+                  Are you sure you want to continue?
+                </Text>
+              )}
+            </AlertDialogBody>
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={handleDuplicateCancel}>
+                Cancel
+              </Button>
+              <Button colorScheme="red" onClick={handleDuplicateConfirm} ml={3}>
+                Confirm
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </Box>
   );
 }; 

@@ -28,7 +28,7 @@ import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { months, days, years } from '../utils/dateUtils';
 
 const relationshipOptions = [
-  'Wife', 'Husband', 'Brother', 'Sister', 'Mom', 'Dad', 'Nephew', 'Niece', 'Friend', 'Colleague', 'Other'
+  'Nephew', 'Niece', 'Wife', 'Husband', 'Brother', 'Sister', 'Mom', 'Dad', 'Friend', 'Colleague', 'Other'
 ];
 const suggestedInterests = ['Gaming', 'Music', 'Tech', 'Travel', 'Sports', 'Food', 'Books', 'Movies', 'Fashion', 'Outdoors'];
 
@@ -160,9 +160,19 @@ const AddRecipientPage: React.FC = () => {
                   ))}
                 </Flex>
                 <Flex gap={2} mt={2} flexWrap="wrap">
-                  {suggestedInterests.map(si => (
-                    <Button key={si} size="xs" variant={recipient.interests.includes(si) ? 'solid' : 'outline'} colorScheme="gray" onClick={() => !recipient.interests.includes(si) && setRecipient(r => ({ ...r, interests: [...r.interests, si] }))}>{si}</Button>
-                  ))}
+                  {suggestedInterests
+                    .filter(si => !recipient.interests.includes(si))
+                    .map(si => (
+                      <Button 
+                        key={si} 
+                        size="xs" 
+                        variant="outline" 
+                        colorScheme="gray" 
+                        onClick={() => setRecipient(r => ({ ...r, interests: [...r.interests, si] }))}
+                      >
+                        {si}
+                      </Button>
+                    ))}
                 </Flex>
               </FormControl>
               <FormControl>
