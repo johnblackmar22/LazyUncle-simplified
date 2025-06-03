@@ -1,0 +1,17 @@
+{
+  "name": "lazyuncle-netlify-functions",
+  "version": "1.0.0",
+  "description": "Netlify Functions for LazyUncle gift recommendations",
+  "main": "index.js",
+  "dependencies": {
+    "@netlify/functions": "^2.8.1",
+    "openai": "^4.67.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "scripts": {
+    "build": "tsc"
+  }
+} 
