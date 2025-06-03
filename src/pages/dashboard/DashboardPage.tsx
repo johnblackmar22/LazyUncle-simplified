@@ -271,6 +271,7 @@ const DashboardPage: React.FC = () => {
         notes: occasionForm.notes,
         amount: occasionForm.amount,
         recurring: occasionForm.recurring,
+        userId: user?.id || '',
       };
       const result = await addOccasion(occasionModalRecipientId, occasionToSave);
       if (!result) {
@@ -522,7 +523,7 @@ const DashboardPage: React.FC = () => {
                 </VStack>
               ) : (
                 <Box textAlign="center" py={8}>
-                  <Icon as={FaCalendarAlt} size="2xl" color="gray.400" mb={3} />
+                  <Icon as={FaCalendarAlt} boxSize="48px" color="gray.400" mb={3} />
                   <Text color="gray.500" fontSize="sm">
                     No upcoming occasions in the next 60 days
                   </Text>
@@ -540,7 +541,7 @@ const DashboardPage: React.FC = () => {
           <Card bg="blue.50" shadow="md" borderRadius="lg" borderColor="blue.200" borderWidth="1px">
             <CardBody>
               <VStack spacing={4} textAlign="center">
-                <Icon as={FaGift} size="3xl" color="blue.500" />
+                <Icon as={FaGift} boxSize="60px" color="blue.500" />
                 <Heading size="lg" color="blue.700">
                   Ready to start gifting?
                 </Heading>
