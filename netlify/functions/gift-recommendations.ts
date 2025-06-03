@@ -3,11 +3,34 @@
 // npm install @netlify/functions openai
 
 import { Handler } from '@netlify/functions';
-import OpenAI from 'openai';
 
-const openai = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_PROD
-});
+// Dynamic import of OpenAI to handle module loading issues
+let OpenAI: any = null;
+let openai: any = null;
+
+// Initialize OpenAI only if needed and available
+async function initializeOpenAI() {
+  if (openai) return openai;
+  
+  try {
+    console.log('Attempting to load OpenAI module...');
+    const OpenAIModule = await import('openai');
+    OpenAI = OpenAIModule.default;
+    
+    const apiKey = process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_PROD;
+    if (!apiKey) {
+      console.warn('No OpenAI API key found - will use fallback recommendations');
+      return null;
+    }
+    
+    openai = new OpenAI({ apiKey });
+    console.log('OpenAI initialized successfully');
+    return openai;
+  } catch (error) {
+    console.error('Failed to initialize OpenAI:', error);
+    return null;
+  }
+}
 
 // Enhanced prompt engineering
 function createPersonalizedPrompt(data: any): string {
@@ -106,80 +129,91 @@ const handler: Handler = async (event, context) => {
       throw new Error('Valid budget is required');
     }
 
-    // Check OpenAI API key
-    if (!process.env.OPENAI_API_KEY && !process.env.OPENAI_API_KEY_PROD) {
-      throw new Error('OpenAI API key not configured');
-    }
-
     console.log(`Generating gift recommendations for ${data.recipient.name} (${data.occasion}, $${data.budget} budget)`);
 
-    // Create personalized prompt
-    const prompt = createPersonalizedPrompt(data);
-
-    // Call OpenAI with enhanced parameters
-    console.log('Calling OpenAI API...');
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages: [
-        { 
-          role: 'system', 
-          content: 'You are a world-class gift consultant specializing in personalized recommendations. Always respond with valid JSON arrays containing exactly 5 gift suggestions.' 
-        },
-        { role: 'user', content: prompt },
-      ],
-      max_tokens: 1500,
-      temperature: 0.7,
-      top_p: 0.9,
-      frequency_penalty: 0.3,
-      presence_penalty: 0.1,
-    });
-
-    const responseText = completion.choices[0]?.message?.content?.trim();
-    console.log('OpenAI response received, length:', responseText?.length);
-    
-    if (!responseText) {
-      throw new Error('No response from OpenAI');
-    }
-
-    // Parse and validate AI response
+    // Try to use OpenAI
     let giftSuggestions;
-    try {
-      // Try to extract JSON if it's wrapped in markdown
-      const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-      const jsonString = jsonMatch ? jsonMatch[1] : responseText;
-      
-      giftSuggestions = JSON.parse(jsonString);
-      
-      // Basic validation
-      if (!Array.isArray(giftSuggestions)) {
-        throw new Error('Response is not an array');
-      }
+    const openaiClient = await initializeOpenAI();
+    
+    if (openaiClient) {
+      try {
+        console.log('Using OpenAI for recommendations...');
+        
+        // Create personalized prompt
+        const prompt = createPersonalizedPrompt(data);
 
-      // Ensure price is within budget and add required fields
-      giftSuggestions = giftSuggestions.map((suggestion: any) => {
-        if (suggestion.price > data.budget) {
-          suggestion.price = Math.floor(data.budget * 0.9);
+        // Call OpenAI with enhanced parameters
+        console.log('Calling OpenAI API...');
+        const completion = await openaiClient.chat.completions.create({
+          model: 'gpt-4',
+          messages: [
+            { 
+              role: 'system', 
+              content: 'You are a world-class gift consultant specializing in personalized recommendations. Always respond with valid JSON arrays containing exactly 5 gift suggestions.' 
+            },
+            { role: 'user', content: prompt },
+          ],
+          max_tokens: 1500,
+          temperature: 0.7,
+          top_p: 0.9,
+          frequency_penalty: 0.3,
+          presence_penalty: 0.1,
+        });
+
+        const responseText = completion.choices[0]?.message?.content?.trim();
+        console.log('OpenAI response received, length:', responseText?.length);
+        
+        if (!responseText) {
+          throw new Error('No response from OpenAI');
+        }
+
+        // Parse and validate AI response
+        try {
+          // Try to extract JSON if it's wrapped in markdown
+          const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+          const jsonString = jsonMatch ? jsonMatch[1] : responseText;
+          
+          giftSuggestions = JSON.parse(jsonString);
+          
+          // Basic validation
+          if (!Array.isArray(giftSuggestions)) {
+            throw new Error('Response is not an array');
+          }
+
+          // Ensure price is within budget and add required fields
+          giftSuggestions = giftSuggestions.map((suggestion: any) => {
+            if (suggestion.price > data.budget) {
+              suggestion.price = Math.floor(data.budget * 0.9);
+            }
+            
+            // Add missing fields if needed
+            suggestion.id = suggestion.id || `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            
+            return suggestion;
+          });
+
+          // Ensure we have exactly 5 suggestions
+          if (giftSuggestions.length < 5) {
+            console.warn(`Only received ${giftSuggestions.length} suggestions, expected 5`);
+          }
+          
+          giftSuggestions = giftSuggestions.slice(0, 5);
+          console.log(`Successfully generated ${giftSuggestions.length} AI recommendations`);
+
+        } catch (parseError) {
+          console.error('JSON parsing error:', parseError);
+          console.error('Raw response:', responseText);
+          throw parseError;
         }
         
-        // Add missing fields if needed
-        suggestion.id = suggestion.id || `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        
-        return suggestion;
-      });
-
-      // Ensure we have exactly 5 suggestions
-      if (giftSuggestions.length < 5) {
-        console.warn(`Only received ${giftSuggestions.length} suggestions, expected 5`);
+      } catch (openaiError) {
+        console.error('OpenAI API error:', openaiError);
+        throw openaiError;
       }
       
-      giftSuggestions = giftSuggestions.slice(0, 5);
-
-    } catch (parseError) {
-      console.error('JSON parsing error:', parseError);
-      console.error('Raw response:', responseText);
-      
-      // Fallback to generic suggestions
-      giftSuggestions = createFallbackSuggestions(data);
+    } else {
+      console.log('OpenAI not available, using fallback recommendations');
+      throw new Error('OpenAI not available');
     }
 
     // Add metadata
@@ -195,8 +229,6 @@ const handler: Handler = async (event, context) => {
       }
     };
 
-    console.log(`Successfully generated ${giftSuggestions.length} recommendations for ${data.recipient.name}`);
-
     return {
       statusCode: 200,
       headers,
@@ -206,25 +238,55 @@ const handler: Handler = async (event, context) => {
   } catch (error) {
     console.error('Gift recommendation error:', error);
     
-    // Return structured error response
-    const errorResponse = {
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
-      type: 'system_error',
-      timestamp: new Date().toISOString(),
-    };
+    // Fallback to sophisticated mock recommendations
+    console.log('Falling back to enhanced mock recommendations');
+    
+    try {
+      const data = JSON.parse(event.body || '{}');
+      const fallbackSuggestions = createFallbackSuggestions(data);
+      
+      const fallbackResponse = {
+        suggestions: fallbackSuggestions,
+        metadata: {
+          model: 'fallback',
+          generated_at: new Date().toISOString(),
+          recipient_name: data.recipient?.name || 'Unknown',
+          occasion: data.occasion || 'birthday',
+          budget: data.budget || 50,
+          request_id: Math.random().toString(36).substring(7),
+          fallback_reason: error instanceof Error ? error.message : 'Unknown error',
+        }
+      };
 
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify(errorResponse),
-    };
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify(fallbackResponse),
+      };
+      
+    } catch (fallbackError) {
+      console.error('Fallback error:', fallbackError);
+      
+      // Return structured error response
+      const errorResponse = {
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
+        type: 'system_error',
+        timestamp: new Date().toISOString(),
+      };
+
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify(errorResponse),
+      };
+    }
   }
 };
 
 // Fallback suggestions when AI fails
 function createFallbackSuggestions(data: any) {
-  const budget = data.budget;
-  const interests = data.recipient.interests || [];
+  const budget = data.budget || 50;
+  const interests = data.recipient?.interests || [];
   
   return [
     {
