@@ -3,23 +3,24 @@ import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where, T
 import { db } from '../services/firebase';
 import type { Occasion } from '../types';
 import { useAuthStore } from './authStore';
+import { STORAGE_KEYS, COLLECTIONS, DEMO_USER_ID, DEFAULTS } from '../utils/constants';
 
 interface OccasionState {
-  occasions: { [recipientId: string]: Occasion[] };
+  occasions: Record<string, Occasion[]>; // recipientId -> occasions
   loading: boolean;
   error: string | null;
   fetchOccasions: (recipientId: string) => Promise<void>;
-  addOccasion: (recipientId: string, occasion: Omit<Occasion, 'id' | 'recipientId' | 'createdAt' | 'updatedAt'>) => Promise<Occasion | null>;
+  addOccasion: (recipientId: string, occasionData: Omit<Occasion, 'id' | 'recipientId' | 'createdAt' | 'updatedAt'>) => Promise<Occasion | null>;
   updateOccasion: (occasionId: string, data: Partial<Occasion>) => Promise<void>;
   deleteOccasion: (occasionId: string, recipientId: string) => Promise<void>;
   setOccasions: (recipientId: string, occasions: Occasion[]) => void;
   resetError: () => void;
 }
 
-// Helper function to get localStorage key
-function getOccasionsStorageKey(recipientId: string): string {
-  return `lazyuncle_occasions_${recipientId}`;
-}
+// Helper function to get localStorage key for occasions by recipient
+const getOccasionsStorageKey = (recipientId: string) => {
+  return STORAGE_KEYS.OCCASIONS(recipientId);
+};
 
 export const useOccasionStore = create<OccasionState>((set, get) => ({
   occasions: {},
@@ -72,7 +73,7 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
         }
         
         console.log(`Fetching occasions from Firebase for recipient: ${recipientId}`);
-        const occasionsRef = collection(db, 'occasions');
+        const occasionsRef = collection(db, COLLECTIONS.OCCASIONS);
         const q = query(occasionsRef, where('recipientId', '==', recipientId), where('userId', '==', user.id));
         const querySnapshot = await getDocs(q);
         
@@ -115,11 +116,11 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
       if (demoMode) {
         console.log('Using demo mode for occasion creation');
         const newOccasion: Occasion = {
-          id: `demo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          id: `demo-occasion-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           recipientId,
           ...occasionData,
           createdAt: Date.now(),
-          updatedAt: Date.now(),
+          updatedAt: Date.now()
         };
         console.log('Demo occasion created:', newOccasion);
         
@@ -183,15 +184,9 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
         ) as Omit<Occasion, 'id' | 'recipientId' | 'createdAt' | 'updatedAt'>;
         console.log('Cleaned occasion data (removed undefined values):', cleanedOccasionData);
         
-        const newOccasion = {
-          ...cleanedOccasionData,
-          recipientId,
-          userId: user.id,
-          createdAt: timestamp,
-          updatedAt: timestamp,
-        };
-        console.log('Firebase occasion to save:', newOccasion);
-        const docRef = await addDoc(collection(db, 'occasions'), newOccasion);
+        const newOccasion = { ...cleanedOccasionData, recipientId, userId: user.id, createdAt: timestamp, updatedAt: timestamp };
+        console.log('Writing occasion to Firestore:', newOccasion);
+        const docRef = await addDoc(collection(db, COLLECTIONS.OCCASIONS), newOccasion);
         const occasion: Occasion = {
           id: docRef.id,
           ...newOccasion,
@@ -234,7 +229,7 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
         return;
       } else {
         const timestamp = Timestamp.now();
-        await updateDoc(doc(db, 'occasions', occasionId), { ...data, updatedAt: timestamp });
+        await updateDoc(doc(db, COLLECTIONS.OCCASIONS, occasionId), { ...data, updatedAt: timestamp });
         // Find the recipientId for this occasion
         let foundRecipientId: string | null = null;
         Object.entries(get().occasions).forEach(([rid, occs]) => {
@@ -263,7 +258,7 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
         set(state => ({ occasions: { ...state.occasions, [recipientId]: updated }, loading: false }));
         return;
       } else {
-        await deleteDoc(doc(db, 'occasions', occasionId));
+        await deleteDoc(doc(db, COLLECTIONS.OCCASIONS, occasionId));
         const updated = (get().occasions[recipientId] || []).filter(o => o.id !== occasionId);
         set(state => ({ occasions: { ...state.occasions, [recipientId]: updated }, loading: false }));
       }

@@ -14,6 +14,7 @@ import {
 import { db } from '../services/firebase';
 import type { Recipient, AutoSendPreferences, OccasionPreference, AutoSendOccasions, PaymentMethod, Address } from '../types';
 import { useAuthStore } from './authStore';
+import { STORAGE_KEYS, COLLECTIONS, DEMO_USER_ID, DEFAULTS } from '../utils/constants';
 
 interface RecipientState {
   recipients: Recipient[];
@@ -33,13 +34,13 @@ interface RecipientState {
   toggleApprovalRequirement: (id: string, requireApproval: boolean) => Promise<void>;
 }
 
-// Constants for localStorage keys
-const RECIPIENTS_STORAGE_KEY = 'lazyuncle_recipients';
+// Constants for localStorage keys - using centralized constants
+// const RECIPIENTS_STORAGE_KEY = 'lazyuncle_recipients';
 
 const defaultAutoSendPreferences = {
-  enabled: false,
-  defaultBudget: 50,
-  requireApproval: true,
+  enabled: DEFAULTS.AUTO_SEND_ENABLED,
+  defaultBudget: DEFAULTS.BUDGET,
+  requireApproval: DEFAULTS.REQUIRE_APPROVAL,
   occasions: {},
   shippingAddress: { line1: '', city: '', state: '', postalCode: '', country: '' },
   paymentMethod: { type: 'creditCard' }
@@ -76,7 +77,7 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
     try {
       if (demoMode) {
         // Handle demo mode
-        const stored = localStorage.getItem('lazyuncle_recipients');
+        const stored = localStorage.getItem(STORAGE_KEYS.RECIPIENTS);
         const recipients = stored ? JSON.parse(stored) : [];
         
         console.log('Demo recipients loaded from localStorage:', recipients.length);
@@ -93,7 +94,7 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
         }
         
         console.log('Fetching recipients from Firebase for user:', user.id);
-        const q = query(collection(db, 'recipients'), where('userId', '==', user.id));
+        const q = query(collection(db, COLLECTIONS.RECIPIENTS), where('userId', '==', user.id));
         const snapshot = await getDocs(q);
         const recipients: Recipient[] = [];
         
@@ -144,7 +145,7 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
         // Handle demo mode recipient creation
         const newRecipient: Recipient = {
           id: `demo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          userId: 'demo-user',
+          userId: DEMO_USER_ID,
           ...recipientData,
           interests: recipientData.interests || [],
           createdAt: Date.now(),
@@ -152,11 +153,11 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
         };
         
         // Save to localStorage with consistent key
-        const savedRecipients = localStorage.getItem(RECIPIENTS_STORAGE_KEY);
+        const savedRecipients = localStorage.getItem(STORAGE_KEYS.RECIPIENTS);
         const existingRecipients = savedRecipients ? JSON.parse(savedRecipients) : [];
         const updatedRecipients = [...existingRecipients, newRecipient];
-        localStorage.setItem(RECIPIENTS_STORAGE_KEY, JSON.stringify(updatedRecipients));
-        console.log('Saved to localStorage with key:', RECIPIENTS_STORAGE_KEY);
+        localStorage.setItem(STORAGE_KEYS.RECIPIENTS, JSON.stringify(updatedRecipients));
+        console.log('Saved to localStorage with key:', STORAGE_KEYS.RECIPIENTS);
         
         set(state => ({ 
           recipients: [...state.recipients, newRecipient],
@@ -182,7 +183,7 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
           updatedAt: timestamp
         };
         console.log('Writing recipient to Firestore:', newRecipient);
-        const docRef = await addDoc(collection(db, 'recipients'), newRecipient);
+        const docRef = await addDoc(collection(db, COLLECTIONS.RECIPIENTS), newRecipient);
         const recipient = {
           id: docRef.id,
           ...newRecipient,
@@ -228,7 +229,7 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
           console.log('Updated recipients in demo mode:', updatedRecipients);
           
           // Save to localStorage
-          localStorage.setItem(RECIPIENTS_STORAGE_KEY, JSON.stringify(updatedRecipients));
+          localStorage.setItem(STORAGE_KEYS.RECIPIENTS, JSON.stringify(updatedRecipients));
           console.log('Recipients saved to localStorage');
           
           return {
@@ -243,7 +244,7 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
           throw new Error('User not authenticated');
         }
         
-        const docRef = doc(db, 'recipients', id);
+        const docRef = doc(db, COLLECTIONS.RECIPIENTS, id);
         await updateDoc(docRef, {
           ...recipientData,
           updatedAt: serverTimestamp()
@@ -285,7 +286,7 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
           const filteredRecipients = state.recipients.filter(recipient => recipient.id !== id);
           
           // Update localStorage
-          localStorage.setItem(RECIPIENTS_STORAGE_KEY, JSON.stringify(filteredRecipients));
+          localStorage.setItem(STORAGE_KEYS.RECIPIENTS, JSON.stringify(filteredRecipients));
           
           return {
             recipients: filteredRecipients,
@@ -296,7 +297,7 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
       }
       
       // Normal Firebase mode
-      await deleteDoc(doc(db, 'recipients', id));
+      await deleteDoc(doc(db, COLLECTIONS.RECIPIENTS, id));
       set(state => ({
         recipients: state.recipients.filter(recipient => recipient.id !== id),
         loading: false
@@ -324,7 +325,7 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
             } as Recipient
           : recipient
       );
-      localStorage.setItem(RECIPIENTS_STORAGE_KEY, JSON.stringify(updatedRecipients));
+      localStorage.setItem(STORAGE_KEYS.RECIPIENTS, JSON.stringify(updatedRecipients));
       return { recipients: updatedRecipients };
     });
   },
@@ -349,7 +350,7 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
           }
         } as Recipient;
       });
-      localStorage.setItem(RECIPIENTS_STORAGE_KEY, JSON.stringify(updatedRecipients));
+      localStorage.setItem(STORAGE_KEYS.RECIPIENTS, JSON.stringify(updatedRecipients));
       return { recipients: updatedRecipients };
     });
   },
@@ -366,7 +367,7 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
           }
         } as Recipient;
       });
-      localStorage.setItem(RECIPIENTS_STORAGE_KEY, JSON.stringify(updatedRecipients));
+      localStorage.setItem(STORAGE_KEYS.RECIPIENTS, JSON.stringify(updatedRecipients));
       return { recipients: updatedRecipients };
     });
   },
@@ -390,7 +391,7 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
           }
         } as Recipient;
       });
-      localStorage.setItem(RECIPIENTS_STORAGE_KEY, JSON.stringify(updatedRecipients));
+      localStorage.setItem(STORAGE_KEYS.RECIPIENTS, JSON.stringify(updatedRecipients));
       return { recipients: updatedRecipients };
     });
   },
@@ -403,7 +404,7 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
           deliveryAddress: address
         } as Recipient;
       });
-      localStorage.setItem(RECIPIENTS_STORAGE_KEY, JSON.stringify(updatedRecipients));
+      localStorage.setItem(STORAGE_KEYS.RECIPIENTS, JSON.stringify(updatedRecipients));
       return { recipients: updatedRecipients };
     });
   },
@@ -420,7 +421,7 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
           }
         } as Recipient;
       });
-      localStorage.setItem(RECIPIENTS_STORAGE_KEY, JSON.stringify(updatedRecipients));
+      localStorage.setItem(STORAGE_KEYS.RECIPIENTS, JSON.stringify(updatedRecipients));
       return { recipients: updatedRecipients };
     });
   }
