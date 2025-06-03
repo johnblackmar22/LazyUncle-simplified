@@ -11,7 +11,7 @@ import {
 } from 'firebase/firestore';
 import { db, DEMO_MODE } from './firebase';
 import { useAuthStore } from '../store/authStore';
-import type { Recipient, ImportantDate, RecipientAutoSendPreferences } from '../types';
+import type { Recipient, AutoSendPreferences } from '../types';
 
 const COLLECTION = 'recipients';
 
@@ -161,7 +161,7 @@ export const deleteRecipient = async (id: string): Promise<void> => {
 // Update a recipient's auto-send preferences
 export const updateRecipientAutoSendPreferences = async (
   recipientId: string, 
-  preferences: Partial<RecipientAutoSendPreferences>
+  preferences: Partial<AutoSendPreferences>
 ): Promise<Recipient> => {
   const { user } = useAuthStore.getState();
   if (!user) throw new Error('User not authenticated');
@@ -218,16 +218,8 @@ const generateSampleRecipients = (userId: string): Recipient[] => {
       userId,
       name: 'John Smith',
       relationship: 'Brother',
-      email: 'john@example.com',
-      phone: '555-1234',
       interests: ['Gaming', 'Hiking'],
-      importantDates: [
-        {
-          id: 'date-1',
-          type: 'birthday',
-          date: '1985-06-15'
-        }
-      ],
+      birthdate: '1985-06-15',
       createdAt: now,
       updatedAt: now
     },
@@ -236,15 +228,8 @@ const generateSampleRecipients = (userId: string): Recipient[] => {
       userId,
       name: 'Sarah Johnson',
       relationship: 'Friend',
-      email: 'sarah@example.com',
       interests: ['Reading', 'Cooking'],
-      importantDates: [
-        {
-          id: 'date-2',
-          type: 'birthday',
-          date: '1990-03-22'
-        }
-      ],
+      birthdate: '1990-03-22',
       createdAt: now,
       updatedAt: now
     }
@@ -274,13 +259,14 @@ const addMockRecipient = (userId: string, data: Partial<Recipient>): Recipient =
     userId,
     name: data.name || '',
     relationship: data.relationship || '',
-    email: data.email,
-    phone: data.phone,
-    address: data.address,
-    photoURL: data.photoURL,
-    notes: data.notes,
     interests: data.interests || [],
-    importantDates: data.importantDates || [],
+    birthdate: data.birthdate,
+    deliveryAddress: data.deliveryAddress,
+    description: data.description,
+    anniversary: data.anniversary,
+    giftPreferences: data.giftPreferences,
+    autoSendPreferences: data.autoSendPreferences,
+    occasionIds: data.occasionIds,
     createdAt: now,
     updatedAt: now
   };
@@ -312,7 +298,7 @@ const deleteMockRecipient = (id: string): void => {
 
 const updateMockRecipientAutoSendPreferences = (
   id: string, 
-  preferences: Partial<RecipientAutoSendPreferences>
+  preferences: Partial<AutoSendPreferences>
 ): Recipient => {
   const index = mockRecipients.findIndex(r => r.id === id);
   if (index === -1) throw new Error('Recipient not found');
