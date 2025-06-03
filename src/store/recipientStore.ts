@@ -59,6 +59,29 @@ function ensureAutoSendPreferences(prefs: Partial<AutoSendPreferences> = {}): Au
   };
 }
 
+// Deep clean function to remove undefined values recursively (Firebase doesn't allow undefined)
+const deepCleanUndefined = (obj: any): any => {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+  
+  if (Array.isArray(obj)) {
+    return obj.map(item => deepCleanUndefined(item)).filter(item => item !== undefined);
+  }
+  
+  if (typeof obj === 'object') {
+    const cleaned: any = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (value !== undefined) {
+        cleaned[key] = deepCleanUndefined(value);
+      }
+    }
+    return cleaned;
+  }
+  
+  return obj;
+};
+
 export const useRecipientStore = create<RecipientState>((set, get) => ({
   recipients: [],
   loading: false,
@@ -179,11 +202,9 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
         }
         
         // Filter out undefined values for Firebase (Firebase doesn't allow undefined)
-        const cleanedRecipientData = Object.fromEntries(
-          Object.entries(recipientData).filter(([key, value]) => value !== undefined)
-        );
+        const cleanedRecipientData = deepCleanUndefined(recipientData);
         
-        console.log('Cleaned recipient data for Firebase:', cleanedRecipientData);
+        console.log('Deep cleaned recipient data for Firebase:', cleanedRecipientData);
         
         const newRecipient = {
           ...cleanedRecipientData,
@@ -255,11 +276,9 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
         }
         
         // Filter out undefined values for Firebase (Firebase doesn't allow undefined)
-        const cleanedData = Object.fromEntries(
-          Object.entries(recipientData).filter(([key, value]) => value !== undefined)
-        );
+        const cleanedData = deepCleanUndefined(recipientData);
         
-        console.log('Cleaned data for Firebase (removed undefined values):', cleanedData);
+        console.log('Deep cleaned data for Firebase (removed undefined values recursively):', cleanedData);
         
         const docRef = doc(db, COLLECTIONS.RECIPIENTS, id);
         await updateDoc(docRef, {
