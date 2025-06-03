@@ -165,36 +165,36 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
         
         console.log('Demo recipient created successfully:', newRecipient.id);
         return newRecipient;
+      } else {
+        // Normal Firebase mode
+        if (!user) {
+          throw new Error('User not authenticated');
+        }
+        // Validate required fields
+        if (!recipientData.name || !recipientData.relationship) {
+          throw new Error('Missing required recipient fields');
+        }
+        const newRecipient = {
+          ...recipientData,
+          userId: user.id,
+          interests: recipientData.interests || [],
+          createdAt: timestamp,
+          updatedAt: timestamp
+        };
+        console.log('Writing recipient to Firestore:', newRecipient);
+        const docRef = await addDoc(collection(db, 'recipients'), newRecipient);
+        const recipient = {
+          id: docRef.id,
+          ...newRecipient,
+          createdAt: timestamp.toDate().getTime(),
+          updatedAt: timestamp.toDate().getTime()
+        };
+        set(state => ({ 
+          recipients: [...state.recipients, recipient],
+          loading: false 
+        }));
+        return recipient;
       }
-      
-      // Normal Firebase mode
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-      // Validate required fields
-      if (!recipientData.name || !recipientData.relationship) {
-        throw new Error('Missing required recipient fields');
-      }
-      const newRecipient = {
-        ...recipientData,
-        userId: user.id,
-        interests: recipientData.interests || [],
-        createdAt: timestamp,
-        updatedAt: timestamp
-      };
-      console.log('Writing recipient to Firestore:', newRecipient);
-      const docRef = await addDoc(collection(db, 'recipients'), newRecipient);
-      const recipient = {
-        id: docRef.id,
-        ...newRecipient,
-        createdAt: timestamp.toDate().getTime(),
-        updatedAt: timestamp.toDate().getTime()
-      };
-      set(state => ({ 
-        recipients: [...state.recipients, recipient],
-        loading: false 
-      }));
-      return recipient;
     } catch (error) {
       console.error('Error adding recipient to Firestore:', error, recipientData);
       set({ error: `Failed to add recipient: ${(error as Error).message}. Check Firestore rules, config, and data structure.`, loading: false });
@@ -228,7 +228,7 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
           console.log('Updated recipients in demo mode:', updatedRecipients);
           
           // Save to localStorage
-          localStorage.setItem('lazyuncle_recipients', JSON.stringify(updatedRecipients));
+          localStorage.setItem(RECIPIENTS_STORAGE_KEY, JSON.stringify(updatedRecipients));
           console.log('Recipients saved to localStorage');
           
           return {
@@ -398,13 +398,9 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
     set(state => {
       const updatedRecipients = state.recipients.map(recipient => {
         if (recipient.id !== id) return recipient;
-        const prefs = ensureAutoSendPreferences(recipient.autoSendPreferences);
         return {
           ...recipient,
-          autoSendPreferences: {
-            ...prefs,
-            shippingAddress: address
-          }
+          deliveryAddress: address
         } as Recipient;
       });
       localStorage.setItem(RECIPIENTS_STORAGE_KEY, JSON.stringify(updatedRecipients));
