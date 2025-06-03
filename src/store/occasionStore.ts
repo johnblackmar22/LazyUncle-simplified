@@ -72,8 +72,8 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
         }
         
         console.log(`Fetching occasions from Firebase for recipient: ${recipientId}`);
-        const occasionsRef = collection(db, 'users', user.id, 'occasions');
-        const q = query(occasionsRef, where('recipientId', '==', recipientId));
+        const occasionsRef = collection(db, 'occasions');
+        const q = query(occasionsRef, where('recipientId', '==', recipientId), where('userId', '==', user.id));
         const querySnapshot = await getDocs(q);
         
         const occasions = querySnapshot.docs.map(doc => ({
@@ -170,40 +170,41 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
         
         console.log('✅ Demo occasion saved successfully');
         return newOccasion;
+      } else {
+        if (!user) {
+          console.error('User not authenticated for Firebase mode');
+          throw new Error('User not authenticated');
+        }
+        console.log('Using Firebase mode for occasion creation');
+        
+        // Clean the occasion data to remove undefined values that Firebase rejects
+        const cleanedOccasionData = Object.fromEntries(
+          Object.entries(occasionData).filter(([key, value]) => value !== undefined)
+        ) as Omit<Occasion, 'id' | 'recipientId' | 'createdAt' | 'updatedAt'>;
+        console.log('Cleaned occasion data (removed undefined values):', cleanedOccasionData);
+        
+        const newOccasion = {
+          ...cleanedOccasionData,
+          recipientId,
+          userId: user.id,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        };
+        console.log('Firebase occasion to save:', newOccasion);
+        const docRef = await addDoc(collection(db, 'occasions'), newOccasion);
+        const occasion: Occasion = {
+          id: docRef.id,
+          ...newOccasion,
+          createdAt: timestamp.toDate().getTime(),
+          updatedAt: timestamp.toDate().getTime(),
+        };
+        set(state => {
+          const prev = state.occasions[recipientId] || [];
+          return { occasions: { ...state.occasions, [recipientId]: [...prev, occasion] }, loading: false };
+        });
+        console.log('Firebase occasion saved successfully:', occasion);
+        return occasion;
       }
-      if (!user) {
-        console.error('User not authenticated for Firebase mode');
-        throw new Error('User not authenticated');
-      }
-      console.log('Using Firebase mode for occasion creation');
-      
-      // Clean the occasion data to remove undefined values that Firebase rejects
-      const cleanedOccasionData = Object.fromEntries(
-        Object.entries(occasionData).filter(([key, value]) => value !== undefined)
-      ) as Omit<Occasion, 'id' | 'recipientId' | 'createdAt' | 'updatedAt'>;
-      console.log('Cleaned occasion data (removed undefined values):', cleanedOccasionData);
-      
-      const newOccasion = {
-        ...cleanedOccasionData,
-        recipientId,
-        userId: user.id,
-        createdAt: timestamp,
-        updatedAt: timestamp,
-      };
-      console.log('Firebase occasion to save:', newOccasion);
-      const docRef = await addDoc(collection(db, 'occasions'), newOccasion);
-      const occasion: Occasion = {
-        id: docRef.id,
-        ...newOccasion,
-        createdAt: timestamp.toDate().getTime(),
-        updatedAt: timestamp.toDate().getTime(),
-      };
-      set(state => {
-        const prev = state.occasions[recipientId] || [];
-        return { occasions: { ...state.occasions, [recipientId]: [...prev, occasion] }, loading: false };
-      });
-      console.log('Firebase occasion saved successfully:', occasion);
-      return occasion;
     } catch (error) {
       console.error('❌ Error in addOccasion store:', error);
       set({ error: (error as Error).message, loading: false });
@@ -231,19 +232,20 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
         localStorage.setItem(storageKey, JSON.stringify(updated));
         set(state => ({ occasions: { ...state.occasions, [foundRecipientId as string]: updated }, loading: false }));
         return;
+      } else {
+        const timestamp = Timestamp.now();
+        await updateDoc(doc(db, 'occasions', occasionId), { ...data, updatedAt: timestamp });
+        // Find the recipientId for this occasion
+        let foundRecipientId: string | null = null;
+        Object.entries(get().occasions).forEach(([rid, occs]) => {
+          if (occs.some(o => o.id === occasionId)) foundRecipientId = rid;
+        });
+        if (!foundRecipientId) throw new Error('Occasion not found');
+        const updated = get().occasions[foundRecipientId].map(o => 
+          o.id === occasionId ? { ...o, ...data, updatedAt: timestamp.toDate().getTime() } : o
+        );
+        set(state => ({ occasions: { ...state.occasions, [foundRecipientId as string]: updated }, loading: false }));
       }
-      const timestamp = Timestamp.now();
-      await updateDoc(doc(db, 'occasions', occasionId), { ...data, updatedAt: timestamp });
-      // Find the recipientId for this occasion
-      let foundRecipientId: string | null = null;
-      Object.entries(get().occasions).forEach(([rid, occs]) => {
-        if (occs.some(o => o.id === occasionId)) foundRecipientId = rid;
-      });
-      if (!foundRecipientId) throw new Error('Occasion not found');
-      const updated = get().occasions[foundRecipientId].map(o => 
-        o.id === occasionId ? { ...o, ...data, updatedAt: timestamp.toDate().getTime() } : o
-      );
-      set(state => ({ occasions: { ...state.occasions, [foundRecipientId as string]: updated }, loading: false }));
     } catch (error) {
       set({ error: (error as Error).message, loading: false });
     }
@@ -260,10 +262,11 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
         localStorage.setItem(storageKey, JSON.stringify(updated));
         set(state => ({ occasions: { ...state.occasions, [recipientId]: updated }, loading: false }));
         return;
+      } else {
+        await deleteDoc(doc(db, 'occasions', occasionId));
+        const updated = (get().occasions[recipientId] || []).filter(o => o.id !== occasionId);
+        set(state => ({ occasions: { ...state.occasions, [recipientId]: updated }, loading: false }));
       }
-      await deleteDoc(doc(db, 'occasions', occasionId));
-      const updated = (get().occasions[recipientId] || []).filter(o => o.id !== occasionId);
-      set(state => ({ occasions: { ...state.occasions, [recipientId]: updated }, loading: false }));
     } catch (error) {
       set({ error: (error as Error).message, loading: false });
     }
