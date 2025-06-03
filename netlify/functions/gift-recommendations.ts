@@ -117,7 +117,11 @@ const handler: Handler = async (event, context) => {
     console.log('Request data received:', {
       recipientName: data.recipient?.name,
       budget: data.budget,
-      occasion: data.occasion
+      occasion: data.occasion,
+      interests: data.recipient?.interests,
+      relationship: data.recipient?.relationship,
+      age: data.recipient?.age,
+      description: data.recipient?.description
     });
 
     // Basic validation
@@ -162,6 +166,7 @@ const handler: Handler = async (event, context) => {
 
         const responseText = completion.choices[0]?.message?.content?.trim();
         console.log('OpenAI response received, length:', responseText?.length);
+        console.log('Raw OpenAI response:', responseText?.substring(0, 500) + '...');
         
         if (!responseText) {
           throw new Error('No response from OpenAI');
