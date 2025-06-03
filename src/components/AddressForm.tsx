@@ -129,6 +129,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({
   
   // Update parent when local state changes
   useEffect(() => {
+    console.log('AddressForm - useEffect triggered, calling handleAddressChange');
     handleAddressChange();
   }, [handleAddressChange]);
   

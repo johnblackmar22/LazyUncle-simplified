@@ -135,6 +135,8 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
     
     console.log('=== ADD RECIPIENT ===');
     console.log('Adding recipient in mode:', demoMode ? 'demo' : 'firebase', 'User:', user?.id);
+    console.log('RecipientStore - addRecipient called with data:', recipientData);
+    console.log('RecipientStore - deliveryAddress in data:', recipientData.deliveryAddress);
     
     set({ loading: true, error: null });
     try {

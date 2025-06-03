@@ -75,6 +75,12 @@ const AddRecipientPage: React.FC = () => {
     console.log('AddRecipientPage - deliveryAddress changed:', deliveryAddress);
   }, [deliveryAddress]);
 
+  // Add debug logging for the setDeliveryAddress function
+  const handleAddressChange = React.useCallback((address: Address | undefined) => {
+    console.log('AddRecipientPage - handleAddressChange called with:', address);
+    setDeliveryAddress(address);
+  }, []);
+
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
@@ -119,14 +125,20 @@ const AddRecipientPage: React.FC = () => {
     
     console.log('AddRecipientPage - About to submit recipient with delivery address:', deliveryAddress);
     
+    const submissionData = {
+      ...recipient,
+      name: fullName,
+      birthdate: birthdateStr || undefined,
+      description: description.trim() || undefined,
+      deliveryAddress,
+    };
+    
+    console.log('AddRecipientPage - Final submission data:', submissionData);
+    console.log('AddRecipientPage - deliveryAddress in submission:', submissionData.deliveryAddress);
+    
     try {
-      await addRecipient({
-        ...recipient,
-        name: fullName,
-        birthdate: birthdateStr || undefined,
-        description: description.trim() || undefined,
-        deliveryAddress,
-      });
+      const result = await addRecipient(submissionData);
+      console.log('AddRecipientPage - addRecipient result:', result);
       toast({
         title: 'Recipient added!',
         status: 'success',
@@ -135,6 +147,7 @@ const AddRecipientPage: React.FC = () => {
       });
       navigate('/recipients');
     } catch (error) {
+      console.error('AddRecipientPage - Error adding recipient:', error);
       toast({
         title: 'Error adding recipient',
         description: (error as Error).message,
@@ -328,7 +341,7 @@ const AddRecipientPage: React.FC = () => {
                   </Text>
                   <AddressForm
                     address={deliveryAddress}
-                    onChange={setDeliveryAddress}
+                    onChange={handleAddressChange}
                     isRequired={false}
                     helperText="We'll use this address to deliver gifts directly to your recipient."
                   />
