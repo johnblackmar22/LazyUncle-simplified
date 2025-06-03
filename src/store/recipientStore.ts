@@ -199,6 +199,11 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
   updateRecipient: async (id, recipientData) => {
     const demoMode = useAuthStore.getState().demoMode;
     
+    console.log('=== UPDATE RECIPIENT ===');
+    console.log('Recipient ID:', id);
+    console.log('Update data:', recipientData);
+    console.log('Demo mode:', demoMode);
+    
     set({ loading: true, error: null });
     try {
       if (demoMode) {
@@ -214,8 +219,17 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
               : recipient
           );
           
+          console.log('Updated recipients in demo mode:', updatedRecipients);
+          
           // Update localStorage
           localStorage.setItem(RECIPIENTS_STORAGE_KEY, JSON.stringify(updatedRecipients));
+          console.log('Saved updated recipients to localStorage');
+          
+          // Verify the save
+          const verification = localStorage.getItem(RECIPIENTS_STORAGE_KEY);
+          const parsedVerification = verification ? JSON.parse(verification) : [];
+          const updatedRecipient = parsedVerification.find((r: any) => r.id === id);
+          console.log('Verification - Updated recipient in localStorage:', updatedRecipient);
           
           return {
             recipients: updatedRecipients,

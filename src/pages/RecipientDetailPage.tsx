@@ -110,10 +110,17 @@ export const RecipientDetailPage: React.FC = () => {
   // Load recipients and occasions
   useEffect(() => {
     console.log('RecipientDetailPage useEffect triggered. ID:', id, 'Location search:', location.search);
-    fetchRecipients();
-    if (id) {
-      fetchOccasions(id);
-    }
+    const loadData = async () => {
+      await fetchRecipients();
+      
+      // Only fetch occasions if we have an ID
+      if (id) {
+        console.log('RecipientDetailPage - Fetching occasions for recipient:', id);
+        await fetchOccasions(id);
+      }
+    };
+    
+    loadData();
 
     // Check if we should open the occasion modal (from add recipient flow)
     const urlParams = new URLSearchParams(location.search);
@@ -133,6 +140,14 @@ export const RecipientDetailPage: React.FC = () => {
       }
     }
   }, [id, recipients]);
+
+  // Separate effect to refetch occasions when recipient changes
+  useEffect(() => {
+    if (id && currentRecipient) {
+      console.log('RecipientDetailPage - Refetching occasions for current recipient:', currentRecipient.name);
+      fetchOccasions(id);
+    }
+  }, [id, currentRecipient?.id, fetchOccasions]); // Only trigger when recipient ID actually changes
 
   // Function to check if recipient has delivery address and handle validation
   const checkDeliveryAddressAndProceed = (actionCallback: () => void) => {

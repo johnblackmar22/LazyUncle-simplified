@@ -87,14 +87,21 @@ const DashboardPage: React.FC = () => {
       }
       
       await fetchRecipients();
-      
-      recipients.forEach(recipient => {
-        fetchOccasions(recipient.id);
-      });
     };
     
     loadData();
-  }, [fetchRecipients, demoMode, fetchOccasions, recipients]);
+  }, [fetchRecipients, demoMode]);
+
+  // Load occasions when recipients change (separate effect)
+  useEffect(() => {
+    console.log('DashboardPage - Loading occasions for recipients:', recipients.length);
+    if (recipients.length > 0) {
+      recipients.forEach(recipient => {
+        console.log(`DashboardPage - Fetching occasions for recipient: ${recipient.name} (${recipient.id})`);
+        fetchOccasions(recipient.id);
+      });
+    }
+  }, [recipients.length, fetchOccasions]);
   
   // Calculate stats
   const totalRecipients = recipients.length;

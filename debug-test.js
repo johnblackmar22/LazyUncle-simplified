@@ -24,13 +24,18 @@ if (recipients) {
   console.log('Found recipients:', recipientData.length);
   recipientData.forEach(r => {
     console.log(`- ${r.name} (${r.relationship})`);
+    if (r.deliveryAddress) {
+      console.log(`  ✅ Has delivery address: ${r.deliveryAddress.line1}, ${r.deliveryAddress.city}`);
+    } else {
+      console.log(`  ❌ No delivery address`);
+    }
   });
   console.log('✅ Recipients data found');
 } else {
   console.log('❌ No recipients data found');
 }
 
-// Test 3: Check occasions data  
+// Test 3: Check occasions data
 console.log('\n=== OCCASIONS DATA TEST ===');
 const occasionKeys = Object.keys(localStorage).filter(key => key.startsWith('lazyuncle_occasions_'));
 
@@ -40,13 +45,55 @@ if (occasionKeys.length > 0) {
     const occasions = localStorage.getItem(key);
     if (occasions) {
       const occasionData = JSON.parse(occasions);
-      console.log(`- ${key}: ${occasionData.length} occasions`);
+      const recipientId = key.replace('lazyuncle_occasions_', '');
+      console.log(`- ${key}: ${occasionData.length} occasions for recipient ${recipientId}`);
+      occasionData.forEach(occ => {
+        console.log(`  * ${occ.name} on ${occ.date} (${occ.type})`);
+      });
     }
   });
   console.log('✅ Occasions data found');
 } else {
   console.log('❌ No occasions data found');
 }
+
+// Test 4: Test address persistence
+console.log('\n=== ADDRESS PERSISTENCE TEST ===');
+if (recipients) {
+  const recipientData = JSON.parse(recipients);
+  const recipientsWithAddresses = recipientData.filter(r => r.deliveryAddress);
+  
+  if (recipientsWithAddresses.length > 0) {
+    console.log(`✅ Found ${recipientsWithAddresses.length} recipients with addresses:`);
+    recipientsWithAddresses.forEach(r => {
+      console.log(`- ${r.name}: ${r.deliveryAddress.line1}, ${r.deliveryAddress.city}, ${r.deliveryAddress.state} ${r.deliveryAddress.postalCode}`);
+    });
+  } else {
+    console.log('❌ No recipients with addresses found');
+  }
+}
+
+// Test 5: Occasion loading after refresh simulation
+console.log('\n=== OCCASION REFRESH TEST ===');
+console.log('Simulating occasion loading after page refresh...');
+
+const testOccasionLoading = () => {
+  const recipients = JSON.parse(localStorage.getItem('lazyuncle_recipients') || '[]');
+  console.log('Recipients available for occasion loading:', recipients.length);
+  
+  recipients.forEach(recipient => {
+    const occasionKey = `lazyuncle_occasions_${recipient.id}`;
+    const occasions = localStorage.getItem(occasionKey);
+    if (occasions) {
+      const occasionData = JSON.parse(occasions);
+      console.log(`✅ Recipient ${recipient.name}: ${occasionData.length} occasions available`);
+    } else {
+      console.log(`❌ Recipient ${recipient.name}: no occasions found`);
+    }
+  });
+};
+
+testOccasionLoading();
 
 // Test 4: Firebase Auth Persistence Test
 console.log('\n=== FIREBASE AUTH PERSISTENCE TEST ===');

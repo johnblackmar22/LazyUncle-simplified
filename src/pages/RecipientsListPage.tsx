@@ -102,12 +102,14 @@ const RecipientsListPage: React.FC = () => {
 
   // Load occasions for all recipients - only when recipients change
   useEffect(() => {
+    console.log('RecipientsListPage - Loading occasions for recipients:', recipients.length);
     if (recipients.length > 0) {
       recipients.forEach(recipient => {
+        console.log(`RecipientsListPage - Fetching occasions for: ${recipient.name} (${recipient.id})`);
         fetchOccasions(recipient.id);
       });
     }
-  }, [recipients.length]);
+  }, [recipients.length, fetchOccasions]); // Only trigger when number of recipients changes
 
   // Monitor recipients changes
   useEffect(() => {
