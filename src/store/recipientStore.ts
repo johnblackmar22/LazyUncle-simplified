@@ -177,8 +177,16 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
         if (!recipientData.name || !recipientData.relationship) {
           throw new Error('Missing required recipient fields');
         }
+        
+        // Filter out undefined values for Firebase (Firebase doesn't allow undefined)
+        const cleanedRecipientData = Object.fromEntries(
+          Object.entries(recipientData).filter(([key, value]) => value !== undefined)
+        );
+        
+        console.log('Cleaned recipient data for Firebase:', cleanedRecipientData);
+        
         const newRecipient = {
-          ...recipientData,
+          ...cleanedRecipientData,
           userId: user.id,
           interests: recipientData.interests || [],
           createdAt: timestamp,
@@ -186,12 +194,12 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
         };
         console.log('Writing recipient to Firestore:', newRecipient);
         const docRef = await addDoc(collection(db, COLLECTIONS.RECIPIENTS), newRecipient);
-        const recipient = {
+        const recipient: Recipient = {
           id: docRef.id,
           ...newRecipient,
           createdAt: timestamp.toDate().getTime(),
           updatedAt: timestamp.toDate().getTime()
-        };
+        } as Recipient;
         set(state => ({ 
           recipients: [...state.recipients, recipient],
           loading: false 
@@ -246,9 +254,16 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
           throw new Error('User not authenticated');
         }
         
+        // Filter out undefined values for Firebase (Firebase doesn't allow undefined)
+        const cleanedData = Object.fromEntries(
+          Object.entries(recipientData).filter(([key, value]) => value !== undefined)
+        );
+        
+        console.log('Cleaned data for Firebase (removed undefined values):', cleanedData);
+        
         const docRef = doc(db, COLLECTIONS.RECIPIENTS, id);
         await updateDoc(docRef, {
-          ...recipientData,
+          ...cleanedData,
           updatedAt: serverTimestamp()
         });
         
