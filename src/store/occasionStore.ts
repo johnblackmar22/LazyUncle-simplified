@@ -119,6 +119,7 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
           id: `demo-occasion-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           recipientId,
           ...occasionData,
+          userId: "demo-user",
           createdAt: Date.now(),
           updatedAt: Date.now()
         };

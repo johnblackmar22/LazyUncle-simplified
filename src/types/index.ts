@@ -4,8 +4,9 @@ export interface User {
   email: string;
   displayName?: string;
   photoURL?: string;
-  createdAt: number;
   planId: string; // 'free' | 'pro' | etc.
+  createdAt: number;
+  updatedAt: number;
 }
 
 // Auto-send preferences types
@@ -57,8 +58,8 @@ export interface Recipient {
   anniversary?: string; // Format: 'YYYY-MM-DD'
   autoSendPreferences?: AutoSendPreferences;
   occasionIds?: string[]; // List of occasion ids for this recipient
-  createdAt: Date | number;
-  updatedAt: Date | number;
+  createdAt: number;
+  updatedAt: number;
 }
 
 // Address type - keep for future use
@@ -75,6 +76,7 @@ export interface Address {
 export interface Occasion {
   id: string;
   recipientId: string;
+  userId: string; // Required - Owner's user ID (for security)
   name: string; // e.g., 'Birthday', 'Anniversary', 'Graduation', etc.
   date: string; // Format: 'YYYY-MM-DD' - when the occasion actually happens
   deliveryDate?: string; // Format: 'YYYY-MM-DD' - when to deliver the gift (usually 1 week before)
@@ -84,8 +86,8 @@ export interface Occasion {
   giftWrap?: boolean; // Whether to gift wrap
   personalizedNote?: boolean; // Whether to include a personalized note
   noteText?: string; // Custom note text
-  createdAt: Date | number;
-  updatedAt: Date | number;
+  createdAt: number;
+  updatedAt: number;
 }
 
 // Gift types - updated to use occasionId
@@ -98,14 +100,15 @@ export interface Gift {
   price: number;
   category: string;
   occasionId: string; // New: link to Occasion entity
-  date: Date;
+  date: number; // Required - Timestamp when gift is for
   status: 'planned' | 'ordered' | 'shipped' | 'delivered' | 'given' | 'archived' | 'idea' | 'purchased';
   imageUrl?: string;
+  affiliateLink?: string;
   notes?: string;
-  createdAt: Date | number;
-  updatedAt: Date | number;
   autoSend?: boolean; // For test compatibility
   recurring?: boolean; // Deliver this gift every year
+  createdAt: number;
+  updatedAt: number;
 }
 
 // Gift suggestion/recommendation types
