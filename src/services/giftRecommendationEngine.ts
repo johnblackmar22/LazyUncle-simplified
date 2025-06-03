@@ -110,32 +110,31 @@ export async function getGiftRecommendationsFromAI({
 
     console.log(`Requesting AI recommendations for ${recipient.name} (${occasion}, $${budget} budget)`);
     
-    // Call the enhanced Netlify function
-    const response = await fetch('/.netlify/functions/gift-recommendations', {
+    // Temporarily use debug function to test deployment
+    const response = await fetch('/.netlify/functions/gift-recommendations-debug', {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
       },
-      body: JSON.stringify(requestData)
+      body: JSON.stringify(requestData),
     });
     
     if (!response.ok) {
-      let errorMessage = 'Failed to fetch gift recommendations';
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.error || errorMessage;
-      } catch {
-        errorMessage = `${response.status} ${response.statusText}`;
-      }
-      throw new Error(errorMessage);
+      const errorText = await response.text();
+      console.error('API Error Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      });
+      throw new Error(`Failed to fetch gift recommendations`);
     }
     
     const data: AIRecommendationResponse = await response.json();
     
     // Validate response structure
     if (!data.suggestions || !Array.isArray(data.suggestions)) {
-      throw new Error('Invalid response format from AI service');
+      console.error('Invalid API response structure:', data);
+      throw new Error('Invalid response format from API');
     }
     
     // Additional validation and enhancement

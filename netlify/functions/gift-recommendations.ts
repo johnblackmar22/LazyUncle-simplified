@@ -1,60 +1,22 @@
 // Enhanced AI Gift Recommendation Function
 // To use this function locally, run:
-// npm install @netlify/functions openai zod
+// npm install @netlify/functions openai
 
 import { Handler } from '@netlify/functions';
 import OpenAI from 'openai';
-import { z } from 'zod';
 
 const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_PROD
 });
 
-// Validation schemas
-const RecipientSchema = z.object({
-  name: z.string(),
-  age: z.number().optional(),
-  relationship: z.string(),
-  interests: z.array(z.string()),
-  description: z.string().optional(),
-  gender: z.string().optional(),
-});
-
-const RequestSchema = z.object({
-  recipient: RecipientSchema,
-  budget: z.number().min(10).max(1000),
-  occasion: z.string().optional().default('birthday'),
-  pastGifts: z.array(z.object({
-    name: z.string(),
-    category: z.string(),
-    price: z.number().optional(),
-  })).optional().default([]),
-  preferences: z.object({
-    giftWrap: z.boolean().optional().default(true),
-    personalNote: z.boolean().optional().default(true),
-    deliverySpeed: z.enum(['standard', 'express', 'priority']).optional().default('standard'),
-  }).optional().default({}),
-});
-
-const GiftSuggestionSchema = z.object({
-  name: z.string(),
-  description: z.string(),
-  category: z.string(),
-  price: z.number(),
-  reasoning: z.string(),
-  purchaseUrl: z.string().optional(),
-  confidence: z.number().min(0).max(1),
-  tags: z.array(z.string()).optional(),
-});
-
 // Enhanced prompt engineering
-function createPersonalizedPrompt(data: z.infer<typeof RequestSchema>): string {
+function createPersonalizedPrompt(data: any): string {
   const { recipient, budget, occasion, pastGifts, preferences } = data;
   
   const ageContext = recipient.age ? `${recipient.age} years old` : 'adult';
   const genderContext = recipient.gender ? `who identifies as ${recipient.gender}` : '';
-  const pastGiftContext = pastGifts.length > 0 
-    ? `Past gifts: ${pastGifts.map(g => `${g.name} (${g.category})`).join(', ')}`
+  const pastGiftContext = pastGifts && pastGifts.length > 0 
+    ? `Past gifts: ${pastGifts.map((g: any) => `${g.name} (${g.category})`).join(', ')}`
     : 'No past gift history available';
   
   return `You are an expert gift consultant with 20+ years of experience. Your task is to recommend personalized gifts that will genuinely delight the recipient.
@@ -63,13 +25,13 @@ RECIPIENT PROFILE:
 • Name: ${recipient.name}
 • Relationship: ${recipient.relationship}
 • Age: ${ageContext} ${genderContext}
-• Interests: ${recipient.interests.join(', ')}
+• Interests: ${(recipient.interests || []).join(', ')}
 • Personality: ${recipient.description || 'No additional details provided'}
 
 OCCASION DETAILS:
 • Event: ${occasion}
 • Budget: $${budget} (strict limit)
-• Gift preferences: ${preferences.giftWrap ? 'Gift wrapping preferred' : 'No gift wrapping needed'}
+• Gift preferences: ${preferences?.giftWrap ? 'Gift wrapping preferred' : 'No gift wrapping needed'}
 
 GIFT HISTORY:
 ${pastGiftContext}
@@ -121,13 +83,28 @@ const handler: Handler = async (event, context) => {
   }
 
   try {
+    console.log('=== GIFT RECOMMENDATIONS FUNCTION START ===');
+    
     // Validate request body
     if (!event.body) {
       throw new Error('Request body is required');
     }
 
-    const rawData = JSON.parse(event.body);
-    const data = RequestSchema.parse(rawData);
+    const data = JSON.parse(event.body);
+    console.log('Request data received:', {
+      recipientName: data.recipient?.name,
+      budget: data.budget,
+      occasion: data.occasion
+    });
+
+    // Basic validation
+    if (!data.recipient?.name) {
+      throw new Error('Recipient name is required');
+    }
+    
+    if (!data.budget || data.budget <= 0) {
+      throw new Error('Valid budget is required');
+    }
 
     // Check OpenAI API key
     if (!process.env.OPENAI_API_KEY && !process.env.OPENAI_API_KEY_PROD) {
@@ -140,8 +117,9 @@ const handler: Handler = async (event, context) => {
     const prompt = createPersonalizedPrompt(data);
 
     // Call OpenAI with enhanced parameters
+    console.log('Calling OpenAI API...');
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4', // Upgrade to GPT-4 for better reasoning
+      model: 'gpt-4',
       messages: [
         { 
           role: 'system', 
@@ -150,13 +128,14 @@ const handler: Handler = async (event, context) => {
         { role: 'user', content: prompt },
       ],
       max_tokens: 1500,
-      temperature: 0.7, // Balanced creativity and consistency
+      temperature: 0.7,
       top_p: 0.9,
-      frequency_penalty: 0.3, // Avoid repetitive suggestions
+      frequency_penalty: 0.3,
       presence_penalty: 0.1,
     });
 
     const responseText = completion.choices[0]?.message?.content?.trim();
+    console.log('OpenAI response received, length:', responseText?.length);
     
     if (!responseText) {
       throw new Error('No response from OpenAI');
@@ -171,20 +150,21 @@ const handler: Handler = async (event, context) => {
       
       giftSuggestions = JSON.parse(jsonString);
       
-      // Validate each suggestion
+      // Basic validation
       if (!Array.isArray(giftSuggestions)) {
         throw new Error('Response is not an array');
       }
 
+      // Ensure price is within budget and add required fields
       giftSuggestions = giftSuggestions.map((suggestion: any) => {
-        const validated = GiftSuggestionSchema.parse(suggestion);
-        
-        // Ensure price is within budget
-        if (validated.price > data.budget) {
-          validated.price = Math.floor(data.budget * 0.9);
+        if (suggestion.price > data.budget) {
+          suggestion.price = Math.floor(data.budget * 0.9);
         }
         
-        return validated;
+        // Add missing fields if needed
+        suggestion.id = suggestion.id || `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        return suggestion;
       });
 
       // Ensure we have exactly 5 suggestions
@@ -229,12 +209,12 @@ const handler: Handler = async (event, context) => {
     // Return structured error response
     const errorResponse = {
       error: error instanceof Error ? error.message : 'Unknown error occurred',
-      type: error instanceof z.ZodError ? 'validation_error' : 'system_error',
+      type: 'system_error',
       timestamp: new Date().toISOString(),
     };
 
     return {
-      statusCode: error instanceof z.ZodError ? 400 : 500,
+      statusCode: 500,
       headers,
       body: JSON.stringify(errorResponse),
     };
@@ -242,12 +222,13 @@ const handler: Handler = async (event, context) => {
 };
 
 // Fallback suggestions when AI fails
-function createFallbackSuggestions(data: z.infer<typeof RequestSchema>) {
+function createFallbackSuggestions(data: any) {
   const budget = data.budget;
-  const interests = data.recipient.interests;
+  const interests = data.recipient.interests || [];
   
   return [
     {
+      id: `fallback-${Date.now()}-1`,
       name: 'Premium Gift Card',
       description: `A ${budget <= 50 ? '$25' : '$50'} gift card to a popular retailer, giving them the freedom to choose exactly what they want.`,
       category: 'Gift Cards',
@@ -257,6 +238,7 @@ function createFallbackSuggestions(data: z.infer<typeof RequestSchema>) {
       tags: ['safe', 'versatile', 'freedom-of-choice'],
     },
     {
+      id: `fallback-${Date.now()}-2`,
       name: interests.includes('Books') ? 'Bestseller Book Collection' : 'Gourmet Snack Box',
       description: interests.includes('Books') 
         ? 'A curated set of current bestsellers in their favorite genres.'
@@ -270,6 +252,7 @@ function createFallbackSuggestions(data: z.infer<typeof RequestSchema>) {
       tags: interests.includes('Books') ? ['educational', 'entertainment'] : ['delicious', 'variety'],
     },
     {
+      id: `fallback-${Date.now()}-3`,
       name: 'Personalized Photo Frame',
       description: 'A high-quality frame that can be customized with their name or a special message.',
       category: 'Home Decor',
@@ -279,6 +262,7 @@ function createFallbackSuggestions(data: z.infer<typeof RequestSchema>) {
       tags: ['personalized', 'memorable', 'home-decor'],
     },
     {
+      id: `fallback-${Date.now()}-4`,
       name: 'Luxury Candle Set',
       description: 'A set of beautifully scented candles in elegant packaging.',
       category: 'Home & Wellness',
@@ -288,6 +272,7 @@ function createFallbackSuggestions(data: z.infer<typeof RequestSchema>) {
       tags: ['relaxing', 'home-ambiance', 'luxury'],
     },
     {
+      id: `fallback-${Date.now()}-5`,
       name: 'Cozy Throw Blanket',
       description: 'A soft, warm throw blanket perfect for relaxing at home.',
       category: 'Home Comfort',
