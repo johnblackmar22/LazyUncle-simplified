@@ -145,7 +145,7 @@ const handler: Handler = async (event, context) => {
         // Call OpenAI with enhanced parameters
         console.log('Calling OpenAI API...');
         const completion = await openaiClient.chat.completions.create({
-          model: 'gpt-3.5-turbo',
+          model: 'gpt-4o-mini',
           messages: [
             { 
               role: 'system', 
@@ -220,7 +220,7 @@ const handler: Handler = async (event, context) => {
     const response = {
       suggestions: giftSuggestions,
       metadata: {
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4o-mini',
         generated_at: new Date().toISOString(),
         recipient_name: data.recipient.name,
         occasion: data.occasion,
