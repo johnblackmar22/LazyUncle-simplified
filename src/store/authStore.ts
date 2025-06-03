@@ -34,8 +34,9 @@ function convertFirebaseUser(firebaseUser: FirebaseUser): User {
     email: firebaseUser.email || '',
     displayName: firebaseUser.displayName || '',
     photoURL: firebaseUser.photoURL || '',
-    createdAt: Date.now(),
     planId: 'free',
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
   };
 }
 
@@ -46,8 +47,9 @@ function createDemoUser(): User {
     email: 'demo@example.com',
     displayName: 'Demo User',
     photoURL: '',
-    createdAt: Date.now(),
     planId: 'free',
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
   };
 }
 
@@ -150,6 +152,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         email: user.email,
         displayName: user.displayName,
         createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
         planId: user.planId
       });
     } catch (error) {
@@ -296,8 +299,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           email: firebaseUser.email || '',
           displayName: firebaseUser.displayName || '',
           photoURL: firebaseUser.photoURL || '',
-          createdAt: Date.now(),
           planId: 'free',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
         };
         
         set({

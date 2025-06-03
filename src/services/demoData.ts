@@ -103,18 +103,8 @@ export const demoRecipients = [
       },
       categories: ["Jewelry", "Experiences", "Books"]
     },
-    specialDates: [
-      {
-        id: uuidv4(),
-        name: "First Date Anniversary",
-        date: addDays(today, 20), // 20 days from now
-        recurring: true,
-        type: "anniversary",
-        description: "Our first date"
-      }
-    ],
-    createdAt: subDays(today, 365),
-    updatedAt: yesterday
+    createdAt: subDays(today, 365).getTime(),
+    updatedAt: yesterday.getTime()
   },
   {
     id: liamId,
@@ -137,18 +127,8 @@ export const demoRecipients = [
       },
       categories: ["Toys", "Books", "Electronics"]
     },
-    specialDates: [
-      {
-        id: uuidv4(),
-        name: "Soccer Tournament",
-        date: addDays(today, 14), // 14 days from now
-        recurring: false,
-        type: "other",
-        description: "Annual school tournament"
-      }
-    ],
-    createdAt: subDays(today, 300),
-    updatedAt: yesterday
+    createdAt: subDays(today, 300).getTime(),
+    updatedAt: yesterday.getTime()
   },
   {
     id: robertId,
@@ -172,18 +152,8 @@ export const demoRecipients = [
       },
       categories: ["Gadgets", "Coffee Accessories", "Photography Equipment"]
     },
-    specialDates: [
-      {
-        id: uuidv4(),
-        name: "Promotion Celebration",
-        date: addDays(today, 3), // 3 days from now
-        recurring: false,
-        type: "other",
-        description: "Celebrating promotion at work"
-      }
-    ],
-    createdAt: subDays(today, 180),
-    updatedAt: yesterday
+    createdAt: subDays(today, 180).getTime(),
+    updatedAt: yesterday.getTime()
   },
   {
     id: sophiaId,
@@ -207,18 +177,8 @@ export const demoRecipients = [
       },
       categories: ["Home Decor", "Kitchen Gadgets", "Art Supplies"]
     },
-    specialDates: [
-      {
-        id: uuidv4(),
-        name: "Retirement Anniversary",
-        date: addDays(today, 25), // 25 days from now
-        recurring: true,
-        type: "anniversary",
-        description: "Celebrates 5 years of retirement"
-      }
-    ],
-    createdAt: subDays(today, 400),
-    updatedAt: yesterday
+    createdAt: subDays(today, 400).getTime(),
+    updatedAt: yesterday.getTime()
   }
 ];
 
@@ -232,13 +192,13 @@ export const demoGifts = [
     description: "14k white gold with small diamond pendant",
     price: 249.99,
     category: "Jewelry",
-    occasion: "Anniversary",
-    date: addDays(today, 15), // For upcoming anniversary
+    occasionId: `demo-occasion-${Date.now()}-2`, // Reference to Anniversary occasion
+    date: addDays(today, 15).getTime(), // For upcoming anniversary
     status: "planned", // Valid status
     imageUrl: "https://images.unsplash.com/photo-1599643477877-530eb83abc8e?ixlib=rb-4.0.3",
     notes: "She mentioned liking this style at the mall last month",
-    createdAt: yesterday,
-    updatedAt: yesterday
+    createdAt: yesterday.getTime(),
+    updatedAt: yesterday.getTime()
   },
   {
     id: uuidv4(),
@@ -248,13 +208,13 @@ export const demoGifts = [
     description: "Advanced building set with 1,200 pieces",
     price: 89.99,
     category: "Toys",
-    occasion: "Birthday",
-    date: addDays(today, 7), // For upcoming birthday
+    occasionId: `demo-occasion-${Date.now()}-3`, // Reference to Birthday occasion
+    date: addDays(today, 7).getTime(), // For upcoming birthday
     status: "ordered", // Valid status
     imageUrl: "https://images.unsplash.com/photo-1619158404527-a21de95ade6e?ixlib=rb-4.0.3",
     notes: "Already ordered from Amazon, should arrive in 2 days",
-    createdAt: subDays(today, 10),
-    updatedAt: subDays(today, 2)
+    createdAt: subDays(today, 10).getTime(),
+    updatedAt: subDays(today, 2).getTime()
   },
   {
     id: uuidv4(),
@@ -264,13 +224,13 @@ export const demoGifts = [
     description: "3-month subscription of premium single-origin coffees",
     price: 75.99,
     category: "Coffee Accessories",
-    occasion: "Promotion",
-    date: addDays(today, 3), // For promotion celebration
+    occasionId: `demo-occasion-${Date.now()}-4`, // Reference to Promotion occasion
+    date: addDays(today, 3).getTime(), // For promotion celebration
     status: "ordered", // Valid status
     imageUrl: "https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?ixlib=rb-4.0.3",
     notes: "Include a personal note about the promotion",
-    createdAt: subDays(today, 5),
-    updatedAt: subDays(today, 1)
+    createdAt: subDays(today, 5).getTime(),
+    updatedAt: subDays(today, 1).getTime()
   },
   {
     id: uuidv4(),
@@ -280,13 +240,13 @@ export const demoGifts = [
     description: "Self-watering indoor garden with LED grow lights",
     price: 64.99,
     category: "Gardening",
-    occasion: "Birthday",
-    date: addDays(today, 3), // Very soon
+    occasionId: `demo-occasion-${Date.now()}-6`, // Reference to Birthday occasion
+    date: addDays(today, 3).getTime(), // Very soon
     status: "ordered", // Valid status
     imageUrl: "https://images.unsplash.com/photo-1585502892072-450ab2f2e2f7?ixlib=rb-4.0.3",
     notes: "Arrives tomorrow, remember to hide it!",
-    createdAt: subDays(today, 7),
-    updatedAt: yesterday
+    createdAt: subDays(today, 7).getTime(),
+    updatedAt: yesterday.getTime()
   },
   {
     id: uuidv4(),
@@ -296,12 +256,12 @@ export const demoGifts = [
     description: "Two-night stay with full spa package",
     price: 399.99,
     category: "Experiences",
-    occasion: "Birthday",
-    date: addDays(today, 10), // For birthday
+    occasionId: `demo-occasion-${Date.now()}-1`, // Reference to Birthday occasion
+    date: addDays(today, 10).getTime(), // For birthday
     status: "planned", // Valid status
     notes: "Need to book at least 7 days in advance",
-    createdAt: subDays(today, 15),
-    updatedAt: subDays(today, 15)
+    createdAt: subDays(today, 15).getTime(),
+    updatedAt: subDays(today, 15).getTime()
   },
   {
     id: uuidv4(),
@@ -311,12 +271,12 @@ export const demoGifts = [
     description: "Yearly membership to the science museum with special exhibits access",
     price: 129.99,
     category: "Experiences",
-    occasion: "Soccer Tournament",
-    date: addDays(today, 14), // For upcoming tournament
+    occasionId: `demo-occasion-soccer-tournament`, // Reference to custom occasion
+    date: addDays(today, 14).getTime(), // For upcoming tournament
     status: "planned", // Valid status
     notes: "He's been asking for this for months",
-    createdAt: subDays(today, 20),
-    updatedAt: subDays(today, 5)
+    createdAt: subDays(today, 20).getTime(),
+    updatedAt: subDays(today, 5).getTime()
   },
   {
     id: uuidv4(),
@@ -326,13 +286,13 @@ export const demoGifts = [
     description: "Premium over-ear headphones with 30-hour battery life",
     price: 249.99,
     category: "Electronics",
-    occasion: "Birthday",
-    date: addDays(today, 22), // For birthday
+    occasionId: `demo-occasion-${Date.now()}-5`, // Reference to Birthday occasion
+    date: addDays(today, 22).getTime(), // For birthday
     status: "planned", // Valid status
     imageUrl: "https://images.unsplash.com/photo-1546435770-a3e426bf472b?ixlib=rb-4.0.3",
     notes: "Black color, the latest model",
-    createdAt: subDays(today, 10),
-    updatedAt: yesterday
+    createdAt: subDays(today, 10).getTime(),
+    updatedAt: yesterday.getTime()
   }
 ];
 
@@ -342,6 +302,7 @@ export const demoOccasions = {
     {
       id: `demo-occasion-${Date.now()}-1`,
       recipientId: emmaId,
+      userId: "demo-user",
       name: "Birthday",
       date: formatDate(addDays(today, 10), 'yyyy-MM-dd'),
       type: "birthday",
@@ -356,6 +317,7 @@ export const demoOccasions = {
     {
       id: `demo-occasion-${Date.now()}-2`,
       recipientId: emmaId,
+      userId: "demo-user",
       name: "Anniversary",
       date: formatDate(addDays(today, 15), 'yyyy-MM-dd'),
       type: "anniversary",
@@ -372,6 +334,7 @@ export const demoOccasions = {
     {
       id: `demo-occasion-${Date.now()}-3`,
       recipientId: liamId,
+      userId: "demo-user",
       name: "Birthday",
       date: formatDate(addDays(today, 7), 'yyyy-MM-dd'),
       type: "birthday",
@@ -382,15 +345,31 @@ export const demoOccasions = {
       noteText: "",
       createdAt: Date.now(),
       updatedAt: Date.now()
+    },
+    {
+      id: "demo-occasion-soccer-tournament",
+      recipientId: liamId,
+      userId: "demo-user",
+      name: "Soccer Tournament",
+      date: formatDate(addDays(today, 14), 'yyyy-MM-dd'),
+      type: "custom",
+      notes: "End of season soccer tournament celebration",
+      budget: 130,
+      giftWrap: false,
+      personalizedNote: true,
+      noteText: "Great job this season!",
+      createdAt: Date.now(),
+      updatedAt: Date.now()
     }
   ],
   [robertId]: [
     {
       id: `demo-occasion-${Date.now()}-4`,
       recipientId: robertId,
+      userId: "demo-user",
       name: "Promotion Celebration",
       date: formatDate(addDays(today, 3), 'yyyy-MM-dd'),
-      type: "other",
+      type: "custom",
       notes: "Celebrating work promotion",
       budget: 80,
       giftWrap: false,
@@ -402,6 +381,7 @@ export const demoOccasions = {
     {
       id: `demo-occasion-${Date.now()}-5`,
       recipientId: robertId,
+      userId: "demo-user",
       name: "Birthday",
       date: formatDate(addDays(today, 22), 'yyyy-MM-dd'),
       type: "birthday",
@@ -418,6 +398,7 @@ export const demoOccasions = {
     {
       id: `demo-occasion-${Date.now()}-6`,
       recipientId: sophiaId,
+      userId: "demo-user",
       name: "Birthday",
       date: formatDate(addDays(today, 3), 'yyyy-MM-dd'),
       type: "birthday",

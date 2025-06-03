@@ -132,8 +132,8 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
             interests: data.interests || [],
             deliveryAddress: data.deliveryAddress,
             autoSendPreferences: ensureAutoSendPreferences(data.autoSendPreferences),
-            createdAt: data.createdAt?.toDate?.() || data.createdAt,
-            updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
+            createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().getTime() : data.createdAt,
+            updatedAt: data.updatedAt?.toDate?.() ? data.updatedAt.toDate().getTime() : data.updatedAt,
           });
         });
         
