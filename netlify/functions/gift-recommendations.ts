@@ -108,6 +108,9 @@ const handler: Handler = async (event, context) => {
   try {
     console.log('=== GIFT RECOMMENDATIONS FUNCTION START ===');
     
+    // Add a small delay to prevent rapid-fire requests
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
     // Validate request body
     if (!event.body) {
       throw new Error('Request body is required');
@@ -211,8 +214,15 @@ const handler: Handler = async (event, context) => {
           throw parseError;
         }
         
-      } catch (openaiError) {
+      } catch (openaiError: any) {
         console.error('OpenAI API error:', openaiError);
+        
+        // Handle specific error types
+        if (openaiError?.status === 429) {
+          console.log('Rate limit hit, using fallback recommendations');
+          throw new Error('OpenAI rate limit - using fallback');
+        }
+        
         throw openaiError;
       }
       
