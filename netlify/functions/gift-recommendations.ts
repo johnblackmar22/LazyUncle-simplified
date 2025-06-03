@@ -42,14 +42,22 @@ function createPersonalizedPrompt(data: any): string {
     ? `Past gifts: ${pastGifts.map((g: any) => `${g.name} (${g.category})`).join(', ')}`
     : 'No past gift history available';
   
+  const relationshipContext = recipient.relationship ? 
+    `My relationship: I am giving this gift as their ${recipient.relationship.toLowerCase()}.` :
+    'Relationship context not specified.';
+  
+  const personalityContext = recipient.description ? 
+    `Additional context: ${recipient.description}` :
+    'No additional personality details provided.';
+  
   return `You are an expert gift consultant with 20+ years of experience. Your task is to recommend personalized gifts that will genuinely delight the recipient.
 
 RECIPIENT PROFILE:
 • Name: ${recipient.name}
-• Relationship: ${recipient.relationship}
 • Age: ${ageContext} ${genderContext}
+• ${relationshipContext}
 • Interests: ${(recipient.interests || []).join(', ')}
-• Personality: ${recipient.description || 'No additional details provided'}
+• ${personalityContext}
 
 OCCASION DETAILS:
 • Event: ${occasion}
@@ -59,14 +67,21 @@ OCCASION DETAILS:
 GIFT HISTORY:
 ${pastGiftContext}
 
+IMPORTANT CONTEXT:
+- Consider the relationship (${recipient.relationship || 'unspecified'}) when selecting appropriate gifts
+- Focus on their specific interests: ${(recipient.interests || []).join(', ')}
+- Remember this is for ${occasion} and they are ${ageContext}
+${recipient.description ? `- Personal note: ${recipient.description}` : ''}
+
 INSTRUCTIONS:
-1. Suggest 5 thoughtful, unique gifts that match the recipient's personality
+1. Suggest 5 thoughtful, unique gifts that match the recipient's personality and interests
 2. Avoid duplicating past gifts or similar items
 3. Focus on emotional impact and personal connection
 4. Include specific product names when possible (not generic categories)
 5. Ensure all suggestions are under $${budget}
 6. Provide clear reasoning for each recommendation
-7. Consider the relationship context (${recipient.relationship}) for appropriateness
+7. Consider the relationship context (${recipient.relationship || 'friend'}) for appropriateness
+8. Pay special attention to their interests: ${(recipient.interests || []).join(', ')}
 
 RESPONSE FORMAT:
 Return a JSON array of exactly 5 gift objects with this structure:
@@ -80,7 +95,7 @@ Return a JSON array of exactly 5 gift objects with this structure:
   "tags": ["relevant", "tags"]
 }
 
-Focus on gifts that show thoughtfulness and understanding of who they are as a person.`;
+Focus on gifts that show thoughtfulness and understanding of who they are as a person, especially considering their interests in ${(recipient.interests || []).slice(0, 3).join(', ')}.`;
 }
 
 const handler: Handler = async (event, context) => {
@@ -124,7 +139,9 @@ const handler: Handler = async (event, context) => {
       interests: data.recipient?.interests,
       relationship: data.recipient?.relationship,
       age: data.recipient?.age,
-      description: data.recipient?.description
+      description: data.recipient?.description,
+      gender: data.recipient?.gender,
+      pastGifts: data.pastGifts?.length || 0
     });
 
     // Basic validation

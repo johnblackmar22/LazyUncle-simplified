@@ -108,6 +108,18 @@ export async function getGiftRecommendationsFromAI({
       },
     };
 
+    // Debug logging to see what data we have
+    console.log('Full recipient object:', {
+      name: recipient.name,
+      birthdate: recipient.birthdate,
+      relationship: recipient.relationship,
+      interests: recipient.interests,
+      description: recipient.description,
+      gender: recipient.gender,
+      deliveryAddress: recipient.deliveryAddress,
+      anniversary: recipient.anniversary
+    });
+
     console.log(`Requesting AI recommendations for ${recipient.name} (${occasion}, $${budget} budget)`);
     
     // Call the enhanced Netlify function (switched back from debug)
