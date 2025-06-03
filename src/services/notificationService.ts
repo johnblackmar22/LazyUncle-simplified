@@ -59,16 +59,16 @@ export const sendTextNotification = async (
  * Check for upcoming gifts and send reminders based on user settings
  */
 export const checkAndSendReminders = async (settings: UserSettings): Promise<void> => {
-  if (!settings.notificationsEnabled) {
-    console.log('Notifications are disabled.');
+  if (!settings.emailNotifications && !settings.textNotifications) {
+    console.log('All notifications are disabled.');
     return;
   }
 
   try {
     // In a real app, you would fetch the user's upcoming gifts from a database
     // For this demo, we'll simulate it
-    const upcomingGifts = JSON.parse(localStorage.getItem('gifts') || '[]');
-    const recipients = JSON.parse(localStorage.getItem('recipients') || '[]');
+    const upcomingGifts = JSON.parse(localStorage.getItem('lazyuncle_gifts') || '[]');
+    const recipients = JSON.parse(localStorage.getItem('lazyuncle_recipients') || '[]');
     
     if (!upcomingGifts.length) {
       console.log('No upcoming gifts to check.');

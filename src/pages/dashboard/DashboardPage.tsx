@@ -80,7 +80,7 @@ const DashboardPage: React.FC = () => {
   useEffect(() => {
     const loadData = async () => {
       if (demoMode) {
-        const recipients = JSON.parse(localStorage.getItem('recipients') || '[]');
+        const recipients = JSON.parse(localStorage.getItem('lazyuncle_recipients') || '[]');
         if (!recipients.length) {
           initializeDemoData();
         }

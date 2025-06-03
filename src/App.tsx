@@ -39,7 +39,7 @@ function App() {
       return;
     }
 
-    console.log('App.tsx - Setting up Firebase auth listener for production mode');
+    console.log('App.tsx - Setting up ongoing Firebase auth listener for state changes');
     
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       const store = useAuthStore.getState();
@@ -53,22 +53,29 @@ function App() {
         return;
       }
       
+      // Only update if the current state doesn't already have this user
+      // This prevents overriding state during initialization
       if (firebaseUser) {
-        useAuthStore.setState({
-          user: {
-            id: firebaseUser.uid,
-            email: firebaseUser.email || '',
-            displayName: firebaseUser.displayName || '',
-            photoURL: firebaseUser.photoURL || '',
-            createdAt: Date.now(),
-            planId: 'free',
-          },
-          initialized: true,
-          demoMode: false
-        });
-        console.log('App.tsx - Firebase user set in store');
-      } else {
-        // Only clear user if not in demo mode
+        const newUser = {
+          id: firebaseUser.uid,
+          email: firebaseUser.email || '',
+          displayName: firebaseUser.displayName || '',
+          photoURL: firebaseUser.photoURL || '',
+          createdAt: Date.now(),
+          planId: 'free',
+        };
+        
+        // Only update if it's a different user or no user currently
+        if (!store.user || store.user.id !== newUser.id) {
+          useAuthStore.setState({
+            user: newUser,
+            initialized: true,
+            demoMode: false
+          });
+          console.log('App.tsx - Firebase user updated in store');
+        }
+      } else if (store.user) {
+        // Only clear user if we currently have one
         useAuthStore.setState({
           user: null,
           initialized: true,

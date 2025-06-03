@@ -336,6 +336,102 @@ export const demoGifts = [
   }
 ];
 
+// Demo Occasions for Recipients
+export const demoOccasions = {
+  [emmaId]: [
+    {
+      id: `demo-occasion-${Date.now()}-1`,
+      recipientId: emmaId,
+      name: "Birthday",
+      date: formatDate(addDays(today, 10), 'yyyy-MM-dd'),
+      type: "birthday",
+      notes: "Annual birthday celebration",
+      budget: 100,
+      giftWrap: true,
+      personalizedNote: true,
+      noteText: "Happy Birthday Emma! Hope you have a wonderful day!",
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    },
+    {
+      id: `demo-occasion-${Date.now()}-2`,
+      recipientId: emmaId,
+      name: "Anniversary",
+      date: formatDate(addDays(today, 15), 'yyyy-MM-dd'),
+      type: "anniversary",
+      notes: "Wedding anniversary",
+      budget: 200,
+      giftWrap: true,
+      personalizedNote: true,
+      noteText: "Happy Anniversary! Love you!",
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    }
+  ],
+  [liamId]: [
+    {
+      id: `demo-occasion-${Date.now()}-3`,
+      recipientId: liamId,
+      name: "Birthday",
+      date: formatDate(addDays(today, 7), 'yyyy-MM-dd'),
+      type: "birthday",
+      notes: "Son's birthday",
+      budget: 75,
+      giftWrap: true,
+      personalizedNote: false,
+      noteText: "",
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    }
+  ],
+  [robertId]: [
+    {
+      id: `demo-occasion-${Date.now()}-4`,
+      recipientId: robertId,
+      name: "Promotion Celebration",
+      date: formatDate(addDays(today, 3), 'yyyy-MM-dd'),
+      type: "other",
+      notes: "Celebrating work promotion",
+      budget: 80,
+      giftWrap: false,
+      personalizedNote: true,
+      noteText: "Congrats on the promotion!",
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    },
+    {
+      id: `demo-occasion-${Date.now()}-5`,
+      recipientId: robertId,
+      name: "Birthday",
+      date: formatDate(addDays(today, 22), 'yyyy-MM-dd'),
+      type: "birthday",
+      notes: "Friend's birthday",
+      budget: 120,
+      giftWrap: true,
+      personalizedNote: true,
+      noteText: "Happy Birthday Robert!",
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    }
+  ],
+  [sophiaId]: [
+    {
+      id: `demo-occasion-${Date.now()}-6`,
+      recipientId: sophiaId,
+      name: "Birthday",
+      date: formatDate(addDays(today, 3), 'yyyy-MM-dd'),
+      type: "birthday",
+      notes: "Mother's birthday - very important!",
+      budget: 150,
+      giftWrap: true,
+      personalizedNote: true,
+      noteText: "Happy Birthday Mom! Love you so much!",
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    }
+  ]
+};
+
 // Import Firebase environment modules
 import { getEnv as browserGetEnv } from './firebase.env';
 
@@ -394,6 +490,15 @@ export const initializeDemoData = () => {
       safeSetItem('lazyuncle_recipients', demoRecipients);
       console.log('Demo recipients created:', demoRecipients.length);
     }
+    
+    // Initialize occasions for each recipient
+    Object.entries(demoOccasions).forEach(([recipientId, occasions]) => {
+      const occasionKey = `lazyuncle_occasions_${recipientId}`;
+      if (!safeGetItem(occasionKey)) {
+        safeSetItem(occasionKey, occasions);
+        console.log(`Demo occasions created for recipient ${recipientId}:`, occasions.length);
+      }
+    });
     
     // Initialize gifts if they don't exist
     if (!hasGifts) {

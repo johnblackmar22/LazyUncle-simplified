@@ -2,53 +2,131 @@
 console.log('🔍 LazyUncle Debug Test Starting...');
 
 // Test 1: Check localStorage for demo mode
-console.log('\n=== Test 1: Demo Mode Check ===');
+console.log('=== DEMO MODE TEST ===');
 const demoMode = localStorage.getItem('lazyuncle_demoMode');
 const demoUser = localStorage.getItem('lazyuncle_demoUser');
-console.log('Demo mode flag:', demoMode);
-console.log('Demo user exists:', !!demoUser);
 
-if (demoUser) {
-  try {
-    const user = JSON.parse(demoUser);
-    console.log('Demo user:', user.email, user.displayName);
-  } catch (e) {
-    console.log('Error parsing demo user:', e);
-  }
+console.log('Demo mode flag:', demoMode);
+console.log('Demo user:', demoUser ? JSON.parse(demoUser) : 'None');
+
+if (demoMode === 'true' && demoUser) {
+  console.log('✅ Demo mode persistence working');
+} else {
+  console.log('❌ Demo mode persistence not working');
 }
 
 // Test 2: Check recipients data
-console.log('\n=== Test 2: Recipients Data ===');
+console.log('\n=== RECIPIENTS DATA TEST ===');
 const recipients = localStorage.getItem('lazyuncle_recipients');
-console.log('Recipients exist:', !!recipients);
 
 if (recipients) {
-  try {
-    const recipientData = JSON.parse(recipients);
-    console.log('Number of recipients:', recipientData.length);
-    recipientData.forEach((r, i) => {
-      console.log(`Recipient ${i + 1}:`, r.name, 'Address:', !!r.deliveryAddress);
-    });
-  } catch (e) {
-    console.log('Error parsing recipients:', e);
-  }
+  const recipientData = JSON.parse(recipients);
+  console.log('Found recipients:', recipientData.length);
+  recipientData.forEach(r => {
+    console.log(`- ${r.name} (${r.relationship})`);
+  });
+  console.log('✅ Recipients data found');
+} else {
+  console.log('❌ No recipients data found');
 }
 
-// Test 3: Check occasions data
-console.log('\n=== Test 3: Occasions Data ===');
+// Test 3: Check occasions data  
+console.log('\n=== OCCASIONS DATA TEST ===');
 const occasionKeys = Object.keys(localStorage).filter(key => key.startsWith('lazyuncle_occasions_'));
-console.log('Occasion keys found:', occasionKeys.length);
-occasionKeys.forEach(key => {
-  const occasions = localStorage.getItem(key);
-  if (occasions) {
-    try {
+
+if (occasionKeys.length > 0) {
+  console.log('Found occasion keys:', occasionKeys.length);
+  occasionKeys.forEach(key => {
+    const occasions = localStorage.getItem(key);
+    if (occasions) {
       const occasionData = JSON.parse(occasions);
-      console.log(`${key}:`, occasionData.length, 'occasions');
-    } catch (e) {
-      console.log(`Error parsing ${key}:`, e);
+      console.log(`- ${key}: ${occasionData.length} occasions`);
     }
+  });
+  console.log('✅ Occasions data found');
+} else {
+  console.log('❌ No occasions data found');
+}
+
+// Test 4: Firebase Auth Persistence Test
+console.log('\n=== FIREBASE AUTH PERSISTENCE TEST ===');
+console.log('This test checks if Firebase auth state would persist properly.');
+console.log('Run this in browser console after signing in and refreshing the page.');
+
+// Test function to verify auth persistence
+window.testAuthPersistence = function() {
+  console.log('Testing auth persistence...');
+  
+  // Check if Firebase is loaded
+  if (typeof firebase === 'undefined') {
+    console.log('❌ Firebase not loaded');
+    return;
   }
-});
+  
+  console.log('✅ Firebase loaded');
+  console.log('Current auth state:', firebase.auth().currentUser ? 'Logged in' : 'Logged out');
+  
+  // Set up auth state listener
+  firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+      console.log('✅ Auth persistence working - user:', user.email);
+    } else {
+      console.log('❌ Auth persistence not working - no user found');
+    }
+  });
+};
+
+// Test 5: Test creating demo data
+console.log('\n=== DEMO DATA CREATION TEST ===');
+function createTestDemoData() {
+  localStorage.setItem('lazyuncle_demoMode', 'true');
+  localStorage.setItem('lazyuncle_demoUser', JSON.stringify(demoUser));
+  
+  // Create test recipient
+  const testRecipient = {
+    id: 'test-recipient-' + Date.now(),
+    name: 'Test Recipient',
+    relationship: 'Friend',
+    interests: ['Testing'],
+    createdAt: Date.now()
+  };
+  
+  const recipients = JSON.parse(localStorage.getItem('lazyuncle_recipients') || '[]');
+  recipients.push(testRecipient);
+  localStorage.setItem('lazyuncle_recipients', JSON.stringify(recipients));
+  
+  console.log('✅ Test recipient with address added to localStorage');
+  
+  // Create test occasion
+  const testOccasion = {
+    id: 'test-occasion-' + Date.now(),
+    recipientId: testRecipient.id,
+    name: 'Test Birthday',
+    date: new Date().toISOString().split('T')[0],
+    type: 'birthday',
+    notes: 'Test occasion',
+    budget: 50,
+    createdAt: Date.now()
+  };
+  
+  const occasionKey = `lazyuncle_occasions_${testRecipient.id}`;
+  localStorage.setItem(occasionKey, JSON.stringify([testOccasion]));
+  
+  console.log('✅ Test occasion added to localStorage');
+  console.log('Reload the page and check if data persists');
+}
+
+// Expose test function globally
+window.createTestDemoData = createTestDemoData;
+
+console.log('\n=== PERSISTENCE VERIFICATION ===');
+console.log('To test authentication persistence:');
+console.log('1. Sign in to the app');
+console.log('2. Add a recipient and occasion');
+console.log('3. Refresh the page or close/reopen browser');
+console.log('4. Check if you stay logged in and data is still there');
+console.log('5. Run window.testAuthPersistence() in console to test Firebase auth');
+console.log('6. Run window.createTestDemoData() to test demo data creation');
 
 // Test 4: Current URL and auth state
 console.log('\n=== Test 4: Page State ===');

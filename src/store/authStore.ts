@@ -4,6 +4,7 @@ import {
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   sendPasswordResetEmail,
+  onAuthStateChanged,
   type User as FirebaseUser
 } from 'firebase/auth';
 import { auth, db, DEMO_MODE } from '../services/firebase';
@@ -274,14 +275,60 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
     }
     
-    // For Firebase auth, mark as initialized and let onAuthStateChanged handle the rest
-    // Don't wait for async Firebase auth check - mark as initialized immediately
+    // For Firebase auth, we need to wait for the onAuthStateChanged to fire at least once
+    // This ensures we don't mark as initialized until we know the auth state
+    console.log('Setting up Firebase auth initialization...');
     set({ 
-      initialized: true, 
+      initialized: false,  // Don't mark as initialized yet
       demoMode: false,
-      loading: false,
+      loading: true,       // Show loading while waiting for auth state
       error: null
     });
-    console.log('✅ Auth initialization complete - Firebase mode (will wait for onAuthStateChanged)');
+    
+    // Set up a one-time listener to initialize auth state
+    const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
+      console.log('🔥 Firebase onAuthStateChanged fired during initialization:', !!firebaseUser);
+      
+      if (firebaseUser) {
+        const user = convertFirebaseUser(firebaseUser);
+        set({
+          user,
+          initialized: true,
+          demoMode: false,
+          loading: false,
+          error: null
+        });
+        console.log('✅ Firebase user restored successfully during initialization');
+      } else {
+        set({
+          user: null,
+          initialized: true,
+          demoMode: false,
+          loading: false,
+          error: null
+        });
+        console.log('✅ No Firebase user found during initialization - user needs to log in');
+      }
+      
+      // Unsubscribe after first auth state determination
+      unsubscribe();
+    });
+    
+    // Fallback timeout in case onAuthStateChanged never fires (shouldn't happen, but safety net)
+    setTimeout(() => {
+      const currentState = get();
+      if (!currentState.initialized) {
+        console.log('⚠️ Auth initialization timeout - marking as initialized without user');
+        set({
+          user: null,
+          initialized: true,
+          demoMode: false,
+          loading: false,
+          error: null
+        });
+      }
+    }, 5000); // 5 second timeout
+    
+    console.log('✅ Firebase auth initialization setup complete - waiting for onAuthStateChanged');
   }
 })); 
