@@ -110,8 +110,8 @@ export async function getGiftRecommendationsFromAI({
 
     console.log(`Requesting AI recommendations for ${recipient.name} (${occasion}, $${budget} budget)`);
     
-    // Temporarily use debug function to test deployment
-    const response = await fetch('/.netlify/functions/gift-recommendations-debug', {
+    // Call the enhanced Netlify function (switched back from debug)
+    const response = await fetch('/.netlify/functions/gift-recommendations', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
