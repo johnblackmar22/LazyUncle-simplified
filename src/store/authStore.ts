@@ -244,9 +244,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     
     // Check for demo mode first - this needs to be synchronous to prevent race conditions
     const isDemoMode = checkDemoMode();
-    console.log('Demo mode detected:', isDemoMode);
+    console.log('Demo mode detected from localStorage:', isDemoMode);
     
-    if (isDemoMode) {
+    // IMPORTANT: Also check if we're in fallback demo mode due to missing Firebase config
+    const isFirebaseFallback = import.meta.env.VITE_DEMO_MODE === 'false' && 
+      !import.meta.env.VITE_FIREBASE_API_KEY;
+    
+    if (isFirebaseFallback) {
+      console.log('🚨 Firebase mode requested but no config - forcing demo mode');
+      localStorage.setItem('lazyuncle_demoMode', 'true');
+    }
+    
+    const finalDemoMode = isDemoMode || isFirebaseFallback;
+    console.log('Final demo mode decision:', finalDemoMode);
+    
+    if (finalDemoMode) {
       const storedUser = getStoredDemoUser();
       console.log('Stored demo user found:', !!storedUser);
       if (storedUser) {
@@ -285,50 +297,42 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       error: null
     });
     
-    // Set up a one-time listener to initialize auth state
-    const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
-      console.log('🔥 Firebase onAuthStateChanged fired during initialization:', !!firebaseUser);
+    // Set up a one-time listener to handle the initial auth state
+    console.log('Waiting for initial Firebase auth state...');
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      console.log('✅ Initial Firebase auth state received:', firebaseUser ? 'User found' : 'No user');
       
       if (firebaseUser) {
-        const user = convertFirebaseUser(firebaseUser);
+        const user = {
+          id: firebaseUser.uid,
+          email: firebaseUser.email || '',
+          displayName: firebaseUser.displayName || '',
+          photoURL: firebaseUser.photoURL || '',
+          createdAt: Date.now(),
+          planId: 'free',
+        };
+        
         set({
           user,
-          initialized: true,
           demoMode: false,
+          initialized: true,
           loading: false,
           error: null
         });
-        console.log('✅ Firebase user restored successfully during initialization');
+        console.log('✅ Firebase user authenticated and initialized');
       } else {
         set({
           user: null,
-          initialized: true,
           demoMode: false,
+          initialized: true,
           loading: false,
           error: null
         });
-        console.log('✅ No Firebase user found during initialization - user needs to log in');
+        console.log('✅ No Firebase user - initialized as logged out');
       }
       
-      // Unsubscribe after first auth state determination
+      // Unsubscribe after first state received
       unsubscribe();
     });
-    
-    // Fallback timeout in case onAuthStateChanged never fires (shouldn't happen, but safety net)
-    setTimeout(() => {
-      const currentState = get();
-      if (!currentState.initialized) {
-        console.log('⚠️ Auth initialization timeout - marking as initialized without user');
-        set({
-          user: null,
-          initialized: true,
-          demoMode: false,
-          loading: false,
-          error: null
-        });
-      }
-    }, 5000); // 5 second timeout
-    
-    console.log('✅ Firebase auth initialization setup complete - waiting for onAuthStateChanged');
   }
 })); 

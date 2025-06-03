@@ -29,14 +29,23 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
   fetchOccasions: async (recipientId) => {
     const user = useAuthStore.getState().user;
     const demoMode = useAuthStore.getState().demoMode;
+    
+    // IMPORTANT: Also check if we should be in demo mode due to missing Firebase config
+    const isFirebaseFallback = import.meta.env.VITE_DEMO_MODE === 'false' && 
+      !import.meta.env.VITE_FIREBASE_API_KEY;
+    
+    const shouldUseDemoMode = demoMode || isFirebaseFallback;
+    
     console.log('=== FETCH OCCASIONS ===');
     console.log('Recipient ID:', recipientId);
-    console.log('Demo mode:', demoMode);
+    console.log('Demo mode (from store):', demoMode);
+    console.log('Firebase fallback:', isFirebaseFallback);
+    console.log('Final decision - use demo mode:', shouldUseDemoMode);
     console.log('User:', user);
     
     set({ loading: true, error: null });
     try {
-      if (demoMode) {
+      if (shouldUseDemoMode) {
         const storageKey = getOccasionsStorageKey(recipientId);
         console.log('Looking for occasions in localStorage with key:', storageKey);
         const saved = localStorage.getItem(storageKey);

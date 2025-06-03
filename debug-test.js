@@ -15,6 +15,35 @@ if (demoMode === 'true' && demoUser) {
   console.log('❌ Demo mode persistence not working');
 }
 
+// Test environment variables and mode detection
+console.log('\n=== ENVIRONMENT & MODE DETECTION TEST ===');
+// @ts-ignore
+const envDemoMode = import.meta.env.VITE_DEMO_MODE;
+// @ts-ignore
+const hasFirebaseKey = !!import.meta.env.VITE_FIREBASE_API_KEY;
+// @ts-ignore
+const hasFirebaseAuth = !!import.meta.env.VITE_FIREBASE_AUTH_DOMAIN;
+// @ts-ignore
+const hasFirebaseProject = !!import.meta.env.VITE_FIREBASE_PROJECT_ID;
+
+console.log('VITE_DEMO_MODE env var:', envDemoMode);
+console.log('Has Firebase API Key:', hasFirebaseKey);
+console.log('Has Firebase Auth Domain:', hasFirebaseAuth);
+console.log('Has Firebase Project ID:', hasFirebaseProject);
+
+const shouldFallbackToDemo = envDemoMode === 'false' && !hasFirebaseKey;
+console.log('Should fallback to demo mode:', shouldFallbackToDemo);
+
+if (shouldFallbackToDemo) {
+  console.log('🚨 DETECTED: Firebase mode requested but no config - will fallback to demo mode');
+} else if (envDemoMode === 'true') {
+  console.log('✅ DETECTED: Explicit demo mode enabled');
+} else if (hasFirebaseKey) {
+  console.log('✅ DETECTED: Firebase mode with valid config');
+} else {
+  console.log('🔧 DETECTED: Auto demo mode (no config found)');
+}
+
 // Test 2: Check recipients data
 console.log('\n=== RECIPIENTS DATA TEST ===');
 const recipients = localStorage.getItem('lazyuncle_recipients');

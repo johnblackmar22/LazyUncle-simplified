@@ -95,7 +95,10 @@ export const DEMO_MODE = (() => {
       console.error('- VITE_FIREBASE_AUTH_DOMAIN'); 
       console.error('- VITE_FIREBASE_PROJECT_ID');
       console.error('- VITE_FIREBASE_APP_ID');
-      throw new Error('Firebase configuration is required when VITE_DEMO_MODE=false');
+      console.warn('⚠️  FALLING BACK TO DEMO MODE due to missing Firebase config');
+      
+      // Instead of throwing an error, fall back to demo mode for safety
+      return true;
     }
     
     console.log('🔥 VITE_DEMO_MODE=false - Using FIREBASE MODE');
