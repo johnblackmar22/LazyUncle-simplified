@@ -30,71 +30,73 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
     const user = useAuthStore.getState().user;
     const demoMode = useAuthStore.getState().demoMode;
     
-    // IMPORTANT: Also check if we should be in demo mode due to missing Firebase config
-    const isFirebaseFallback = import.meta.env.VITE_DEMO_MODE === 'false' && 
-      !import.meta.env.VITE_FIREBASE_API_KEY;
-    
-    const shouldUseDemoMode = demoMode || isFirebaseFallback;
-    
     console.log('=== FETCH OCCASIONS ===');
     console.log('Recipient ID:', recipientId);
-    console.log('Demo mode (from store):', demoMode);
-    console.log('Firebase fallback:', isFirebaseFallback);
-    console.log('Final decision - use demo mode:', shouldUseDemoMode);
+    console.log('Demo mode:', demoMode);
     console.log('User:', user);
     
     set({ loading: true, error: null });
+    
     try {
-      if (shouldUseDemoMode) {
+      if (demoMode) {
+        // Handle demo mode
         const storageKey = getOccasionsStorageKey(recipientId);
-        console.log('Looking for occasions in localStorage with key:', storageKey);
-        const saved = localStorage.getItem(storageKey);
-        console.log('Found occasions data:', saved);
-        const occasions = saved ? JSON.parse(saved) : [];
-        console.log('Parsed occasions:', occasions);
+        const stored = localStorage.getItem(storageKey);
         
-        // Always update the store state, even if empty array
-        set(state => ({ 
-          occasions: { ...state.occasions, [recipientId]: occasions }, 
-          loading: false 
+        if (stored) {
+          const occasions = JSON.parse(stored);
+          console.log(`Found ${occasions.length} occasions for recipient ${recipientId} in localStorage`);
+          set(state => ({
+            occasions: {
+              ...state.occasions,
+              [recipientId]: occasions
+            },
+            loading: false
+          }));
+        } else {
+          console.log(`No occasions found for recipient ${recipientId} in localStorage`);
+          set(state => ({
+            occasions: {
+              ...state.occasions,
+              [recipientId]: []
+            },
+            loading: false
+          }));
+        }
+      } else {
+        // Handle Firebase mode
+        if (!user) {
+          console.log('No user found, cannot fetch occasions');
+          set({ loading: false });
+          return;
+        }
+        
+        console.log(`Fetching occasions from Firebase for recipient: ${recipientId}`);
+        const occasionsRef = collection(db, 'users', user.id, 'occasions');
+        const q = query(occasionsRef, where('recipientId', '==', recipientId));
+        const querySnapshot = await getDocs(q);
+        
+        const occasions = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Occasion[];
+        
+        console.log(`Found ${occasions.length} occasions for recipient ${recipientId} in Firebase`);
+        
+        set(state => ({
+          occasions: {
+            ...state.occasions,
+            [recipientId]: occasions
+          },
+          loading: false
         }));
-        console.log('Demo occasions loaded successfully for recipient:', recipientId, 'Count:', occasions.length);
-        return;
       }
-      
-      if (!user) {
-        console.log('No user found, setting empty occasions');
-        set({ loading: false });
-        return;
-      }
-      
-      const q = query(collection(db, 'occasions'), where('recipientId', '==', recipientId));
-      const snapshot = await getDocs(q);
-      const occasions: Occasion[] = [];
-      
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        occasions.push({
-          id: docSnap.id,
-          recipientId: data.recipientId,
-          name: data.name,
-          date: data.date,
-          type: data.type,
-          notes: data.notes,
-          budget: data.budget,
-          giftWrap: data.giftWrap,
-          personalizedNote: data.personalizedNote,
-          noteText: data.noteText,
-          createdAt: data.createdAt?.toDate?.() || data.createdAt,
-          updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
-        });
-      });
-      
-      set(state => ({ occasions: { ...state.occasions, [recipientId]: occasions }, loading: false }));
-      console.log('Firebase occasions loaded successfully for recipient:', recipientId, 'Count:', occasions.length);
     } catch (error) {
       console.error('Error fetching occasions:', error);
-      set({ error: (error as Error).message, loading: false });
+      set({ 
+        error: (error as Error).message,
+        loading: false 
+      });
     }
   },
 

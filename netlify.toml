@@ -9,9 +9,9 @@
 [build.environment]
   # Node.js version to use
   NODE_VERSION = "18"
-  # Enable demo mode for dev branch deployment since Firebase config is not set up
-  # Change to VITE_DEMO_MODE="false" and add Firebase env vars for production
-  VITE_DEMO_MODE = "true"
+  # Disable demo mode for deployment - use Firebase instead
+  # Firebase env vars should be configured in Netlify dashboard under Environment Variables
+  VITE_DEMO_MODE = "false"
 
 # Redirect rules for SPA (Single Page Application)
 [[redirects]]

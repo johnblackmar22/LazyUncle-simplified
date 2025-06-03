@@ -79,28 +79,8 @@ export const DEMO_MODE = (() => {
     return true;
   }
   
-  // If explicitly set to false, require Firebase config
+  // If explicitly set to false, use Firebase mode
   if (envDemoMode === 'false') {
-    const hasFirebaseConfig = !!(
-      import.meta.env.VITE_FIREBASE_API_KEY &&
-      import.meta.env.VITE_FIREBASE_AUTH_DOMAIN &&
-      import.meta.env.VITE_FIREBASE_PROJECT_ID &&
-      import.meta.env.VITE_FIREBASE_APP_ID
-    );
-    
-    if (!hasFirebaseConfig) {
-      console.error('❌ VITE_DEMO_MODE=false but Firebase config is missing!');
-      console.error('Required environment variables:');
-      console.error('- VITE_FIREBASE_API_KEY');
-      console.error('- VITE_FIREBASE_AUTH_DOMAIN'); 
-      console.error('- VITE_FIREBASE_PROJECT_ID');
-      console.error('- VITE_FIREBASE_APP_ID');
-      console.warn('⚠️  FALLING BACK TO DEMO MODE due to missing Firebase config');
-      
-      // Instead of throwing an error, fall back to demo mode for safety
-      return true;
-    }
-    
     console.log('🔥 VITE_DEMO_MODE=false - Using FIREBASE MODE');
     return false;
   }

@@ -246,19 +246,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const isDemoMode = checkDemoMode();
     console.log('Demo mode detected from localStorage:', isDemoMode);
     
-    // IMPORTANT: Also check if we're in fallback demo mode due to missing Firebase config
-    const isFirebaseFallback = import.meta.env.VITE_DEMO_MODE === 'false' && 
-      !import.meta.env.VITE_FIREBASE_API_KEY;
-    
-    if (isFirebaseFallback) {
-      console.log('🚨 Firebase mode requested but no config - forcing demo mode');
-      localStorage.setItem('lazyuncle_demoMode', 'true');
-    }
-    
-    const finalDemoMode = isDemoMode || isFirebaseFallback;
-    console.log('Final demo mode decision:', finalDemoMode);
-    
-    if (finalDemoMode) {
+    if (isDemoMode) {
       const storedUser = getStoredDemoUser();
       console.log('Stored demo user found:', !!storedUser);
       if (storedUser) {

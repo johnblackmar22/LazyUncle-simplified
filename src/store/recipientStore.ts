@@ -8,7 +8,8 @@ import {
   getDocs, 
   query, 
   where,
-  Timestamp
+  Timestamp,
+  serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import type { Recipient, AutoSendPreferences, OccasionPreference, AutoSendOccasions, PaymentMethod, Address } from '../types';
@@ -66,68 +67,64 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
     const user = useAuthStore.getState().user;
     const demoMode = useAuthStore.getState().demoMode;
     
-    // IMPORTANT: Also check if we should be in demo mode due to missing Firebase config
-    const isFirebaseFallback = import.meta.env.VITE_DEMO_MODE === 'false' && 
-      !import.meta.env.VITE_FIREBASE_API_KEY;
-    
-    const shouldUseDemoMode = demoMode || isFirebaseFallback;
-    
     console.log('=== FETCH RECIPIENTS ===');
-    console.log('Demo mode (from store):', demoMode);
-    console.log('Firebase fallback:', isFirebaseFallback);
-    console.log('Final decision - use demo mode:', shouldUseDemoMode);
+    console.log('Demo mode:', demoMode);
     console.log('Fetching recipients with user:', user?.id);
     
     set({ loading: true, error: null });
     
     try {
-      // If in demo mode, get data from localStorage
-      if (shouldUseDemoMode) {
-        console.log('Using demo mode for recipients');
-        const savedRecipients = localStorage.getItem(RECIPIENTS_STORAGE_KEY);
-        const recipients = savedRecipients ? JSON.parse(savedRecipients) : [];
-        console.log('Found demo recipients:', recipients.length);
-        set({ recipients, loading: false });
-        return;
-      }
-      
-      // Otherwise, proceed with Firebase fetching if user is authenticated
-      if (!user) {
-        console.log('No user found, cannot fetch recipients');
-        set({ loading: false });
-        return;
-      }
-
-      const recipientsQuery = query(
-        collection(db, 'recipients'),
-        where('userId', '==', user.id)
-      );
-      
-      const querySnapshot = await getDocs(recipientsQuery);
-      const recipientsData: Recipient[] = [];
-      
-      querySnapshot.forEach(doc => {
-        const data = doc.data();
-        recipientsData.push({
-          id: doc.id,
-          userId: data.userId,
-          name: data.name,
-          relationship: data.relationship,
-          birthdate: data.birthdate?.toDate?.() || data.birthdate,
-          interests: data.interests || [],
-          description: data.description,
-          deliveryAddress: data.deliveryAddress,
-          giftPreferences: data.giftPreferences,
-          createdAt: data.createdAt?.toDate?.() || data.createdAt,
-          updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
+      if (demoMode) {
+        // Handle demo mode
+        const stored = localStorage.getItem('lazyuncle_recipients');
+        const recipients = stored ? JSON.parse(stored) : [];
+        
+        console.log('Demo recipients loaded from localStorage:', recipients.length);
+        set({ 
+          recipients, 
+          loading: false 
         });
-      });
-      
-      console.log('Fetched Firebase recipients:', recipientsData.length);
-      set({ recipients: recipientsData, loading: false });
+      } else {
+        // Handle Firebase mode
+        if (!user) {
+          console.log('No user found, cannot fetch recipients');
+          set({ loading: false });
+          return;
+        }
+        
+        console.log('Fetching recipients from Firebase for user:', user.id);
+        const q = query(collection(db, 'recipients'), where('userId', '==', user.id));
+        const snapshot = await getDocs(q);
+        const recipients: Recipient[] = [];
+        
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          recipients.push({
+            id: doc.id,
+            userId: data.userId,
+            name: data.name,
+            relationship: data.relationship,
+            birthdate: data.birthdate,
+            interests: data.interests || [],
+            deliveryAddress: data.deliveryAddress,
+            autoSendPreferences: ensureAutoSendPreferences(data.autoSendPreferences),
+            createdAt: data.createdAt?.toDate?.() || data.createdAt,
+            updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
+          });
+        });
+        
+        console.log('Firebase recipients loaded:', recipients.length);
+        set({ 
+          recipients, 
+          loading: false 
+        });
+      }
     } catch (error) {
       console.error('Error fetching recipients:', error);
-      set({ error: (error as Error).message, loading: false });
+      set({ 
+        error: (error as Error).message,
+        loading: false 
+      });
     }
   },
 
@@ -208,22 +205,14 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
   updateRecipient: async (id, recipientData) => {
     const demoMode = useAuthStore.getState().demoMode;
     
-    // IMPORTANT: Also check if we should be in demo mode due to missing Firebase config
-    const isFirebaseFallback = import.meta.env.VITE_DEMO_MODE === 'false' && 
-      !import.meta.env.VITE_FIREBASE_API_KEY;
-    
-    const shouldUseDemoMode = demoMode || isFirebaseFallback;
-    
     console.log('=== UPDATE RECIPIENT ===');
     console.log('Recipient ID:', id);
     console.log('Update data:', recipientData);
-    console.log('Demo mode (from store):', demoMode);
-    console.log('Firebase fallback:', isFirebaseFallback);
-    console.log('Final decision - use demo mode:', shouldUseDemoMode);
+    console.log('Demo mode:', demoMode);
     
     set({ loading: true, error: null });
     try {
-      if (shouldUseDemoMode) {
+      if (demoMode) {
         // Handle demo mode update
         set(state => {
           const updatedRecipients = state.recipients.map(recipient => 
@@ -238,49 +227,50 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
           
           console.log('Updated recipients in demo mode:', updatedRecipients);
           
-          // Update localStorage
-          localStorage.setItem(RECIPIENTS_STORAGE_KEY, JSON.stringify(updatedRecipients));
-          console.log('Saved updated recipients to localStorage');
-          
-          // Verify the save
-          const verification = localStorage.getItem(RECIPIENTS_STORAGE_KEY);
-          const parsedVerification = verification ? JSON.parse(verification) : [];
-          const updatedRecipient = parsedVerification.find((r: any) => r.id === id);
-          console.log('Verification - Updated recipient in localStorage:', updatedRecipient);
+          // Save to localStorage
+          localStorage.setItem('lazyuncle_recipients', JSON.stringify(updatedRecipients));
+          console.log('Recipients saved to localStorage');
           
           return {
             recipients: updatedRecipients,
             loading: false
           };
         });
-        return;
-      }
-      
-      // Normal Firebase mode
-      const timestamp = Timestamp.now();
-      await updateDoc(doc(db, 'recipients', id), {
-        ...recipientData,
-        updatedAt: timestamp
-      });
-      
-      set(state => {
-        const updatedRecipients = state.recipients.map(recipient => 
-          recipient.id === id 
-            ? { 
-                ...recipient, 
-                ...recipientData, 
-                updatedAt: timestamp.toDate().getTime() 
-              } 
-            : recipient
-        );
-        return {
-          recipients: updatedRecipients,
+      } else {
+        // Handle Firebase mode update
+        const user = useAuthStore.getState().user;
+        if (!user) {
+          throw new Error('User not authenticated');
+        }
+        
+        const docRef = doc(db, 'recipients', id);
+        await updateDoc(docRef, {
+          ...recipientData,
+          updatedAt: serverTimestamp()
+        });
+        
+        // Update local state
+        set(state => ({
+          recipients: state.recipients.map(recipient => 
+            recipient.id === id 
+              ? { 
+                  ...recipient, 
+                  ...recipientData, 
+                  updatedAt: Date.now() 
+                } 
+              : recipient
+          ),
           loading: false
-        };
-      });
+        }));
+        
+        console.log('Recipient updated in Firebase successfully');
+      }
     } catch (error) {
       console.error('Error updating recipient:', error);
-      set({ error: (error as Error).message, loading: false });
+      set({ 
+        error: (error as Error).message,
+        loading: false 
+      });
     }
   },
 
