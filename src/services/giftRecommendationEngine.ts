@@ -1,234 +1,427 @@
 /**
- * Gift Recommendation Engine
+ * Enhanced Gift Recommendation Engine
  * 
- * This service provides functionality for recommending gifts based on recipient data.
+ * This service provides sophisticated AI-powered gift recommendations
+ * using OpenAI GPT-4 with personalized prompting and structured output.
  */
 
-import type { GiftSuggestion } from '../types';
+import type { GiftSuggestion, Recipient, Occasion } from '../types';
 import { DEMO_MODE } from './firebase';
 
-// Mock database of gift ideas
-const giftCatalog: GiftSuggestion[] = [
-  // Birthday gifts
-  {
-    id: 'gift-1',
-    name: 'Premium Wireless Headphones',
-    description: 'High-quality noise-cancelling headphones for music lovers',
-    price: 199.99,
-    category: 'Electronics',
-    interests: ['Music', 'Technology'],
-    occasion: 'Birthday',
-    imageUrl: 'https://example.com/headphones.jpg'
-  },
-  {
-    id: 'gift-2',
-    name: 'Leather Wallet',
-    description: 'Handcrafted leather wallet with RFID protection',
-    price: 49.99,
-    category: 'Accessories',
-    gender: 'Male',
-    occasion: 'Birthday',
-    imageUrl: 'https://example.com/wallet.jpg'
-  },
-  {
-    id: 'gift-3',
-    name: 'Scented Candle Set',
-    description: 'Set of 4 luxury scented candles in decorative jars',
-    price: 39.99,
-    category: 'Home',
-    gender: 'Female',
-    occasion: 'Birthday',
-    imageUrl: 'https://example.com/candles.jpg'
-  },
-  
-  // Anniversary gifts
-  {
-    id: 'gift-4',
-    name: 'Personalized Photo Album',
-    description: 'Custom photo album with your favorite memories',
-    price: 59.99,
-    category: 'Personalized',
-    occasion: 'Anniversary',
-    imageUrl: 'https://example.com/album.jpg'
-  },
-  {
-    id: 'gift-5',
-    name: 'Gourmet Chocolate Box',
-    description: 'Luxury assortment of handcrafted chocolates',
-    price: 34.99,
-    category: 'Food',
-    occasion: 'Anniversary',
-    imageUrl: 'https://example.com/chocolate.jpg'
-  },
-  
-  // Christmas/Holiday gifts
-  {
-    id: 'gift-6',
-    name: 'Smart Home Starter Kit',
-    description: 'All-in-one smart home system with voice control',
-    price: 149.99,
-    category: 'Electronics',
-    interests: ['Technology', 'Gadgets'],
-    occasion: 'Christmas',
-    imageUrl: 'https://example.com/smarthome.jpg'
-  },
-  {
-    id: 'gift-7',
-    name: 'Cozy Knit Blanket',
-    description: 'Super soft knitted throw blanket for cold winter nights',
-    price: 79.99,
-    category: 'Home',
-    occasion: 'Christmas',
-    imageUrl: 'https://example.com/blanket.jpg'
-  },
-  
-  // For book lovers
-  {
-    id: 'gift-8',
-    name: 'E-Reader',
-    description: 'Waterproof e-reader with adjustable lighting',
-    price: 129.99,
-    category: 'Electronics',
-    interests: ['Books', 'Reading'],
-    imageUrl: 'https://example.com/ereader.jpg'
-  },
-  {
-    id: 'gift-9',
-    name: 'Book Subscription Box',
-    description: '3-month subscription to curated book box with goodies',
-    price: 89.99,
-    category: 'Subscription',
-    interests: ['Books', 'Reading'],
-    imageUrl: 'https://example.com/bookbox.jpg'
-  },
-  
-  // For sports enthusiasts
-  {
-    id: 'gift-10',
-    name: 'Fitness Tracker',
-    description: 'Advanced fitness and activity tracker with heart rate monitoring',
-    price: 149.99,
-    category: 'Electronics',
-    interests: ['Sports', 'Fitness', 'Running'],
-    imageUrl: 'https://example.com/fitnesstracker.jpg'
-  },
-  
-  // For cooking enthusiasts
-  {
-    id: 'gift-11',
-    name: 'Premium Chef\'s Knife',
-    description: 'Professional-grade stainless steel chef\'s knife',
-    price: 89.99,
-    category: 'Kitchen',
-    interests: ['Cooking', 'Food'],
-    imageUrl: 'https://example.com/knife.jpg'
-  },
-  {
-    id: 'gift-12',
-    name: 'Cooking Class Voucher',
-    description: 'Gift certificate for a gourmet cooking class',
-    price: 99.99,
-    category: 'Experience',
-    interests: ['Cooking', 'Food'],
-    imageUrl: 'https://example.com/cookingclass.jpg'
-  },
-  
-  // For travelers
-  {
-    id: 'gift-13',
-    name: 'Travel Backpack',
-    description: 'Weather-resistant backpack with built-in charging port',
-    price: 79.99,
-    category: 'Travel',
-    interests: ['Travel', 'Adventure'],
-    imageUrl: 'https://example.com/backpack.jpg'
-  },
-  
-  // For music lovers
-  {
-    id: 'gift-14',
-    name: 'Vinyl Record Subscription',
-    description: '3-month subscription to receive curated vinyl records',
-    price: 119.99,
-    category: 'Subscription',
-    interests: ['Music', 'Vinyl'],
-    imageUrl: 'https://example.com/vinyl.jpg'
-  },
-  
-  // For art lovers
-  {
-    id: 'gift-15',
-    name: 'Art Print Set',
-    description: 'Set of 3 high-quality art prints from renowned artists',
-    price: 69.99,
-    category: 'Art',
-    interests: ['Art', 'Design'],
-    imageUrl: 'https://example.com/artprints.jpg'
-  }
-];
+// Enhanced gift suggestion interface
+export interface EnhancedGiftSuggestion extends GiftSuggestion {
+  reasoning?: string;
+  purchaseUrl?: string;
+  tags?: string[];
+}
+
+// AI request interface matching the Netlify function
+interface AIRecommendationRequest {
+  recipient: {
+    name: string;
+    age?: number;
+    relationship: string;
+    interests: string[];
+    description?: string;
+    gender?: string;
+  };
+  budget: number;
+  occasion?: string;
+  pastGifts?: Array<{
+    name: string;
+    category: string;
+    price?: number;
+  }>;
+  preferences?: {
+    giftWrap?: boolean;
+    personalNote?: boolean;
+    deliverySpeed?: 'standard' | 'express' | 'priority';
+  };
+}
+
+// AI response interface
+interface AIRecommendationResponse {
+  suggestions: EnhancedGiftSuggestion[];
+  metadata: {
+    model: string;
+    generated_at: string;
+    recipient_name: string;
+    occasion: string;
+    budget: number;
+    request_id: string;
+  };
+}
 
 /**
- * Get gift recommendations based on recipient data
+ * Get AI-powered gift recommendations with enhanced personalization
  */
-export const getGiftRecommendations = (recipientData: any, occasion?: string, budget?: number): GiftSuggestion[] => {
-  // Get the recipient's interests, if available
-  const interests = recipientData.interests || [];
-  const gender = recipientData.gender || '';
-  const age = recipientData.age || 30;
-  const maxPrice = budget || 200;
-  
-  // Filter the catalog based on recipient data and occasion
-  let recommendations = giftCatalog.filter(gift => {
-    // Filter by price
-    if (gift.price > maxPrice) {
-      return false;
+export async function getGiftRecommendationsFromAI({ 
+  recipient, 
+  budget, 
+  occasion = 'birthday',
+  pastGifts = [], 
+  preferences = {} 
+}: {
+  recipient: Recipient | any;
+  budget: number;
+  occasion?: string;
+  pastGifts?: any[];
+  preferences?: any;
+}): Promise<EnhancedGiftSuggestion[]> {
+  try {
+    // Validate inputs
+    if (!recipient?.name) {
+      throw new Error('Recipient name is required for gift recommendations');
     }
     
-    // If occasion is specified, filter by occasion
-    if (occasion && gift.occasion && gift.occasion.toLowerCase() !== occasion.toLowerCase()) {
-      return false;
+    if (!budget || budget <= 0) {
+      throw new Error('Valid budget is required for gift recommendations');
+    }
+
+    // Use DEMO_MODE to determine if we should use real API
+    if (DEMO_MODE) {
+      console.log('Using enhanced mock AI recommendations in demo mode');
+      return await generateMockRecommendations({ recipient, budget, occasion, pastGifts });
     }
     
-    // If gender is specified, consider gender-specific gifts
-    if (gender && gift.gender && gift.gender.toLowerCase() !== gender.toLowerCase()) {
-      return false;
+    // Prepare request data
+    const requestData: AIRecommendationRequest = {
+      recipient: {
+        name: recipient.name,
+        age: recipient.birthdate ? calculateAge(recipient.birthdate) : undefined,
+        relationship: recipient.relationship,
+        interests: recipient.interests || [],
+        description: recipient.description,
+        gender: recipient.gender,
+      },
+      budget,
+      occasion,
+      pastGifts: pastGifts.map(gift => ({
+        name: gift.name,
+        category: gift.category,
+        price: gift.price,
+      })),
+      preferences: {
+        giftWrap: preferences.giftWrap ?? true,
+        personalNote: preferences.personalNote ?? true,
+        deliverySpeed: preferences.deliverySpeed ?? 'standard',
+      },
+    };
+
+    console.log(`Requesting AI recommendations for ${recipient.name} (${occasion}, $${budget} budget)`);
+    
+    // Call the enhanced Netlify function
+    const response = await fetch('/.netlify/functions/gift-recommendations', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify(requestData)
+    });
+    
+    if (!response.ok) {
+      let errorMessage = 'Failed to fetch gift recommendations';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch {
+        errorMessage = `${response.status} ${response.statusText}`;
+      }
+      throw new Error(errorMessage);
     }
     
-    return true;
-  });
-  
-  // Sort by interest matching
-  recommendations = recommendations.sort((a, b) => {
-    const scoreA = calculateInterestMatchScore(a, interests);
-    const scoreB = calculateInterestMatchScore(b, interests);
-    return scoreB - scoreA;
-  });
-  
-  // Return top 5 recommendations
-  return recommendations.slice(0, 5);
-};
+    const data: AIRecommendationResponse = await response.json();
+    
+    // Validate response structure
+    if (!data.suggestions || !Array.isArray(data.suggestions)) {
+      throw new Error('Invalid response format from AI service');
+    }
+    
+    // Additional validation and enhancement
+    const validRecommendations = data.suggestions
+      .filter(gift => gift.price <= budget)
+      .map(gift => ({
+        ...gift,
+        id: gift.id || `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        imageUrl: gift.imageUrl || generatePlaceholderImage(gift.category),
+        affiliateLink: gift.purchaseUrl,
+      }));
+    
+    if (validRecommendations.length === 0) {
+      console.warn('No valid recommendations within budget, falling back to mock data');
+      return await generateMockRecommendations({ recipient, budget, occasion, pastGifts });
+    }
+    
+    console.log(`Successfully received ${validRecommendations.length} AI recommendations`);
+    return validRecommendations;
+    
+  } catch (error) {
+    console.error('AI gift recommendation error:', error);
+    
+    // Graceful fallback to mock recommendations
+    console.log('Falling back to enhanced mock recommendations');
+    return await generateMockRecommendations({ recipient, budget, occasion, pastGifts });
+  }
+}
 
 /**
- * Calculate how well a gift matches the recipient's interests
+ * Generate sophisticated mock recommendations for demo mode
  */
-const calculateInterestMatchScore = (gift: GiftSuggestion, recipientInterests: string[]): number => {
-  if (!gift.interests || gift.interests.length === 0 || recipientInterests.length === 0) {
-    return 0;
+async function generateMockRecommendations({ 
+  recipient, 
+  budget, 
+  occasion, 
+  pastGifts 
+}: {
+  recipient: any;
+  budget: number;
+  occasion: string;
+  pastGifts: any[];
+}): Promise<EnhancedGiftSuggestion[]> {
+  
+  // Simulate network delay for realism
+  await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
+  
+  const interests = recipient.interests || [];
+  const relationship = recipient.relationship || 'friend';
+  const age = recipient.birthdate ? calculateAge(recipient.birthdate) : 30;
+  
+  // Avoid past gifts
+  const pastGiftNames = pastGifts.map(g => g.name.toLowerCase());
+  
+  // Create contextual recommendations based on interests and relationship
+  const recommendationPool = [
+    // Tech & Gadgets
+    ...(interests.some((i: string) => ['technology', 'tech', 'gadgets'].includes(i.toLowerCase())) ? [
+      {
+        name: 'Wireless Charging Station',
+        description: 'A sleek 3-in-1 wireless charging station for phone, watch, and earbuds. Perfect for keeping all devices organized and powered up.',
+        category: 'Electronics',
+        price: Math.min(budget * 0.8, 79),
+        reasoning: 'Matches their tech interests and provides daily utility.',
+        confidence: 0.9,
+        tags: ['practical', 'tech', 'organization'],
+      },
+      {
+        name: 'Smart Home Assistant',
+        description: 'Voice-controlled assistant with premium sound quality for music, smart home control, and daily assistance.',
+        category: 'Smart Home',
+        price: Math.min(budget * 0.9, 99),
+        reasoning: 'Great for tech enthusiasts who enjoy automation and convenience.',
+        confidence: 0.85,
+        tags: ['smart-home', 'voice-control', 'music'],
+      }
+    ] : []),
+    
+    // Books & Reading
+    ...(interests.some((i: string) => ['books', 'reading', 'literature'].includes(i.toLowerCase())) ? [
+      {
+        name: 'Premium Book Subscription Box',
+        description: 'A 3-month subscription to a curated book box featuring bestsellers, exclusive editions, and bookish goodies.',
+        category: 'Subscription',
+        price: Math.min(budget * 0.7, 89),
+        reasoning: 'Perfect for book lovers who enjoy discovering new titles and authors.',
+        confidence: 0.95,
+        tags: ['books', 'discovery', 'ongoing-gift'],
+      },
+      {
+        name: 'Personalized Leather Book Journal',
+        description: 'A handcrafted leather journal with their name embossed on the cover, perfect for notes, thoughts, and creative writing.',
+        category: 'Stationery',
+        price: Math.min(budget * 0.6, 65),
+        reasoning: 'Combines their love of books with personal expression and creativity.',
+        confidence: 0.88,
+        tags: ['personalized', 'writing', 'leather-craft'],
+      }
+    ] : []),
+    
+    // Food & Cooking
+    ...(interests.some((i: string) => ['cooking', 'food', 'culinary', 'baking'].includes(i.toLowerCase())) ? [
+      {
+        name: 'Artisan Spice Collection',
+        description: 'A premium collection of 12 rare and exotic spices from around the world, each with recipe suggestions and origin stories.',
+        category: 'Culinary',
+        price: Math.min(budget * 0.65, 75),
+        reasoning: 'Enhances their cooking adventures with authentic international flavors.',
+        confidence: 0.92,
+        tags: ['culinary', 'international', 'cooking-enhancement'],
+      },
+      {
+        name: 'Professional Chef\'s Knife',
+        description: 'A high-carbon steel chef\'s knife with ergonomic handle, professionally sharpened and ready for serious cooking.',
+        category: 'Kitchen Tools',
+        price: Math.min(budget * 0.85, 120),
+        reasoning: 'Essential tool that any cooking enthusiast would appreciate and use daily.',
+        confidence: 0.9,
+        tags: ['professional', 'daily-use', 'cooking-essential'],
+      }
+    ] : []),
+    
+    // Fitness & Wellness
+    ...(interests.some((i: string) => ['fitness', 'yoga', 'health', 'wellness', 'exercise'].includes(i.toLowerCase())) ? [
+      {
+        name: 'Smart Fitness Tracker',
+        description: 'Advanced fitness tracker with heart rate monitoring, sleep tracking, and workout recognition. Waterproof with 7-day battery.',
+        category: 'Fitness Tech',
+        price: Math.min(budget * 0.9, 149),
+        reasoning: 'Perfect for tracking their fitness goals and maintaining an active lifestyle.',
+        confidence: 0.87,
+        tags: ['health-tracking', 'motivation', 'waterproof'],
+      },
+      {
+        name: 'Premium Yoga Mat Set',
+        description: 'Eco-friendly yoga mat with alignment guides, plus matching yoga blocks and strap in a beautiful carrying case.',
+        category: 'Fitness Equipment',
+        price: Math.min(budget * 0.7, 95),
+        reasoning: 'Supports their yoga practice with high-quality, sustainable equipment.',
+        confidence: 0.9,
+        tags: ['eco-friendly', 'yoga', 'complete-set'],
+      }
+    ] : []),
+    
+    // Universal options for any relationship/interest
+    {
+      name: 'Luxury Candle Collection',
+      description: 'A set of 4 premium soy candles with unique scents inspired by different seasons. Burns for 40+ hours each.',
+      category: 'Home Fragrance',
+      price: Math.min(budget * 0.5, 68),
+      reasoning: 'Creates a relaxing atmosphere and works for any home or personal space.',
+      confidence: 0.8,
+      tags: ['relaxation', 'home-ambiance', 'long-lasting'],
+    },
+    {
+      name: 'Artisan Coffee Subscription',
+      description: 'A 3-month subscription to single-origin, freshly roasted coffee beans from small-batch roasters worldwide.',
+      category: 'Beverage',
+      price: Math.min(budget * 0.8, 95),
+      reasoning: 'Perfect for coffee lovers who enjoy trying new flavors and supporting small businesses.',
+      confidence: 0.83,
+      tags: ['coffee', 'artisan', 'monthly-delivery'],
+    },
+    {
+      name: 'Personalized Star Map',
+      description: 'A custom star map showing the exact alignment of stars on a meaningful date, beautifully framed and personalized.',
+      category: 'Personalized Art',
+      price: Math.min(budget * 0.6, 85),
+      reasoning: 'A unique, sentimental gift that captures a special moment in time.',
+      confidence: 0.85,
+      tags: ['personalized', 'sentimental', 'unique'],
+    },
+    {
+      name: 'Premium Skincare Set',
+      description: 'A luxurious skincare collection with cleanser, serum, and moisturizer made from natural, organic ingredients.',
+      category: 'Beauty & Wellness',
+      price: Math.min(budget * 0.75, 110),
+      reasoning: 'Self-care items that promote wellness and show you care about their well-being.',
+      confidence: 0.78,
+      tags: ['self-care', 'organic', 'daily-luxury'],
+    },
+    {
+      name: 'Cozy Weighted Blanket',
+      description: 'A soft, breathable weighted blanket designed to reduce stress and improve sleep quality. Available in multiple weights.',
+      category: 'Sleep & Comfort',
+      price: Math.min(budget * 0.8, 89),
+      reasoning: 'Promotes better sleep and relaxation, beneficial for anyone dealing with stress.',
+      confidence: 0.82,
+      tags: ['sleep-improvement', 'stress-relief', 'comfort'],
+    }
+  ];
+  
+  // Filter by budget and avoid past gifts
+  const filteredRecommendations = recommendationPool
+    .filter(item => 
+      item.price <= budget && 
+      !pastGiftNames.some(pastName => 
+        item.name.toLowerCase().includes(pastName) || 
+        pastName.includes(item.name.toLowerCase())
+      )
+    )
+    .sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
+  
+  // Select top 5 recommendations
+  const selectedRecommendations = filteredRecommendations.slice(0, 5);
+  
+  // If we don't have enough recommendations, add generic fallbacks
+  while (selectedRecommendations.length < 5) {
+    const fallbackGifts = [
+      {
+        name: 'Premium Gift Card Bundle',
+        description: `A collection of gift cards totaling $${Math.floor(budget * 0.8)} to popular retailers, giving them maximum choice and flexibility.`,
+        category: 'Gift Cards',
+        price: Math.floor(budget * 0.8),
+        reasoning: 'Provides complete freedom to choose exactly what they want.',
+        confidence: 0.75,
+        tags: ['flexible', 'choice', 'popular-retailers'],
+      },
+      {
+        name: 'Gourmet Food & Wine Pairing',
+        description: 'A curated selection of artisanal cheeses, chocolates, and a bottle of wine, beautifully packaged for a special tasting experience.',
+        category: 'Gourmet Food',
+        price: Math.floor(budget * 0.9),
+        reasoning: 'A sophisticated gift that creates a memorable tasting experience.',
+        confidence: 0.7,
+        tags: ['gourmet', 'experience', 'sophisticated'],
+      }
+    ];
+    
+    const nextFallback = fallbackGifts.find(gift => 
+      !selectedRecommendations.some(selected => selected.name === gift.name) &&
+      gift.price <= budget
+    );
+    
+    if (nextFallback) {
+      selectedRecommendations.push(nextFallback);
+    } else {
+      break;
+    }
   }
   
-  // Count matching interests
-  let matchCount = 0;
-  gift.interests.forEach(interest => {
-    if (recipientInterests.some(recInterest => 
-      recInterest.toLowerCase() === interest.toLowerCase()
-    )) {
-      matchCount++;
-    }
-  });
+  // Add IDs and image URLs
+  return selectedRecommendations.map((gift, index) => ({
+    ...gift,
+    id: `mock-ai-${Date.now()}-${index}`,
+    imageUrl: generatePlaceholderImage(gift.category),
+    affiliateLink: `https://example.com/buy/${encodeURIComponent(gift.name)}`,
+  }));
+}
+
+/**
+ * Calculate age from birthdate string
+ */
+function calculateAge(birthdate?: string): number {
+  if (!birthdate) return 30; // Default age
   
-  // Calculate score based on percentage of matches
-  return (matchCount / gift.interests.length) * 10;
-};
+  const today = new Date();
+  const birth = new Date(birthdate);
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  
+  return Math.max(1, age); // Ensure positive age
+}
+
+/**
+ * Generate placeholder image URL based on category
+ */
+function generatePlaceholderImage(category: string): string {
+  const categoryImages: { [key: string]: string } = {
+    'Electronics': 'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=400',
+    'Books': 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400',
+    'Kitchen': 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400',
+    'Fitness': 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400',
+    'Home': 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400',
+    'Fashion': 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400',
+    'Art': 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400',
+    'Food': 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400',
+    'Gift Cards': 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400',
+  };
+  
+  return categoryImages[category] || 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400';
+}
 
 /**
  * Generate a personal message for the gift
@@ -266,112 +459,4 @@ export const generateGiftMessage = (recipientName: string, occasion: string, rel
   
   // Return a random message from the array
   return messages[Math.floor(Math.random() * messages.length)];
-};
-
-/**
- * Auto-send gift based on settings and recipient data
- */
-export const handleAutoSendGift = async (gift: any, recipient: any, settings: any): Promise<boolean> => {
-  // In a real application, this would connect to an e-commerce API
-  // or gift card provider to actually purchase and send the gift
-  
-  console.log(`Auto-sending gift: ${gift.name} to ${recipient.name}`);
-  
-  // Simulate sending the gift (would be an API call in production)
-  return new Promise(resolve => {
-    setTimeout(() => {
-      console.log('Gift sent successfully');
-      resolve(true);
-    }, 1500);
-  });
-};
-
-/**
- * Call the OpenAI-powered Netlify function for gift recommendations
- */
-export async function getGiftRecommendationsFromAI({ recipient, budget, pastGifts = [], trendingGifts = [] }: {
-  recipient: any;
-  budget: number;
-  pastGifts?: any[];
-  trendingGifts?: any[];
-}): Promise<any[]> {
-  try {
-    // Validate inputs
-    if (!recipient) {
-      throw new Error('Recipient is required for gift recommendations');
-    }
-    
-    if (!budget || budget <= 0) {
-      throw new Error('Valid budget is required for gift recommendations');
-    }
-
-    // Use DEMO_MODE from firebase.ts to determine if we should use real API
-    if (DEMO_MODE) {
-      console.log('Using mock AI recommendations in demo mode');
-      // Return local recommendations instead of calling the API
-      const mockRecommendations = [
-        {
-          id: 'ai-rec-1',
-          name: 'Personalized Book Collection',
-          description: 'A set of books tailored to their interests',
-          price: budget * 0.8,
-          category: 'Books',
-          interests: recipient.interests.slice(0, 2),
-          imageUrl: 'https://example.com/books.jpg'
-        },
-        {
-          id: 'ai-rec-2',
-          name: 'Premium Subscription Service',
-          description: 'A year of premium access to their favorite platform',
-          price: budget * 0.6,
-          category: 'Digital',
-          interests: recipient.interests.slice(0, 2),
-          imageUrl: 'https://example.com/subscription.jpg'
-        },
-        {
-          id: 'ai-rec-3',
-          name: 'Artisan Gift Basket',
-          description: 'Handcrafted selection of gourmet treats',
-          price: budget * 0.7,
-          category: 'Food',
-          interests: recipient.interests.slice(0, 2),
-          imageUrl: 'https://example.com/basket.jpg'
-        }
-      ];
-      
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      return mockRecommendations;
-    }
-    
-    // For production, call the actual API
-    const response = await fetch('/.netlify/functions/gift-recommendations', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ recipient, budget, pastGifts, trendingGifts })
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.text();
-      throw new Error(`Failed to fetch gift recommendations: ${response.status} ${errorData}`);
-    }
-    
-    const recommendations = await response.json();
-    
-    // Additional validation to ensure recommendations match budget
-    const validRecommendations = recommendations.filter((gift: any) => 
-      gift.price <= budget || gift.estimatedPrice <= budget
-    );
-    
-    if (validRecommendations.length === 0) {
-      // Instead of returning empty, throw error to match test expectations
-      throw new Error('No recommendations within budget found');
-    }
-    
-    return validRecommendations;
-  } catch (err) {
-    console.error('AI gift recommendation error:', err);
-    // Throw the error instead of returning empty array to match test expectations
-    throw err;
-  }
-} 
+}; 

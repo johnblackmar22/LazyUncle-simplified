@@ -36,6 +36,7 @@
     "react-icons": "^4.12.0",
     "react-router-dom": "^6.30.0",
     "uuid": "^11.1.0",
+    "zod": "^3.25.49",
     "zustand": "^4.5.6"
   },
   "devDependencies": {
@@ -72,9 +73,12 @@
       "<rootDir>/jest.setup.js"
     ],
     "transform": {
-      "^.+\\.(ts|tsx)$": ["ts-jest", {
-        "tsconfig": "tsconfig.test.json"
-      }]
+      "^.+\\.(ts|tsx)$": [
+        "ts-jest",
+        {
+          "tsconfig": "tsconfig.test.json"
+        }
+      ]
     },
     "moduleFileExtensions": [
       "ts",
