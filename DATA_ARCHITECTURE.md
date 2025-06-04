@@ -163,11 +163,87 @@ interface Gift {
   notes?: string;               // Optional - Internal notes
   autoSend?: boolean;           // Optional - Auto-send flag
   recurring?: boolean;          // Optional - Yearly recurring
+  
+  // AI recommendation metadata (added v1.3)
+  isAIGenerated?: boolean;      // Optional - Flag for AI-recommended gifts
+  aiMetadata?: AIGiftMetadata;  // Optional - AI recommendation details
+  
   createdAt: number;            // Required - Creation timestamp
   updatedAt: number;            // Required - Last update timestamp
 }
 
 type GiftStatus = 'planned' | 'ordered' | 'shipped' | 'delivered' | 'given' | 'archived' | 'idea' | 'purchased';
+
+// AI Gift Metadata Schema (new in v1.3)
+interface AIGiftMetadata {
+  model?: string;               // AI model used (e.g., 'gpt-4o-mini')
+  confidence?: number;          // AI confidence score 0-1
+  reasoning?: string;           // AI reasoning for recommendation
+  tags?: string[];              // AI-generated tags
+  generatedAt?: number;         // Timestamp when AI generated this
+  requestData?: {               // Original request context
+    interests?: string[];       // User interests at time of generation
+    budget?: number;            // Budget at time of generation
+    occasion?: string;          // Occasion at time of generation
+    relationship?: string;      // Relationship at time of generation
+  };
+}
+```
+
+**Example - Regular Gift:**
+```json
+{
+  "id": "gift_456",
+  "recipientId": "O1sUoJihtxQEGg2kvXez",
+  "userId": "RmiLm4MF34afDhosnASDjBoZz3F3",
+  "occasionId": "occasion_123",
+  "name": "Hiking Backpack",
+  "description": "Lightweight hiking backpack for day trips",
+  "price": 8999,
+  "category": "Outdoor Gear",
+  "status": "idea",
+  "date": 1672531200000,
+  "imageUrl": "https://example.com/backpack.jpg",
+  "affiliateLink": "https://amazon.com/dp/B123456789",
+  "notes": "She mentioned wanting to upgrade her gear",
+  "createdAt": 1672531200000,
+  "updatedAt": 1672531200000
+}
+```
+
+**Example - AI-Generated Gift:**
+```json
+{
+  "id": "gift_789",
+  "recipientId": "O1sUoJihtxQEGg2kvXez",
+  "userId": "RmiLm4MF34afDhosnASDjBoZz3F3",
+  "occasionId": "occasion_123",
+  "name": "Smart Fitness Watch",
+  "description": "Advanced fitness tracking with GPS and heart rate monitoring",
+  "price": 24999,
+  "category": "AI Recommended",
+  "status": "idea",
+  "date": 1672531200000,
+  "imageUrl": "https://example.com/fitness-watch.jpg",
+  "affiliateLink": "https://amazon.com/dp/B987654321",
+  "notes": "AI-recommended gift. Perfect for someone who loves outdoor activities and tracking their fitness progress.",
+  "isAIGenerated": true,
+  "aiMetadata": {
+    "model": "gpt-4o-mini",
+    "confidence": 0.89,
+    "reasoning": "Perfect for someone who loves outdoor activities and tracking their fitness progress.",
+    "tags": ["fitness", "outdoor", "technology", "health"],
+    "generatedAt": 1672531200000,
+    "requestData": {
+      "interests": ["hiking", "fitness", "technology"],
+      "budget": 25000,
+      "occasion": "birthday",
+      "relationship": "sister"
+    }
+  },
+  "createdAt": 1672531200000,
+  "updatedAt": 1672531200000
+}
 ```
 
 ---
@@ -233,29 +309,76 @@ interface PaymentMethod {
 
 ---
 
-## Local Storage Schema (Demo Mode)
+## Local Storage Schema (Demo Mode & Caching)
 
 ### Storage Keys
 ```typescript
 const STORAGE_KEYS = {
   RECIPIENTS: 'lazyuncle_recipients',
   OCCASIONS: 'lazyuncle_occasions',
-  GIFTS: 'lazyuncle_gifts',
+  GIFTS: 'lazyuncle_gifts', // Used for AI recommendation caching and demo mode
   USER: 'lazyuncle_user',
   DEMO_MODE: 'lazyuncle_demo_mode'
 };
 ```
 
-### Data Format
-All localStorage data is stored as JSON strings of arrays:
+### Dual Storage Architecture (Firebase + localStorage)
+
+**For Production (Firebase Mode):**
+- AI gift selections are saved to **both** Firebase (`gifts` collection) and localStorage
+- Firebase provides persistent storage across sessions
+- localStorage provides immediate UI feedback and caching
+- Regular gifts are stored only in Firebase
+
+**For Demo Mode:**
+- All data stored in localStorage only
+- Simulates Firebase behavior for development/testing
+
+### Gift Storage Integration
 
 ```typescript
-// Recipients
+// AI Gift Selection Flow:
+// 1. User selects AI-recommended gift
+// 2. Create Firebase Gift record with isAIGenerated: true
+// 3. Cache in localStorage for immediate UI updates
+// 4. UI reads from both sources for comprehensive state
+
+interface StoredGift {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  category: string;
+  recipientId: string;
+  occasionId: string;
+  selectedAt: number;
+  status: 'selected' | 'saved_for_later' | 'purchased';
+  metadata?: {
+    model?: string;
+    confidence?: number;
+    reasoning?: string;
+    tags?: string[];
+  };
+}
+```
+
+### Data Format
+All localStorage data is stored as JSON strings:
+
+```typescript
+// Recipients (demo mode only)
 localStorage.setItem('lazyuncle_recipients', JSON.stringify(Recipient[]));
 
-// Occasions (grouped by recipient)
+// Occasions (demo mode only)
 localStorage.setItem('lazyuncle_occasions', JSON.stringify({
   [recipientId: string]: Occasion[]
+}));
+
+// Gifts (caching + demo mode)
+localStorage.setItem('lazyuncle_gifts', JSON.stringify({
+  selectedGifts: StoredGift[],
+  savedGifts: StoredGift[],
+  recentRecommendations: { [key: string]: EnhancedGiftSuggestion[] }
 }));
 ```
 
@@ -277,6 +400,7 @@ User (1) ──── (many) Recipients
 2. **Recipient to Occasions**: One-to-many, cascading delete
 3. **Occasion to Gifts**: One-to-many, cascading delete
 4. **User Security**: All documents include `userId` for access control
+5. **AI Gift Integration**: AI-selected gifts create proper Gift records linked to occasions
 
 ---
 
@@ -295,6 +419,7 @@ User (1) ──── (many) Recipients
 - **Prices/Budgets**: Positive integers (cents)
 - **Arrays**: Never null, use empty array `[]`
 - **Optional Fields**: Use `undefined` in TypeScript, omit in Firebase
+- **AI Metadata**: Optional but recommended for `isAIGenerated: true` gifts
 
 ### Firebase-Specific Rules
 - **No undefined values** - use `deepCleanUndefined()` before saving
@@ -304,25 +429,23 @@ User (1) ──── (many) Recipients
 
 ---
 
-## Migration Guidelines
+## Gift Storage Architecture Changes (v1.3)
 
-### Adding New Fields
-1. Add to TypeScript interface
-2. Update this documentation
-3. Add migration logic for existing data
-4. Update validation rules
+### Problem Solved
+Previously, AI gift selections were only stored in localStorage, causing them to disappear on page refresh or between sessions.
 
-### Changing Field Types
-1. Create migration script
-2. Update TypeScript types
-3. Test with existing data
-4. Deploy in phases
+### New Architecture
+1. **AI Gift Selection**: Creates proper Firebase `Gift` record with `isAIGenerated: true`
+2. **Dual Storage**: Also caches in localStorage for immediate UI feedback
+3. **Status Differentiation**: 
+   - Selected gifts use `status: 'idea'`
+   - Saved for later gifts use `status: 'planned'`
+4. **Metadata Preservation**: AI reasoning, confidence, and context preserved in `aiMetadata`
 
-### Removing Fields
-1. Mark as deprecated first
-2. Remove from new writes
-3. Clean up existing data
-4. Remove from types
+### Migration Path
+- Existing localStorage-only selections will be migrated to Firebase on next selection
+- No data loss during transition period
+- Both storage systems checked for comprehensive gift state
 
 ---
 
@@ -336,26 +459,30 @@ const recipientsRef = query(
   where('userId', '==', userId)
 );
 
-// Get all occasions for a recipient
-const occasionsRef = query(
-  collection(db, 'occasions'),
-  where('recipientId', '==', recipientId),
+// Get all gifts for an occasion (including AI-generated)
+const giftsRef = query(
+  collection(db, 'gifts'),
+  where('occasionId', '==', occasionId),
   where('userId', '==', userId)
+);
+
+// Get AI-generated gifts for a user
+const aiGiftsRef = query(
+  collection(db, 'gifts'),
+  where('userId', '==', userId),
+  where('isAIGenerated', '==', true)
 );
 ```
 
 ### Type Guards
 ```typescript
-// Validate recipient data
-function isValidRecipient(data: any): data is Recipient {
+// Validate gift with AI metadata
+function isValidAIGift(data: any): data is Gift {
   return (
-    typeof data.id === 'string' &&
-    typeof data.userId === 'string' &&
-    typeof data.name === 'string' &&
-    typeof data.relationship === 'string' &&
-    Array.isArray(data.interests) &&
-    typeof data.createdAt === 'number' &&
-    typeof data.updatedAt === 'number'
+    isValidGift(data) &&
+    data.isAIGenerated === true &&
+    data.aiMetadata &&
+    typeof data.aiMetadata.model === 'string'
   );
 }
 ```
@@ -367,7 +494,8 @@ function isValidRecipient(data: any): data is Recipient {
 - **v1.0** - Initial schema definition
 - **v1.1** - Added deep cleaning for Firebase undefined values
 - **v1.2** - Enhanced address validation and occasion types
+- **v1.3** - Added AI recommendation metadata to gifts and dual storage architecture
 
 ---
 
-*This document should be updated whenever data schemas change. All developers must reference this document when working with data structures.* 
+*This document should be updated whenever data schemas change. All developers must reference this document when working with data structures.*

@@ -28,8 +28,9 @@ import {
 } from '@chakra-ui/react';
 import { FiHeart, FiShoppingCart, FiExternalLink, FiInfo, FiStar, FiCheck, FiX } from 'react-icons/fi';
 import { getGiftRecommendationsFromAI, type EnhancedGiftSuggestion } from '../services/giftRecommendationEngine';
-import type { Recipient, Occasion } from '../types';
+import type { Recipient, Occasion, Gift } from '../types';
 import { useGiftStorage } from '../hooks/useGiftStorage';
+import { useGiftStore } from '../store/giftStore';
 
 interface AIGiftRecommendationsProps {
   recipient: Recipient;
@@ -57,9 +58,20 @@ export default function AIGiftRecommendations({
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
   
-  const giftStorage = useGiftStorage();
-  const selectedGiftsForOccasion = giftStorage.getSelectedGiftsForOccasion(recipient.id, occasion.id);
-  const savedGiftsForRecipient = giftStorage.getSavedGiftsForRecipient(recipient.id);
+  // Use both storage systems for transition period
+  const giftStorage = useGiftStorage(); // For recommendation caching
+  const { 
+    createGift, 
+    fetchGiftsByRecipient, 
+    recipientGifts, 
+    loading: giftStoreLoading 
+  } = useGiftStore(); // For persistent gift storage
+  
+  // Get gifts for this recipient and occasion from the main store
+  const allRecipientGifts = recipientGifts[recipient.id] || [];
+  const selectedGiftsForOccasion = allRecipientGifts.filter(
+    gift => gift.occasionId === occasion.id && gift.isAIGenerated && gift.status === 'idea'
+  );
   
   // Debug logging
   useEffect(() => {
@@ -69,9 +81,14 @@ export default function AIGiftRecommendations({
       recipientName: recipient.name,
       occasionName: occasion.name,
       selectedGiftsCount: selectedGiftsForOccasion.length,
-      savedGiftsCount: savedGiftsForRecipient.length
+      allRecipientGiftsCount: allRecipientGifts.length
     });
-  }, [recipient.id, occasion.id, selectedGiftsForOccasion.length, savedGiftsForRecipient.length]);
+  }, [recipient.id, occasion.id, selectedGiftsForOccasion.length, allRecipientGifts.length]);
+  
+  // Fetch recipient gifts when component mounts
+  useEffect(() => {
+    fetchGiftsByRecipient(recipient.id);
+  }, [recipient.id, fetchGiftsByRecipient]);
   
   useEffect(() => {
     // Check for cached recommendations first
@@ -177,7 +194,7 @@ export default function AIGiftRecommendations({
     generateRecommendations();
   };
   
-  const handleSelectGift = (gift: EnhancedGiftSuggestion) => {
+  const handleSelectGift = async (gift: EnhancedGiftSuggestion) => {
     console.log('Selecting gift:', {
       giftId: gift.id,
       giftName: gift.name,
@@ -187,30 +204,98 @@ export default function AIGiftRecommendations({
       occasionName: occasion.name
     });
     
-    const storedGift = giftStorage.selectGift(gift, recipient.id, occasion.id);
-    console.log('Gift stored:', storedGift);
-    
-    onSelectGift?.(gift);
-    toast({
-      title: "Gift Selected",
-      description: `${gift.name} added to ${recipient.name}'s ${occasion.name} plan`,
-      status: "success",
-      duration: 3000,
-    });
+    try {
+      // Create a proper Firebase Gift record
+      const giftData = {
+        recipientId: recipient.id,
+        occasionId: occasion.id,
+        name: gift.name,
+        description: gift.description,
+        price: Math.round((gift.price || 0) * 100), // Convert to cents
+        category: gift.category || 'AI Recommended',
+        date: new Date(occasion.date).getTime(),
+        status: 'idea' as const,
+        imageUrl: gift.imageUrl,
+        affiliateLink: gift.purchaseUrl || gift.affiliateLink,
+        notes: `AI-recommended gift. ${gift.reasoning || ''}`.trim(),
+        isAIGenerated: true,
+        aiMetadata: {
+          model: (gift as any).metadata?.model || 'unknown',
+          confidence: gift.confidence,
+          reasoning: gift.reasoning,
+          tags: gift.tags,
+          generatedAt: Date.now(),
+          requestData: {
+            interests: recipient.interests,
+            budget: occasion.budget,
+            occasion: occasion.name.toLowerCase(),
+            relationship: recipient.relationship
+          }
+        }
+      };
+      
+      const createdGift = await createGift(giftData);
+      console.log('Gift created in Firebase:', createdGift);
+      
+      // Also keep in localStorage cache for UI responsiveness
+      const storedGift = giftStorage.selectGift(gift, recipient.id, occasion.id);
+      console.log('Gift cached in localStorage:', storedGift);
+      
+      onSelectGift?.(gift);
+      toast({
+        title: "Gift Selected",
+        description: `${gift.name} added to ${recipient.name}'s ${occasion.name} plan`,
+        status: "success",
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Error selecting gift:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save gift selection. Please try again.",
+        status: "error",
+        duration: 4000,
+      });
+    }
   };
   
-  const handleUnselectGift = (giftId: string) => {
+  const handleUnselectGift = async (giftId: string) => {
     console.log('Unselecting gift:', giftId);
-    giftStorage.removeGift(giftId, 'selected');
-    toast({
-      title: "Gift Removed",
-      description: "Gift removed from selection",
-      status: "info",
-      duration: 2000,
-    });
+    
+    try {
+      // Find the gift in our local state
+      const giftToRemove = selectedGiftsForOccasion.find(g => 
+        g.id === giftId || 
+        (g.aiMetadata?.requestData && g.name === recommendations.find(r => r.id === giftId)?.name)
+      );
+      
+      if (giftToRemove) {
+        // Remove from Firebase
+        await useGiftStore.getState().removeGift(giftToRemove.id);
+        console.log('Gift removed from Firebase:', giftToRemove.id);
+      }
+      
+      // Also remove from localStorage cache
+      giftStorage.removeGift(giftId, 'selected');
+      
+      toast({
+        title: "Gift Removed",
+        description: "Gift removed from selection",
+        status: "info",
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error('Error removing gift:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove gift. Please try again.",
+        status: "error",
+        duration: 4000,
+      });
+    }
   };
   
-  const handleSaveForLater = (gift: EnhancedGiftSuggestion) => {
+  const handleSaveForLater = async (gift: EnhancedGiftSuggestion) => {
     console.log('Saving gift for later:', {
       giftId: gift.id,
       giftName: gift.name,
@@ -218,24 +303,85 @@ export default function AIGiftRecommendations({
       occasionId: occasion.id
     });
     
-    const storedGift = giftStorage.saveForLater(gift, recipient.id, occasion.id);
-    console.log('Gift saved for later:', storedGift);
+    try {
+      // Create a proper Firebase Gift record with 'planned' status
+      const giftData = {
+        recipientId: recipient.id,
+        occasionId: occasion.id,
+        name: gift.name,
+        description: gift.description,
+        price: Math.round((gift.price || 0) * 100), // Convert to cents
+        category: gift.category || 'AI Recommended',
+        date: new Date(occasion.date).getTime(),
+        status: 'planned' as const, // Different status for saved gifts
+        imageUrl: gift.imageUrl,
+        affiliateLink: gift.purchaseUrl || gift.affiliateLink,
+        notes: `Saved for later. AI-recommended gift. ${gift.reasoning || ''}`.trim(),
+        isAIGenerated: true,
+        aiMetadata: {
+          model: (gift as any).metadata?.model || 'unknown',
+          confidence: gift.confidence,
+          reasoning: gift.reasoning,
+          tags: gift.tags,
+          generatedAt: Date.now(),
+          requestData: {
+            interests: recipient.interests,
+            budget: occasion.budget,
+            occasion: occasion.name.toLowerCase(),
+            relationship: recipient.relationship
+          }
+        }
+      };
+      
+      const createdGift = await createGift(giftData);
+      console.log('Gift saved for later in Firebase:', createdGift);
+      
+      // Also keep in localStorage cache
+      const storedGift = giftStorage.saveForLater(gift, recipient.id, occasion.id);
+      console.log('Gift cached in localStorage:', storedGift);
     
-    onSaveForLater?.(gift);
-    toast({
-      title: "Saved for Later",
-      description: `${gift.name} saved to your wishlist`,
-      status: "info",
-      duration: 2000,
-    });
+      onSaveForLater?.(gift);
+      toast({
+        title: "Saved for Later",
+        description: `${gift.name} saved to your gift list`,
+        status: "info",
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error('Error saving gift for later:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save gift. Please try again.",
+        status: "error",
+        duration: 4000,
+      });
+    }
   };
   
   const isGiftSelected = (giftId: string) => {
-    return selectedGiftsForOccasion.some(g => g.id === giftId);
+    // Check both Firebase gifts and localStorage cache
+    const inFirebase = selectedGiftsForOccasion.some(g => 
+      g.aiMetadata?.requestData && 
+      g.name === recommendations.find(r => r.id === giftId)?.name
+    );
+    const inLocalStorage = giftStorage.getSelectedGiftsForOccasion(recipient.id, occasion.id)
+      .some(g => g.id === giftId);
+    
+    return inFirebase || inLocalStorage;
   };
   
   const isGiftSaved = (giftId: string) => {
-    return savedGiftsForRecipient.some(g => g.id === giftId);
+    // Check if this gift exists in Firebase with 'planned' status
+    const inFirebase = allRecipientGifts.some(g => 
+      g.status === 'planned' &&
+      g.isAIGenerated &&
+      g.aiMetadata?.requestData && 
+      g.name === recommendations.find(r => r.id === giftId)?.name
+    );
+    const inLocalStorage = giftStorage.getSavedGiftsForRecipient(recipient.id)
+      .some(g => g.id === giftId);
+    
+    return inFirebase || inLocalStorage;
   };
   
   if (isLoading) {

@@ -107,6 +107,23 @@ export interface Gift {
   notes?: string;
   autoSend?: boolean; // For test compatibility
   recurring?: boolean; // Deliver this gift every year
+  
+  // AI recommendation metadata (added for AI-generated gifts)
+  isAIGenerated?: boolean; // Flag to indicate if this gift was AI-recommended
+  aiMetadata?: {
+    model?: string; // AI model used (e.g., 'gpt-4o-mini')
+    confidence?: number; // AI confidence score 0-1
+    reasoning?: string; // AI reasoning for this recommendation
+    tags?: string[]; // AI-generated tags
+    generatedAt?: number; // Timestamp when AI generated this recommendation
+    requestData?: { // Original request data for debugging/re-generation
+      interests?: string[];
+      budget?: number;
+      occasion?: string;
+      relationship?: string;
+    };
+  };
+  
   createdAt: number;
   updatedAt: number;
 }
