@@ -166,9 +166,11 @@ const handler: Handler = async (event, context) => {
         // Create personalized prompt
         const prompt = createPersonalizedPrompt(data);
 
-        // Call OpenAI with enhanced parameters
+        // Call OpenAI with enhanced parameters and timeout
         console.log('Calling OpenAI API...');
-        const completion = await openaiClient.chat.completions.create({
+        
+        // Add timeout wrapper for OpenAI call
+        const openaiPromise = openaiClient.chat.completions.create({
           model: 'gpt-4o-mini',
           messages: [
             { 
@@ -183,6 +185,13 @@ const handler: Handler = async (event, context) => {
           frequency_penalty: 0.3,
           presence_penalty: 0.1,
         });
+
+        // Timeout after 8 seconds (before Netlify's 10s limit)
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('OpenAI API timeout after 8 seconds')), 8000)
+        );
+
+        const completion = await Promise.race([openaiPromise, timeoutPromise]) as any;
 
         const responseText = completion.choices[0]?.message?.content?.trim();
         console.log('OpenAI response received, length:', responseText?.length);
@@ -235,6 +244,11 @@ const handler: Handler = async (event, context) => {
         console.error('OpenAI API error:', openaiError);
         
         // Handle specific error types
+        if (openaiError?.message?.includes('timeout')) {
+          console.log('OpenAI API timeout - using fallback recommendations');
+          throw new Error('OpenAI timeout - using fallback');
+        }
+        
         if (openaiError?.status === 429) {
           console.log('Rate limit hit, using fallback recommendations');
           throw new Error('OpenAI rate limit - using fallback');
