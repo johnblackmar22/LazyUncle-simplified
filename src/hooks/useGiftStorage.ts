@@ -37,13 +37,20 @@ export function useGiftStorage() {
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
+      console.log('Loading gift storage from localStorage:', saved ? 'found data' : 'no data');
       if (saved) {
         const parsed = JSON.parse(saved);
-        setStorage({
+        const loadedStorage = {
           selectedGifts: parsed.selectedGifts || [],
           savedGifts: parsed.savedGifts || [],
           recentRecommendations: parsed.recentRecommendations || {}
+        };
+        console.log('Loaded storage:', {
+          selectedGiftsCount: loadedStorage.selectedGifts.length,
+          savedGiftsCount: loadedStorage.savedGifts.length,
+          recommendationsCount: Object.keys(loadedStorage.recentRecommendations).length
         });
+        setStorage(loadedStorage);
       }
     } catch (error) {
       console.error('Error loading gift storage:', error);
@@ -53,13 +60,27 @@ export function useGiftStorage() {
   // Save to localStorage whenever storage changes
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(storage));
+      const jsonString = JSON.stringify(storage);
+      localStorage.setItem(STORAGE_KEY, jsonString);
+      console.log('Saved gift storage to localStorage:', {
+        selectedGiftsCount: storage.selectedGifts.length,
+        savedGiftsCount: storage.savedGifts.length,
+        storageSize: jsonString.length
+      });
     } catch (error) {
       console.error('Error saving gift storage:', error);
     }
   }, [storage]);
 
   const selectGift = (gift: any, recipientId: string, occasionId: string) => {
+    console.log('selectGift called with:', {
+      giftId: gift.id,
+      giftName: gift.name,
+      recipientId,
+      occasionId,
+      currentSelectedCount: storage.selectedGifts.length
+    });
+    
     const storedGift: StoredGift = {
       id: gift.id,
       name: gift.name,
@@ -78,10 +99,21 @@ export function useGiftStorage() {
       }
     };
 
-    setStorage(prev => ({
-      ...prev,
-      selectedGifts: [...prev.selectedGifts.filter(g => g.id !== gift.id), storedGift]
-    }));
+    console.log('Creating stored gift:', storedGift);
+
+    setStorage(prev => {
+      const newSelectedGifts = [...prev.selectedGifts.filter(g => g.id !== gift.id), storedGift];
+      console.log('Updating selected gifts:', {
+        previousCount: prev.selectedGifts.length,
+        newCount: newSelectedGifts.length,
+        removedExisting: prev.selectedGifts.some(g => g.id === gift.id)
+      });
+      
+      return {
+        ...prev,
+        selectedGifts: newSelectedGifts
+      };
+    });
 
     return storedGift;
   };

@@ -61,17 +61,30 @@ export default function AIGiftRecommendations({
   const selectedGiftsForOccasion = giftStorage.getSelectedGiftsForOccasion(recipient.id, occasion.id);
   const savedGiftsForRecipient = giftStorage.getSavedGiftsForRecipient(recipient.id);
   
+  // Debug logging
+  useEffect(() => {
+    console.log('AIGiftRecommendations Debug:', {
+      recipientId: recipient.id,
+      occasionId: occasion.id,
+      recipientName: recipient.name,
+      occasionName: occasion.name,
+      selectedGiftsCount: selectedGiftsForOccasion.length,
+      savedGiftsCount: savedGiftsForRecipient.length
+    });
+  }, [recipient.id, occasion.id, selectedGiftsForOccasion.length, savedGiftsForRecipient.length]);
+  
   useEffect(() => {
     // Check for cached recommendations first
     const cachedRecs = giftStorage.getRecommendations(recipient.id, occasion.id);
     if (cachedRecs.length > 0) {
       setRecommendations(cachedRecs);
       setIsAIGenerated(cachedRecs[0]?.metadata?.model === 'gpt-4o-mini');
-      console.log('Loaded cached recommendations');
+      console.log('Loaded cached recommendations:', cachedRecs.length);
     } else {
+      console.log('No cached recommendations, generating new ones');
       generateRecommendations();
     }
-  }, [recipient, occasion]);
+  }, [recipient.id, occasion.id]); // Fixed dependencies
   
   const generateRecommendations = async (retryAttempt = 0) => {
     setIsLoading(true);
@@ -165,7 +178,18 @@ export default function AIGiftRecommendations({
   };
   
   const handleSelectGift = (gift: EnhancedGiftSuggestion) => {
+    console.log('Selecting gift:', {
+      giftId: gift.id,
+      giftName: gift.name,
+      recipientId: recipient.id,
+      occasionId: occasion.id,
+      recipientName: recipient.name,
+      occasionName: occasion.name
+    });
+    
     const storedGift = giftStorage.selectGift(gift, recipient.id, occasion.id);
+    console.log('Gift stored:', storedGift);
+    
     onSelectGift?.(gift);
     toast({
       title: "Gift Selected",
@@ -176,6 +200,7 @@ export default function AIGiftRecommendations({
   };
   
   const handleUnselectGift = (giftId: string) => {
+    console.log('Unselecting gift:', giftId);
     giftStorage.removeGift(giftId, 'selected');
     toast({
       title: "Gift Removed",
@@ -186,7 +211,16 @@ export default function AIGiftRecommendations({
   };
   
   const handleSaveForLater = (gift: EnhancedGiftSuggestion) => {
-    giftStorage.saveForLater(gift, recipient.id, occasion.id);
+    console.log('Saving gift for later:', {
+      giftId: gift.id,
+      giftName: gift.name,
+      recipientId: recipient.id,
+      occasionId: occasion.id
+    });
+    
+    const storedGift = giftStorage.saveForLater(gift, recipient.id, occasion.id);
+    console.log('Gift saved for later:', storedGift);
+    
     onSaveForLater?.(gift);
     toast({
       title: "Saved for Later",
