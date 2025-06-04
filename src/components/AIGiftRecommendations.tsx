@@ -45,6 +45,7 @@ export default function AIGiftRecommendations({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [isAIGenerated, setIsAIGenerated] = useState(false);
   
   const toast = useToast();
   const cardBg = useColorModeValue('white', 'gray.700');
@@ -76,11 +77,17 @@ export default function AIGiftRecommendations({
       
       setRecommendations(suggestions);
       
+      // Check if these are AI-generated or fallback recommendations
+      const isAI = suggestions.some(s => s.id && !s.id.includes('fallback'));
+      setIsAIGenerated(isAI);
+      
       if (suggestions.length > 0) {
         toast({
-          title: "AI Recommendations Ready",
-          description: `Found ${suggestions.length} personalized gift suggestions for ${recipient.name}`,
-          status: "success",
+          title: isAI ? "🤖 AI Recommendations Ready" : "📋 Curated Recommendations Ready",
+          description: isAI 
+            ? `AI found ${suggestions.length} personalized gift suggestions for ${recipient.name}`
+            : `Found ${suggestions.length} quality gift suggestions for ${recipient.name}`,
+          status: isAI ? "success" : "info",
           duration: 3000,
           isClosable: true,
         });
@@ -190,11 +197,19 @@ export default function AIGiftRecommendations({
       <Flex justify="space-between" align="center" mb={6}>
         <VStack align="start" spacing={1}>
           <Heading size="md">
-            🤖 AI Gift Recommendations
+            {isAIGenerated ? "🤖 AI Gift Recommendations" : "📋 Curated Gift Recommendations"}
           </Heading>
           <Text color={mutedColor} fontSize="sm">
-            Personalized suggestions for {recipient.name} • ${occasion.budget || 100} budget
+            {isAIGenerated 
+              ? `AI-personalized suggestions for ${recipient.name} • $${occasion.budget || 100} budget`
+              : `Quality suggestions for ${recipient.name} • $${occasion.budget || 100} budget`
+            }
           </Text>
+          {!isAIGenerated && (
+            <Text color="orange.500" fontSize="xs" fontWeight="medium">
+              💡 AI recommendations temporarily unavailable - showing curated alternatives
+            </Text>
+          )}
         </VStack>
         <Button size="sm" variant="outline" onClick={handleRetry}>
           Refresh
