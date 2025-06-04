@@ -51,9 +51,11 @@ export function useGiftSelectionSync({ recipientId, occasionId, autoSync = true 
       return [];
     }
     
+    // Filter Firebase gifts for this recipient and occasion
     const firebaseSelections = firebaseGifts.filter(
-      gift => gift.occasionId === occasionId && gift.isAIGenerated && gift.status === 'idea'
+      gift => gift.occasionId === occasionId && gift.recipientId === recipientId && gift.isAIGenerated && gift.status === 'idea'
     );
+    console.log('[Sync] Firebase selections for recipient', recipientId, 'occasion', occasionId, firebaseSelections);
 
     // Create a unified view, preferring Firebase data but including local-only selections
     const unifiedMap = new Map<string, any>();
@@ -70,7 +72,7 @@ export function useGiftSelectionSync({ recipientId, occasionId, autoSync = true 
     // Add local-only gifts (not yet synced to Firebase)
     localSelectedGifts.forEach(localGift => {
       const key = localGift.name.toLowerCase();
-      if (!unifiedMap.has(key)) {
+      if (!unifiedMap.has(key) && localGift.recipientId === recipientId && localGift.occasionId === occasionId) {
         unifiedMap.set(key, {
           ...localGift,
           source: 'local',
@@ -79,8 +81,10 @@ export function useGiftSelectionSync({ recipientId, occasionId, autoSync = true 
       }
     });
 
-    return Array.from(unifiedMap.values());
-  }, [firebaseGifts, localSelectedGifts, occasionId, giftStorage.isLoaded]);
+    const unified = Array.from(unifiedMap.values());
+    console.log('[Sync] Unified selections for recipient', recipientId, 'occasion', occasionId, unified);
+    return unified;
+  }, [firebaseGifts, localSelectedGifts, occasionId, recipientId, giftStorage.isLoaded]);
 
   // Check if a gift is selected (either in Firebase or localStorage)
   const isGiftSelected = useCallback((giftName: string): boolean => {
@@ -90,9 +94,11 @@ export function useGiftSelectionSync({ recipientId, occasionId, autoSync = true 
     }
     
     const selections = getUnifiedSelections();
-    return selections.some(selection => 
+    const found = selections.some(selection => 
       selection.name.toLowerCase() === giftName.toLowerCase()
     );
+    console.log('[Sync] isGiftSelected for', giftName, '->', found);
+    return found;
   }, [getUnifiedSelections, giftStorage.isLoaded]);
 
   // Select a gift with proper synchronization
