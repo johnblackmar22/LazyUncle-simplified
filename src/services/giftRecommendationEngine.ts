@@ -122,11 +122,14 @@ export async function getGiftRecommendationsFromAI({
 
     console.log(`Requesting AI recommendations for ${recipient.name} (${occasion}, $${budget} budget)`);
     
-    // Call the enhanced Netlify function (switched back from debug)
-    const response = await fetch('/.netlify/functions/gift-recommendations', {
+    // Call the enhanced Netlify function
+    const response = await fetch('/.netlify/functions/gift-recommendations-enhanced', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'X-Request-ID': `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
       },
       body: JSON.stringify(requestData),
     });
