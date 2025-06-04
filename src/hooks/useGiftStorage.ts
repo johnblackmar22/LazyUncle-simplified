@@ -61,8 +61,11 @@ export function useGiftStorage() {
     }
   }, []);
 
-  // Save to localStorage whenever storage changes
+  // Save to localStorage whenever storage changes, but only after initial load
   useEffect(() => {
+    // Don't save during initial load to prevent overwriting existing data
+    if (!isLoaded) return;
+    
     try {
       const jsonString = JSON.stringify(storage);
       localStorage.setItem(STORAGE_KEY, jsonString);
@@ -74,7 +77,7 @@ export function useGiftStorage() {
     } catch (error) {
       console.error('Error saving gift storage:', error);
     }
-  }, [storage]);
+  }, [storage, isLoaded]); // Add isLoaded as dependency
 
   const selectGift = (gift: any, recipientId: string, occasionId: string) => {
     console.log('selectGift called with:', {
