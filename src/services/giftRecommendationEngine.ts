@@ -5,7 +5,7 @@
  * using OpenAI GPT-4 with personalized prompting and structured output.
  */
 
-import type { GiftSuggestion, Recipient, Occasion } from '../types';
+import type { GiftSuggestion, Recipient } from '../types';
 import { DEMO_MODE } from './firebase';
 
 // Enhanced gift suggestion interface
@@ -81,7 +81,7 @@ export async function getGiftRecommendationsFromAI({
     // Use DEMO_MODE to determine if we should use real API
     if (DEMO_MODE) {
       console.log('Using enhanced mock AI recommendations in demo mode');
-      return await generateMockRecommendations({ recipient, budget, occasion, pastGifts });
+      return await generateMockRecommendations({ recipient, budget, pastGifts });
     }
     
     // Prepare request data
@@ -164,7 +164,7 @@ export async function getGiftRecommendationsFromAI({
     
     if (validRecommendations.length === 0) {
       console.warn('No valid recommendations within budget, falling back to mock data');
-      return await generateMockRecommendations({ recipient, budget, occasion, pastGifts });
+      return await generateMockRecommendations({ recipient, budget, pastGifts });
     }
     
     console.log(`Successfully received ${validRecommendations.length} AI recommendations`);
@@ -175,7 +175,7 @@ export async function getGiftRecommendationsFromAI({
     
     // Graceful fallback to mock recommendations
     console.log('Falling back to enhanced mock recommendations');
-    return await generateMockRecommendations({ recipient, budget, occasion, pastGifts });
+    return await generateMockRecommendations({ recipient, budget, pastGifts });
   }
 }
 
@@ -185,12 +185,10 @@ export async function getGiftRecommendationsFromAI({
 async function generateMockRecommendations({ 
   recipient, 
   budget, 
-  occasion, 
   pastGifts 
 }: {
   recipient: any;
   budget: number;
-  occasion: string;
   pastGifts: any[];
 }): Promise<EnhancedGiftSuggestion[]> {
   
@@ -198,8 +196,6 @@ async function generateMockRecommendations({
   await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
   
   const interests = recipient.interests || [];
-  const relationship = recipient.relationship || 'friend';
-  const age = recipient.birthdate ? calculateAge(recipient.birthdate) : 30;
   
   // Avoid past gifts
   const pastGiftNames = pastGifts.map(g => g.name.toLowerCase());

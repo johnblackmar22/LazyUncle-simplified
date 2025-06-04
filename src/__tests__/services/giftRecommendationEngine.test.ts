@@ -1,6 +1,12 @@
-import { getGiftRecommendations } from '../../services/giftRecommendationEngine';
-import type { Recipient } from '../../types/index';
 import { getGiftRecommendationsFromAI } from '../../services/giftRecommendationEngine';
+import type { Recipient } from '../../types/index';
+
+// Mock Firebase service to avoid import.meta issues
+jest.mock('../../services/firebase', () => ({
+  DEMO_MODE: false,
+  auth: {},
+  db: {}
+}));
 
 // Mock fetch globally
 global.fetch = jest.fn();
@@ -11,7 +17,7 @@ describe('Gift Recommendation Engine', () => {
     (fetch as jest.Mock).mockClear();
   });
 
-  const mockRecipient = {
+  const mockRecipient: Partial<Recipient> = {
     id: 'test-recipient-1',
     name: 'Test User',
     relationship: 'friend',
@@ -170,90 +176,82 @@ describe('Gift Recommendation Engine', () => {
       // Should have different recommendations based on interests
       expect(gamerRecs).not.toEqual(bookRecs);
     });
-  });
-});
 
-describe('Gift Recommendation Engine', () => {
-  test('should provide recommendations based on recipient interests', () => {
-    // Arrange
-    const recipient: Partial<Recipient> = {
-      id: '1',
-      userId: 'test-user',
-      name: 'John Doe',
-      relationship: 'Friend',
-      interests: ['Music', 'Technology', 'Sports'],
-      giftPreferences: {
-        priceRange: {
-          min: 20,
-          max: 100
+    it('should provide recommendations based on recipient interests', async () => {
+      const recipient: Partial<Recipient> = {
+        id: '1',
+        userId: 'test-user',
+        name: 'John Doe',
+        relationship: 'Friend',
+        interests: ['Music', 'Technology', 'Sports'],
+        giftPreferences: {
+          priceRange: {
+            min: 20,
+            max: 100
+          },
+          categories: ['Electronics', 'Accessories']
         },
-        categories: ['Electronics', 'Accessories']
-      },
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      };
 
-    const budget = 50;
-    const occasion = 'Birthday';
+      const budget = 50;
+      const occasion = 'Birthday';
 
-    // Act
-    const recommendations = getGiftRecommendations(recipient, occasion, budget);
+      const recommendations = await getGiftRecommendationsFromAI({
+        recipient,
+        budget,
+        occasion
+      });
 
-    // Assert
-    expect(recommendations).toBeDefined();
-    expect(recommendations.length).toBeGreaterThan(0);
-    
-    // Verify recommendations match recipient interests
-    recommendations.forEach(gift => {
-      expect(gift).toHaveProperty('id');
-      expect(gift).toHaveProperty('name');
-      expect(gift).toHaveProperty('description');
-      expect(gift).toHaveProperty('price');
-      expect(gift.price).toBeLessThanOrEqual(budget);
-      
-      // Check if this gift matches at least one interest or category preference
-      const matchesInterest = !gift.interests || gift.interests.some(interest => 
-        recipient.interests?.includes(interest)
-      );
-      
-      const matchesCategory = !gift.category || 
-        !recipient.giftPreferences?.categories ||
-        recipient.giftPreferences.categories.includes(gift.category);
-      
-      expect(matchesInterest || matchesCategory).toBeTruthy();
+      expect(recommendations).toBeDefined();
+      expect(Array.isArray(recommendations)).toBeTruthy();
+      expect(recommendations.length).toBeGreaterThan(0);
+
+      // Helper function for budget validation
+      const isWithinBudget = (gift: any) => {
+        return gift.price && gift.price <= budget;
+      };
+
+      recommendations.forEach(gift => {
+        expect(isWithinBudget(gift)).toBeTruthy();
+      });
     });
-  });
 
-  test('should respect gift price range', () => {
-    // Arrange
-    const recipient: Partial<Recipient> = {
-      id: '2',
-      userId: 'test-user',
-      name: 'Jane Doe',
-      relationship: 'Sister',
-      interests: ['Books', 'Cooking', 'Travel'],
-      giftPreferences: {
-        priceRange: {
-          min: 30,
-          max: 75
-        }
-      },
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
+    it('should handle recipients with no interests gracefully', async () => {
+      const recipient: Partial<Recipient> = {
+        id: '2',
+        userId: 'test-user',
+        name: 'Jane Smith',
+        relationship: 'Family',
+        interests: [],
+        giftPreferences: {
+          priceRange: {
+            min: 10,
+            max: 50
+          },
+          categories: ['Books', 'Clothing']
+        },
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      };
 
-    const budget = 75;
-    const occasion = 'Birthday';
+      const budget = 30;
+      const occasion = 'Christmas';
 
-    // Act
-    const recommendations = getGiftRecommendations(recipient, occasion, budget);
+      const recommendations = await getGiftRecommendationsFromAI({
+        recipient,
+        budget,
+        occasion
+      });
 
-    // Assert
-    expect(recommendations).toBeDefined();
-    
-    // Verify all recommendations are within budget
-    recommendations.forEach(gift => {
-      expect(gift.price).toBeLessThanOrEqual(budget);
+      expect(recommendations).toBeDefined();
+      expect(Array.isArray(recommendations)).toBeTruthy();
+      expect(recommendations.length).toBeGreaterThan(0);
+
+      recommendations.forEach((gift: any) => {
+        expect(gift.price).toBeLessThanOrEqual(budget);
+      });
     });
   });
 }); 

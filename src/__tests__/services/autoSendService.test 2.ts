@@ -14,8 +14,8 @@ const mockRecipient: Recipient = {
   name: 'Alice',
   relationship: 'Friend',
   interests: ['Books', 'Music'],
-  createdAt: new Date(),
-  updatedAt: new Date(),
+  createdAt: Date.now(),
+  updatedAt: Date.now(),
   autoSendPreferences: {
     enabled: true,
     defaultBudget: 50,

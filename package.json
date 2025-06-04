@@ -67,7 +67,7 @@
     "vite": "^5.0.10"
   },
   "jest": {
-    "preset": "ts-jest",
+    "preset": "ts-jest/presets/default-esm",
     "testEnvironment": "jsdom",
     "setupFilesAfterEnv": [
       "<rootDir>/jest.setup.js"
@@ -76,7 +76,8 @@
       "^.+\\.(ts|tsx)$": [
         "ts-jest",
         {
-          "tsconfig": "tsconfig.test.json"
+          "tsconfig": "tsconfig.test.json",
+          "useESM": true
         }
       ]
     },
@@ -94,10 +95,7 @@
     "transformIgnorePatterns": [
       "node_modules/(?!(firebase|@firebase)/)"
     ],
-    "globals": {
-      "ts-jest": {
-        "useESM": true
-      }
-    }
+    "extensionsToTreatAsEsm": [".ts", ".tsx"],
+    "globals": {}
   }
 }
