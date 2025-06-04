@@ -42,7 +42,7 @@ export default function AIGiftRecommendations({
   onSaveForLater 
 }: AIGiftRecommendationsProps) {
   const [recommendations, setRecommendations] = useState<EnhancedGiftSuggestion[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [isAIGenerated, setIsAIGenerated] = useState(false);
@@ -56,56 +56,80 @@ export default function AIGiftRecommendations({
     generateRecommendations();
   }, [recipient, occasion]);
   
-  const generateRecommendations = async () => {
-    setLoading(true);
+  const generateRecommendations = async (retryAttempt = 0) => {
+    setIsLoading(true);
     setError(null);
     
     try {
-      console.log('Generating AI recommendations for:', recipient.name);
+      console.log(`Generating recommendations (attempt ${retryAttempt + 1})`);
       
-      const suggestions = await getGiftRecommendationsFromAI({
-        recipient,
-        budget: occasion.budget || 100,
-        occasion: occasion.name.toLowerCase(),
-        pastGifts,
-        preferences: {
-          giftWrap: true,
-          personalNote: true,
-          deliverySpeed: 'standard' as const,
-        }
+      // Cache busting with timestamp
+      const timestamp = Date.now();
+      const response = await fetch('/.netlify/functions/gift-recommendations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'X-Request-ID': `req-${timestamp}-${Math.random().toString(36).substr(2, 9)}`
+        },
+        body: JSON.stringify({
+          recipient: {
+            name: recipient.name,
+            interests: recipient.interests || [],
+            relationship: recipient.relationship || 'friend',
+            description: recipient.description || undefined,
+          },
+          budget: occasion.budget || 50,
+          occasion: occasion.name.toLowerCase(),
+          pastGifts: [],
+          timestamp: timestamp // Additional cache buster
+        }),
       });
+
+      if (!response.ok) {
+        // Retry logic for 5xx errors
+        if (response.status >= 500 && retryAttempt < 2) {
+          console.log(`Server error ${response.status}, retrying in 2 seconds...`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          return generateRecommendations(retryAttempt + 1);
+        }
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
       
-      setRecommendations(suggestions);
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      if (!data.suggestions || data.suggestions.length === 0) {
+        throw new Error('No recommendations received');
+      }
+
+      setRecommendations(data.suggestions);
+      setRetryCount(retryAttempt);
       
-      // Check if these are AI-generated or fallback recommendations
-      const isAI = suggestions.some(s => s.id && !s.id.includes('fallback'));
+      // Check if AI generated (vs fallback)
+      const isAI = data.metadata?.model === 'gpt-4o-mini';
       setIsAIGenerated(isAI);
       
-      if (suggestions.length > 0) {
-        toast({
-          title: isAI ? "🤖 AI Recommendations Ready" : "📋 Curated Recommendations Ready",
-          description: isAI 
-            ? `AI found ${suggestions.length} personalized gift suggestions for ${recipient.name}`
-            : `Found ${suggestions.length} quality gift suggestions for ${recipient.name}`,
-          status: isAI ? "success" : "info",
-          duration: 3000,
-          isClosable: true,
-        });
+      console.log(`Success! AI Generated: ${isAI}, Model: ${data.metadata?.model}, Attempts: ${retryAttempt + 1}`);
+      
+    } catch (err: unknown) {
+      console.error('Recommendation error:', err);
+      
+      // Retry logic for network errors
+      if (retryAttempt < 2 && (err instanceof TypeError || (err instanceof Error && err.message.includes('fetch')))) {
+        console.log(`Network error, retrying in 3 seconds...`);
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        return generateRecommendations(retryAttempt + 1);
       }
       
-    } catch (err) {
-      console.error('Error generating recommendations:', err);
-      setError(err instanceof Error ? err.message : 'Failed to generate recommendations');
-      
-      toast({
-        title: "Recommendation Error",
-        description: "Unable to generate AI recommendations. Please try again.",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
+      setError(err instanceof Error ? err.message : 'Failed to get recommendations');
+      setRetryCount(retryAttempt);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
   
@@ -134,7 +158,7 @@ export default function AIGiftRecommendations({
     });
   };
   
-  if (loading) {
+  if (isLoading) {
     return (
       <Box>
         <Heading size="md" mb={4}>
