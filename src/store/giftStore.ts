@@ -88,6 +88,9 @@ export const useGiftStore = create<GiftState>()(
       
       // Fetch gifts for a specific recipient
       fetchGiftsByRecipient: async (recipientId: string) => {
+        console.log('🎁 === FETCH GIFTS BY RECIPIENT START ===');
+        console.log('🎁 Fetching gifts for recipient:', recipientId);
+        
         set(state => ({ 
           loading: true, 
           error: null,
@@ -100,6 +103,16 @@ export const useGiftStore = create<GiftState>()(
         
         try {
           const gifts = await getGiftsByRecipient(recipientId);
+          console.log('🎁 Firebase returned gifts:', gifts.length);
+          console.log('🎁 Gift details:', gifts.map(g => ({
+            id: g.id,
+            name: g.name,
+            status: g.status,
+            occasionId: g.occasionId,
+            isAIGenerated: g.isAIGenerated,
+            createdAt: g.createdAt
+          })));
+          
           set(state => ({ 
             recipientGifts: {
               ...state.recipientGifts,
@@ -107,7 +120,11 @@ export const useGiftStore = create<GiftState>()(
             },
             loading: false 
           }));
+          
+          console.log('🎁 ✅ Gifts loaded into store for recipient:', recipientId);
+          console.log('🎁 === FETCH GIFTS BY RECIPIENT END ===');
         } catch (error) {
+          console.error('🎁 ❌ Error fetching gifts for recipient:', error);
           set({ 
             error: (error as Error).message, 
             loading: false 

@@ -75,15 +75,31 @@ export default function AIGiftRecommendations({
   
   // Debug logging
   useEffect(() => {
-    console.log('AIGiftRecommendations Debug:', {
+    console.log('🎁 === AI GIFT RECOMMENDATIONS DEBUG ===');
+    console.log('🎁 Component props:', {
       recipientId: recipient.id,
       occasionId: occasion.id,
       recipientName: recipient.name,
       occasionName: occasion.name,
-      selectedGiftsCount: selectedGiftsForOccasion.length,
-      allRecipientGiftsCount: allRecipientGifts.length
+      occasionDate: occasion.date,
+      occasionBudget: occasion.budget
     });
-  }, [recipient.id, occasion.id, selectedGiftsForOccasion.length, allRecipientGifts.length]);
+    console.log('🎁 Current recipient gifts count:', allRecipientGifts.length);
+    console.log('🎁 All recipient gifts:', allRecipientGifts.map(g => ({
+      id: g.id,
+      name: g.name,
+      status: g.status,
+      occasionId: g.occasionId,
+      isAIGenerated: g.isAIGenerated
+    })));
+    console.log('🎁 Selected gifts for this occasion:', selectedGiftsForOccasion.map(g => ({
+      id: g.id,
+      name: g.name,
+      status: g.status,
+      isAIGenerated: g.isAIGenerated
+    })));
+    console.log('🎁 Gift store loading state:', giftStoreLoading);
+  }, [recipient.id, occasion.id, selectedGiftsForOccasion.length, allRecipientGifts.length, giftStoreLoading]);
   
   // Fetch recipient gifts when component mounts
   useEffect(() => {
@@ -195,13 +211,15 @@ export default function AIGiftRecommendations({
   };
   
   const handleSelectGift = async (gift: EnhancedGiftSuggestion) => {
-    console.log('Selecting gift:', {
+    console.log('🎁 === GIFT SELECTION DEBUG START ===');
+    console.log('🎁 Selecting gift:', {
       giftId: gift.id,
       giftName: gift.name,
       recipientId: recipient.id,
       occasionId: occasion.id,
       recipientName: recipient.name,
-      occasionName: occasion.name
+      occasionName: occasion.name,
+      price: gift.price
     });
     
     try {
@@ -234,12 +252,27 @@ export default function AIGiftRecommendations({
         }
       };
       
+      console.log('🎁 Gift data to be saved:', giftData);
+      console.log('🎁 Calling createGift via giftStore...');
+      
       const createdGift = await createGift(giftData);
-      console.log('Gift created in Firebase:', createdGift);
+      console.log('🎁 ✅ Gift created in Firebase successfully:', {
+        id: createdGift.id,
+        name: createdGift.name,
+        status: createdGift.status,
+        isAIGenerated: createdGift.isAIGenerated,
+        recipientId: createdGift.recipientId,
+        occasionId: createdGift.occasionId
+      });
       
       // Also keep in localStorage cache for UI responsiveness
       const storedGift = giftStorage.selectGift(gift, recipient.id, occasion.id);
-      console.log('Gift cached in localStorage:', storedGift);
+      console.log('🎁 ✅ Gift cached in localStorage:', storedGift);
+      
+      // Force refresh of recipient gifts to show the change immediately
+      console.log('🎁 Fetching updated gifts for recipient...');
+      await fetchGiftsByRecipient(recipient.id);
+      console.log('🎁 ✅ Recipient gifts refreshed');
       
       onSelectGift?.(gift);
       toast({
@@ -248,8 +281,14 @@ export default function AIGiftRecommendations({
         status: "success",
         duration: 3000,
       });
+      
+      console.log('🎁 === GIFT SELECTION DEBUG END ===');
     } catch (error) {
-      console.error('Error selecting gift:', error);
+      console.error('🎁 ❌ Error selecting gift:', error);
+      console.log('🎁 Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace'
+      });
       toast({
         title: "Error",
         description: "Failed to save gift selection. Please try again.",
@@ -367,7 +406,19 @@ export default function AIGiftRecommendations({
     const inLocalStorage = giftStorage.getSelectedGiftsForOccasion(recipient.id, occasion.id)
       .some(g => g.id === giftId);
     
-    return inFirebase || inLocalStorage;
+    const isSelected = inFirebase || inLocalStorage;
+    
+    console.log('🎁 Gift selection check:', {
+      giftId,
+      giftName: recommendations.find(r => r.id === giftId)?.name,
+      inFirebase,
+      inLocalStorage,
+      isSelected,
+      firebaseGiftsCount: selectedGiftsForOccasion.length,
+      localStorageGiftsCount: giftStorage.getSelectedGiftsForOccasion(recipient.id, occasion.id).length
+    });
+    
+    return isSelected;
   };
   
   const isGiftSaved = (giftId: string) => {
