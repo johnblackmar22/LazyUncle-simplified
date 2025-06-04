@@ -204,6 +204,18 @@ export function useGiftStorage() {
     localStorage.removeItem(STORAGE_KEY);
   };
 
+  const updateGiftWithFirebaseId = (localId: string, firebaseId: string) => {
+    setStorage(prev => {
+      const updatedSelectedGifts = prev.selectedGifts.map(gift =>
+        gift.id === localId ? { ...gift, id: firebaseId } : gift
+      );
+      return {
+        ...prev,
+        selectedGifts: updatedSelectedGifts
+      };
+    });
+  };
+
   return {
     // State
     selectedGifts: storage.selectedGifts,
@@ -216,6 +228,7 @@ export function useGiftStorage() {
     removeGift,
     markAsPurchased,
     saveRecommendations,
+    updateGiftWithFirebaseId,
     
     // Getters
     getRecommendations,

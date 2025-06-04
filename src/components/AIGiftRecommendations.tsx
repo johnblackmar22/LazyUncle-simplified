@@ -215,8 +215,11 @@ export default function AIGiftRecommendations({
     }
   };
 
+  // Combine loading states for recommendations and sync
+  const isFullyLoading = isLoading || isSyncing;
+
   // Show loading skeleton while generating recommendations or syncing
-  if (isLoading && recommendations.length === 0) {
+  if (isFullyLoading && recommendations.length === 0) {
     return (
       <Box>
         <Flex justify="space-between" align="center" mb={6}>
@@ -226,26 +229,32 @@ export default function AIGiftRecommendations({
           </VStack>
           <Skeleton height="32px" width="80px" />
         </Flex>
-        
         <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
           {[1, 2, 3, 4, 5].map(i => (
             <Skeleton key={i} height="400px" borderRadius="md" />
           ))}
         </SimpleGrid>
+        <Box mt={4} textAlign="center">
+          <Text color="blue.500" fontWeight="medium">
+            {isLoading && 'Loading recommendations...'}
+            {isSyncing && 'Syncing your selections...'}
+          </Text>
+        </Box>
       </Box>
     );
   }
 
-  // Show error state
-  if (error && recommendations.length === 0) {
+  // Show error state for recommendations or sync
+  if ((error && recommendations.length === 0) || syncState.conflicts.some(c => !c.resolved)) {
     return (
       <Box>
         <Alert status="error" borderRadius="md">
           <AlertIcon />
           <Box>
-            <AlertTitle>Unable to generate recommendations</AlertTitle>
+            <AlertTitle>Unable to load recommendations or sync selections</AlertTitle>
             <AlertDescription>
-              {error}. Please try again.
+              {error ? error + '. ' : ''}
+              {syncState.conflicts.some(c => !c.resolved) && 'There was a problem syncing your gift selections. Please try again.'}
             </AlertDescription>
           </Box>
         </Alert>
@@ -415,6 +424,7 @@ export default function AIGiftRecommendations({
                       variant="solid"
                       isLoading={isSyncing}
                       loadingText="Syncing"
+                      disabled={isSyncing}
                     >
                       Selected
                     </Button>
@@ -427,6 +437,7 @@ export default function AIGiftRecommendations({
                       leftIcon={<FiShoppingCart />}
                       isLoading={isSyncing}
                       loadingText="Selecting"
+                      disabled={isSyncing}
                     >
                       Select Gift
                     </Button>
@@ -440,6 +451,7 @@ export default function AIGiftRecommendations({
                       variant="outline"
                       colorScheme="gray"
                       onClick={() => handleSaveForLater(gift)}
+                      disabled={isSyncing}
                     />
                   </Tooltip>
                   
@@ -451,6 +463,7 @@ export default function AIGiftRecommendations({
                         size="sm"
                         variant="outline"
                         onClick={() => window.open(gift.affiliateLink || gift.purchaseUrl, '_blank')}
+                        disabled={isSyncing}
                       />
                     </Tooltip>
                   )}

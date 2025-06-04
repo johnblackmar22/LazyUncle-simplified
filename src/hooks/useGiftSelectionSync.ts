@@ -134,8 +134,9 @@ export function useGiftSelectionSync({ recipientId, occasionId, autoSync = true 
       console.log('✅ Gift created in Firebase:', createdGift.id);
 
       // 3. Update localStorage with Firebase ID for future reference
-      // Note: We'll skip this for now since the method doesn't exist
-      // giftStorage.updateGiftWithFirebaseId?.(localGift.id, createdGift.id);
+      if (giftStorage.updateGiftWithFirebaseId) {
+        giftStorage.updateGiftWithFirebaseId(localGift.id, createdGift.id);
+      }
 
       setSyncState(prev => ({ 
         ...prev, 
