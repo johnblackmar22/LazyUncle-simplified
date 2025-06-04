@@ -36,8 +36,10 @@ async function initializeOpenAI() {
 function createPersonalizedPrompt(data: any): string {
   const { recipient, budget, occasion } = data;
   
-  // Simplified, faster prompt
-  return `Generate 5 gift recommendations as a JSON array for:
+  // Extremely explicit prompt for JSON generation
+  return `You must respond with ONLY a valid JSON array. No explanations, no markdown, no text before or after.
+
+Generate exactly 5 gift recommendations for:
 - Name: ${recipient.name}
 - Interests: ${(recipient.interests || []).join(', ')}
 - Age: ${recipient.age || 'adult'}
@@ -45,8 +47,20 @@ function createPersonalizedPrompt(data: any): string {
 - Occasion: ${occasion}
 - Budget: $${budget}
 
-Return only valid JSON array with objects having: name, description, category, price, reasoning, confidence (0-1), tags.
-Keep descriptions under 100 characters. Ensure all prices are under $${budget}.`;
+Respond with ONLY this JSON array format:
+[
+  {
+    "name": "specific product name",
+    "description": "brief description under 80 chars",
+    "category": "product category",
+    "price": 25,
+    "reasoning": "why this fits their interests",
+    "confidence": 0.9,
+    "tags": ["tag1", "tag2"]
+  }
+]
+
+All prices must be under $${budget}. Return ONLY the JSON array, nothing else.`;
 }
 
 const handler: Handler = async (event, context) => {
@@ -157,43 +171,96 @@ const handler: Handler = async (event, context) => {
           throw new Error('No response from OpenAI');
         }
 
-        // Parse and validate AI response
+        // Parse and validate AI response with robust error handling
         try {
-          // Try to extract JSON if it's wrapped in markdown
-          const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-          const jsonString = jsonMatch ? jsonMatch[1] : responseText;
+          let parsedResponse;
           
-          giftSuggestions = JSON.parse(jsonString);
+          // Method 1: Try direct JSON parse
+          try {
+            parsedResponse = JSON.parse(responseText);
+          } catch (directParseError) {
+            console.log('Direct JSON parse failed, trying markdown extraction...');
+            
+            // Method 2: Extract JSON from markdown code blocks
+            const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+            if (jsonMatch) {
+              try {
+                parsedResponse = JSON.parse(jsonMatch[1]);
+                console.log('Successfully parsed JSON from markdown');
+              } catch (markdownParseError) {
+                console.log('Markdown JSON parse failed, trying array extraction...');
+                
+                // Method 3: Look for array pattern
+                const arrayMatch = responseText.match(/\[[\s\S]*\]/);
+                if (arrayMatch) {
+                  parsedResponse = JSON.parse(arrayMatch[0]);
+                  console.log('Successfully parsed JSON array');
+                } else {
+                  throw new Error('No valid JSON found in response');
+                }
+              }
+            } else {
+              throw new Error('No JSON or markdown code blocks found');
+            }
+          }
           
-          // Basic validation
-          if (!Array.isArray(giftSuggestions)) {
-            throw new Error('Response is not an array');
+          giftSuggestions = Array.isArray(parsedResponse) ? parsedResponse : [parsedResponse];
+          
+          // Basic validation and cleanup
+          if (giftSuggestions.length === 0) {
+            throw new Error('Empty suggestions array');
           }
 
           // Ensure price is within budget and add required fields
-          giftSuggestions = giftSuggestions.map((suggestion: any) => {
-            if (suggestion.price > data.budget) {
-              suggestion.price = Math.floor(data.budget * 0.9);
-            }
+          giftSuggestions = giftSuggestions.map((suggestion: any, index: number) => {
+            // Clean up the suggestion object
+            const cleanSuggestion = {
+              id: suggestion.id || `ai-${Date.now()}-${index}`,
+              name: String(suggestion.name || `Gift Suggestion ${index + 1}`),
+              description: String(suggestion.description || 'A thoughtful gift choice'),
+              category: String(suggestion.category || 'General'),
+              price: Math.min(Number(suggestion.price || data.budget * 0.5), data.budget),
+              reasoning: String(suggestion.reasoning || 'Recommended based on interests'),
+              confidence: Number(suggestion.confidence || 0.8),
+              tags: Array.isArray(suggestion.tags) ? suggestion.tags : ['thoughtful']
+            };
             
-            // Add missing fields if needed
-            suggestion.id = suggestion.id || `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-            
-            return suggestion;
+            return cleanSuggestion;
           });
 
           // Ensure we have exactly 5 suggestions
-          if (giftSuggestions.length < 5) {
-            console.warn(`Only received ${giftSuggestions.length} suggestions, expected 5`);
+          giftSuggestions = giftSuggestions.slice(0, 5);
+          
+          // Add more suggestions if we don't have enough
+          while (giftSuggestions.length < 5) {
+            const index = giftSuggestions.length;
+            giftSuggestions.push({
+              id: `ai-supplement-${Date.now()}-${index}`,
+              name: `Additional Gift Option ${index + 1}`,
+              description: `A carefully selected gift option within your $${data.budget} budget`,
+              category: 'General',
+              price: Math.floor(data.budget * 0.7),
+              reasoning: 'AI-assisted recommendation to complete your options',
+              confidence: 0.75,
+              tags: ['ai-recommended']
+            });
           }
           
-          giftSuggestions = giftSuggestions.slice(0, 5);
           console.log(`Successfully generated ${giftSuggestions.length} AI recommendations`);
 
         } catch (parseError) {
           console.error('JSON parsing error:', parseError);
-          console.error('Raw response:', responseText);
-          throw parseError;
+          console.error('Raw response that failed to parse:', responseText);
+          
+          // Log the exact error for debugging
+          console.error('Parse error details:', {
+            error: parseError.message,
+            responseLength: responseText?.length,
+            responseStart: responseText?.substring(0, 200),
+            responseEnd: responseText?.substring(-200)
+          });
+          
+          throw new Error(`Failed to parse AI response: ${parseError.message}`);
         }
         
       } catch (openaiError: any) {
