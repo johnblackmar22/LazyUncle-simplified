@@ -41,10 +41,16 @@ export function useGiftSelectionSync({ recipientId, occasionId, autoSync = true 
   });
 
   const firebaseGifts = recipientGifts[recipientId] || [];
-  const localSelectedGifts = giftStorage.getSelectedGiftsForOccasion(recipientId, occasionId);
+  const localSelectedGifts = giftStorage.isLoaded ? giftStorage.getSelectedGiftsForOccasion(recipientId, occasionId) : [];
 
   // Get combined view of selections for this occasion
   const getUnifiedSelections = useCallback(() => {
+    // Don't process until localStorage is loaded
+    if (!giftStorage.isLoaded) {
+      console.log('🔄 Waiting for localStorage to load...');
+      return [];
+    }
+    
     const firebaseSelections = firebaseGifts.filter(
       gift => gift.occasionId === occasionId && gift.isAIGenerated && gift.status === 'idea'
     );
@@ -74,15 +80,20 @@ export function useGiftSelectionSync({ recipientId, occasionId, autoSync = true 
     });
 
     return Array.from(unifiedMap.values());
-  }, [firebaseGifts, localSelectedGifts, occasionId]);
+  }, [firebaseGifts, localSelectedGifts, occasionId, giftStorage.isLoaded]);
 
   // Check if a gift is selected (either in Firebase or localStorage)
   const isGiftSelected = useCallback((giftName: string): boolean => {
+    // Don't check until localStorage is loaded
+    if (!giftStorage.isLoaded) {
+      return false;
+    }
+    
     const selections = getUnifiedSelections();
     return selections.some(selection => 
       selection.name.toLowerCase() === giftName.toLowerCase()
     );
-  }, [getUnifiedSelections]);
+  }, [getUnifiedSelections, giftStorage.isLoaded]);
 
   // Select a gift with proper synchronization
   const selectGift = useCallback(async (gift: EnhancedGiftSuggestion): Promise<void> => {
@@ -123,7 +134,8 @@ export function useGiftSelectionSync({ recipientId, occasionId, autoSync = true 
       console.log('✅ Gift created in Firebase:', createdGift.id);
 
       // 3. Update localStorage with Firebase ID for future reference
-      giftStorage.updateGiftWithFirebaseId?.(localGift.id, createdGift.id);
+      // Note: We'll skip this for now since the method doesn't exist
+      // giftStorage.updateGiftWithFirebaseId?.(localGift.id, createdGift.id);
 
       setSyncState(prev => ({ 
         ...prev, 
@@ -229,9 +241,9 @@ export function useGiftSelectionSync({ recipientId, occasionId, autoSync = true 
               isAIGenerated: true,
               aiMetadata: {
                 model: 'local-storage',
-                confidence: localGift.confidence || 0.8,
-                reasoning: localGift.reasoning || 'Previously selected gift',
-                tags: localGift.tags || ['restored'],
+                confidence: localGift.metadata?.confidence || 0.8,
+                reasoning: localGift.metadata?.reasoning || 'Previously selected gift',
+                tags: localGift.metadata?.tags || ['restored'],
                 generatedAt: localGift.selectedAt || Date.now(),
                 originalId: localGift.id
               }
@@ -267,32 +279,26 @@ export function useGiftSelectionSync({ recipientId, occasionId, autoSync = true 
     }
   }, [recipientId, occasionId, autoSync, syncSelections]);
 
-  // Get count of selected gifts
-  const selectedGiftsCount = getUnifiedSelections().length;
-
-  // Get total budget used
-  const totalBudgetUsed = getUnifiedSelections().reduce(
-    (sum, selection) => sum + (selection.price || 0), 
-    0
-  );
+  // Get current selections and their statistics
+  const selectedGifts = getUnifiedSelections();
+  const selectedGiftsCount = selectedGifts.length;
+  const totalBudgetUsed = selectedGifts.reduce((total, gift) => total + (gift.price || 0), 0);
 
   return {
-    // Selection state
-    selectedGifts: getUnifiedSelections(),
+    // State
+    selectedGifts,
     selectedGiftsCount,
     totalBudgetUsed,
+    isLoading: syncState.isSyncing || firebaseLoading || !giftStorage.isLoaded,
+    syncState,
     
-    // Selection actions
+    // Actions
     selectGift,
     unselectGift,
     isGiftSelected,
-    
-    // Sync state and actions
-    syncState,
     syncSelections,
     
-    // Loading states
-    isLoading: firebaseLoading || syncState.isSyncing,
-    isSyncing: syncState.isSyncing
+    // Utils
+    clearConflicts: () => setSyncState(prev => ({ ...prev, conflicts: [] }))
   };
 } 

@@ -32,6 +32,8 @@ export function useGiftStorage() {
     savedGifts: [],
     recentRecommendations: {}
   });
+  
+  const [isLoaded, setIsLoaded] = useState(false);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -54,6 +56,8 @@ export function useGiftStorage() {
       }
     } catch (error) {
       console.error('Error loading gift storage:', error);
+    } finally {
+      setIsLoaded(true);
     }
   }, []);
 
@@ -201,6 +205,7 @@ export function useGiftStorage() {
     // State
     selectedGifts: storage.selectedGifts,
     savedGifts: storage.savedGifts,
+    isLoaded,
     
     // Actions
     selectGift,

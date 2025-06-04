@@ -92,7 +92,8 @@ export default function AIGiftRecommendations({
       isSelected: g.isSelected
     })));
     console.log('🎁 Sync state:', syncState);
-  }, [recipient.id, occasion.id, selectedGiftsCount, selectedGifts, syncState]);
+    console.log('🎁 Is syncing/loading:', isSyncing);
+  }, [recipient.id, occasion.id, selectedGiftsCount, selectedGifts, syncState, isSyncing]);
   
   useEffect(() => {
     // Generate recommendations when component mounts or key props change
