@@ -168,6 +168,7 @@ const handler: Handler = async (event, context) => {
 
         // Call OpenAI with enhanced parameters and timeout
         console.log('Calling OpenAI API...');
+        const startTime = Date.now();
         
         // Add timeout wrapper for OpenAI call
         const openaiPromise = openaiClient.chat.completions.create({
@@ -185,13 +186,17 @@ const handler: Handler = async (event, context) => {
           frequency_penalty: 0.3,
           presence_penalty: 0.1,
         });
+        
+        console.log('OpenAI promise created, waiting for response...');
 
-        // Timeout after 8 seconds (before Netlify's 10s limit)
+        // Timeout after 5 seconds (testing with shorter timeout)
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('OpenAI API timeout after 8 seconds')), 8000)
+          setTimeout(() => reject(new Error('OpenAI API timeout after 5 seconds')), 5000)
         );
 
         const completion = await Promise.race([openaiPromise, timeoutPromise]) as any;
+        const endTime = Date.now();
+        console.log(`OpenAI API call completed in ${endTime - startTime}ms`);
 
         const responseText = completion.choices[0]?.message?.content?.trim();
         console.log('OpenAI response received, length:', responseText?.length);
