@@ -34,68 +34,19 @@ async function initializeOpenAI() {
 
 // Enhanced prompt engineering
 function createPersonalizedPrompt(data: any): string {
-  const { recipient, budget, occasion, pastGifts, preferences } = data;
+  const { recipient, budget, occasion } = data;
   
-  const ageContext = recipient.age ? `${recipient.age} years old` : 'adult';
-  const genderContext = recipient.gender ? `who identifies as ${recipient.gender}` : '';
-  const pastGiftContext = pastGifts && pastGifts.length > 0 
-    ? `Past gifts: ${pastGifts.map((g: any) => `${g.name} (${g.category})`).join(', ')}`
-    : 'No past gift history available';
-  
-  const relationshipContext = recipient.relationship ? 
-    `My relationship: I am giving this gift as their ${recipient.relationship.toLowerCase()}.` :
-    'Relationship context not specified.';
-  
-  const personalityContext = recipient.description ? 
-    `Additional context: ${recipient.description}` :
-    'No additional personality details provided.';
-  
-  return `You are an expert gift consultant with 20+ years of experience. Your task is to recommend personalized gifts that will genuinely delight the recipient.
+  // Simplified, faster prompt
+  return `Generate 5 gift recommendations as a JSON array for:
+- Name: ${recipient.name}
+- Interests: ${(recipient.interests || []).join(', ')}
+- Age: ${recipient.age || 'adult'}
+- Relationship: ${recipient.relationship || 'friend'}
+- Occasion: ${occasion}
+- Budget: $${budget}
 
-RECIPIENT PROFILE:
-• Name: ${recipient.name}
-• Age: ${ageContext} ${genderContext}
-• ${relationshipContext}
-• Interests: ${(recipient.interests || []).join(', ')}
-• ${personalityContext}
-
-OCCASION DETAILS:
-• Event: ${occasion}
-• Budget: $${budget} (strict limit)
-• Gift preferences: ${preferences?.giftWrap ? 'Gift wrapping preferred' : 'No gift wrapping needed'}
-
-GIFT HISTORY:
-${pastGiftContext}
-
-IMPORTANT CONTEXT:
-- Consider the relationship (${recipient.relationship || 'unspecified'}) when selecting appropriate gifts
-- Focus on their specific interests: ${(recipient.interests || []).join(', ')}
-- Remember this is for ${occasion} and they are ${ageContext}
-${recipient.description ? `- Personal note: ${recipient.description}` : ''}
-
-INSTRUCTIONS:
-1. Suggest 5 thoughtful, unique gifts that match the recipient's personality and interests
-2. Avoid duplicating past gifts or similar items
-3. Focus on emotional impact and personal connection
-4. Include specific product names when possible (not generic categories)
-5. Ensure all suggestions are under $${budget}
-6. Provide clear reasoning for each recommendation
-7. Consider the relationship context (${recipient.relationship || 'friend'}) for appropriateness
-8. Pay special attention to their interests: ${(recipient.interests || []).join(', ')}
-
-RESPONSE FORMAT:
-Return a JSON array of exactly 5 gift objects with this structure:
-{
-  "name": "Specific product name",
-  "description": "Detailed description (2-3 sentences)",
-  "category": "Product category",
-  "price": estimated_price_number,
-  "reasoning": "Why this gift is perfect for them (1-2 sentences)",
-  "confidence": confidence_score_0_to_1,
-  "tags": ["relevant", "tags"]
-}
-
-Focus on gifts that show thoughtfulness and understanding of who they are as a person, especially considering their interests in ${(recipient.interests || []).slice(0, 3).join(', ')}.`;
+Return only valid JSON array with objects having: name, description, category, price, reasoning, confidence (0-1), tags.
+Keep descriptions under 100 characters. Ensure all prices are under $${budget}.`;
 }
 
 const handler: Handler = async (event, context) => {
@@ -189,9 +140,9 @@ const handler: Handler = async (event, context) => {
         
         console.log('OpenAI promise created, waiting for response...');
 
-        // Timeout after 5 seconds (testing with shorter timeout)
+        // Timeout after 8 seconds (faster prompt should complete quicker)
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('OpenAI API timeout after 5 seconds')), 5000)
+          setTimeout(() => reject(new Error('OpenAI API timeout after 8 seconds')), 8000)
         );
 
         const completion = await Promise.race([openaiPromise, timeoutPromise]) as any;
