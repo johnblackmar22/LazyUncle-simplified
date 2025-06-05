@@ -43,12 +43,15 @@ import {
   FaTruck,
   FaShoppingCart,
   FaHeart,
-  FaExternalLinkAlt
+  FaExternalLinkAlt,
+  FaCheckCircle,
+  FaUndo
 } from 'react-icons/fa';
 import { EditIcon, DeleteIcon } from '@chakra-ui/icons';
-import type { Occasion, Recipient, GiftSuggestion } from '../types';
+import type { Occasion, Recipient, GiftSuggestion, Gift } from '../types';
 import { format } from 'date-fns';
 import { giftRecommendationEngine, type GiftRecommendation } from '../services/giftRecommendationEngine';
+import { useGiftStore } from '../store/giftStore';
 
 interface OccasionCardProps {
   occasion: Occasion;
@@ -74,6 +77,29 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const hoverBgColor = useColorModeValue('gray.50', 'gray.700');
+
+  // Gift store for persistence
+  const { 
+    createGift, 
+    updateGift, 
+    removeGift, 
+    fetchGiftsByRecipient, 
+    recipientGifts,
+    loading: giftLoading 
+  } = useGiftStore();
+
+  // Get existing selected gifts for this occasion
+  const existingGifts = recipientGifts[recipient.id] || [];
+  const selectedGiftsForOccasion = existingGifts.filter(gift => 
+    gift.occasionId === occasion.id && gift.status === 'selected'
+  );
+
+  // Load existing gifts when component mounts
+  useEffect(() => {
+    if (recipient.id) {
+      fetchGiftsByRecipient(recipient.id);
+    }
+  }, [recipient.id, fetchGiftsByRecipient]);
 
   const handleGenerateSuggestions = async () => {
     setGenerating(true);
@@ -124,23 +150,85 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
     }
   };
 
-  const handleSelectGift = (gift: GiftRecommendation) => {
-    toast({
-      title: 'Gift Selected!',
-      description: `"${gift.name}" has been saved for ${recipient.name}`,
-      status: 'success',
-      duration: 3000,
-      isClosable: true,
-    });
-    // TODO: Save selected gift to the store/backend
+  const handleSelectGift = async (gift: GiftRecommendation) => {
+    try {
+      // Create a new gift record with 'selected' status
+      const newGift: Omit<Gift, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {
+        recipientId: recipient.id,
+        name: gift.name,
+        description: gift.description,
+        price: gift.price,
+        category: gift.category,
+        occasionId: occasion.id,
+        date: new Date(occasion.date).getTime(),
+        status: 'selected',
+        imageUrl: gift.imageUrl,
+        purchaseUrl: gift.purchaseUrl,
+        notes: gift.reasoning,
+        recurring: occasion.recurring || false
+      };
+
+      await createGift(newGift);
+      
+      toast({
+        title: 'Gift Selected!',
+        description: `"${gift.name}" has been saved for ${recipient.name}'s ${occasion.name}`,
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('❌ Error saving selected gift:', error);
+      toast({
+        title: 'Error Saving Gift',
+        description: 'Please try again',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleUndoSelection = async (gift: Gift) => {
+    try {
+      await removeGift(gift.id);
+      
+      toast({
+        title: 'Selection Removed',
+        description: `"${gift.name}" has been removed from your selections`,
+        status: 'info',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('❌ Error removing gift selection:', error);
+      toast({
+        title: 'Error Removing Selection',
+        description: 'Please try again',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  // Check if a recommendation is already selected
+  const isGiftSelected = (recommendation: GiftRecommendation): Gift | null => {
+    return selectedGiftsForOccasion.find(gift => 
+      gift.name === recommendation.name && 
+      Math.abs(gift.price - recommendation.price) < 0.01 // Account for floating point precision
+    ) || null;
   };
 
   const getStatusBadge = () => {
     if (generating) {
       return <Badge colorScheme="blue" variant="subtle"><Spinner size="xs" mr={1} />Generating...</Badge>;
     }
+    if (selectedGiftsForOccasion.length > 0) {
+      return <Badge colorScheme="green" variant="subtle">{selectedGiftsForOccasion.length} gift{selectedGiftsForOccasion.length > 1 ? 's' : ''} selected</Badge>;
+    }
     if (suggestions.length > 0) {
-      return <Badge colorScheme="green" variant="subtle">{suggestions.length} suggestions</Badge>;
+      return <Badge colorScheme="purple" variant="subtle">{suggestions.length} suggestions</Badge>;
     }
     return null;
   };
@@ -224,6 +312,84 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
           )}
         </VStack>
 
+        {/* Show existing selected gifts */}
+        {selectedGiftsForOccasion.length > 0 && (
+          <Box mt={4}>
+            <Divider mb={3} />
+            <Flex justify="space-between" align="center" mb={3}>
+              <Text fontWeight="bold" fontSize="md" color="green.600">
+                ✅ Selected Gifts
+              </Text>
+            </Flex>
+            
+            <VStack spacing={3} align="stretch">
+              {selectedGiftsForOccasion.map((gift) => (
+                <Box
+                  key={gift.id}
+                  p={3}
+                  bg={useColorModeValue('green.50', 'green.900')}
+                  borderRadius="md"
+                  borderWidth="2px"
+                  borderColor={useColorModeValue('green.200', 'green.600')}
+                >
+                  <Flex justify="space-between" align="start" mb={2}>
+                    <VStack align="start" spacing={1} flex={1}>
+                      <HStack>
+                        <Icon as={FaCheckCircle} color="green.500" />
+                        <Text fontWeight="semibold" fontSize="sm" noOfLines={1}>
+                          {gift.name}
+                        </Text>
+                      </HStack>
+                      {gift.description && (
+                        <Text fontSize="xs" color="gray.600" noOfLines={2}>
+                          {gift.description}
+                        </Text>
+                      )}
+                      <HStack spacing={2}>
+                        <Badge colorScheme="green" size="sm">
+                          ${gift.price}
+                        </Badge>
+                        <Badge colorScheme="blue" size="sm" variant="outline">
+                          {gift.category}
+                        </Badge>
+                        <Badge colorScheme="green" size="sm" variant="solid">
+                          Selected
+                        </Badge>
+                      </HStack>
+                    </VStack>
+                    <VStack spacing={1}>
+                      <Button
+                        size="xs"
+                        colorScheme="red"
+                        variant="outline"
+                        leftIcon={<FaUndo />}
+                        onClick={() => handleUndoSelection(gift)}
+                      >
+                        Undo
+                      </Button>
+                      {gift.purchaseUrl && (
+                        <Button
+                          size="xs"
+                          variant="outline"
+                          leftIcon={<FaExternalLinkAlt />}
+                          onClick={() => window.open(gift.purchaseUrl, '_blank')}
+                        >
+                          View
+                        </Button>
+                      )}
+                    </VStack>
+                  </Flex>
+                  {gift.notes && (
+                    <Text fontSize="xs" color="gray.500" fontStyle="italic">
+                      💡 {gift.notes}
+                    </Text>
+                  )}
+                </Box>
+              ))}
+            </VStack>
+          </Box>
+        )}
+
         {/* AI Gift Suggestions Section */}
         <Collapse in={showSuggestions} animateOpacity>
           <Box mt={4}>
@@ -251,63 +417,96 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
             )}
 
             <VStack spacing={3} align="stretch">
-              {suggestions.map((gift, index) => (
-                <Box
-                  key={gift.id || index}
-                  p={3}
-                  bg={useColorModeValue('gray.50', 'gray.700')}
-                  borderRadius="md"
-                  borderWidth="1px"
-                  borderColor={useColorModeValue('gray.200', 'gray.600')}
-                >
-                  <Flex justify="space-between" align="start" mb={2}>
-                    <VStack align="start" spacing={1} flex={1}>
-                      <Text fontWeight="semibold" fontSize="sm" noOfLines={1}>
-                        {gift.name}
+              {suggestions.map((gift, index) => {
+                const selectedGift = isGiftSelected(gift);
+                const isSelected = !!selectedGift;
+                
+                return (
+                  <Box
+                    key={gift.id || index}
+                    p={3}
+                    bg={isSelected 
+                      ? useColorModeValue('green.50', 'green.900') 
+                      : useColorModeValue('gray.50', 'gray.700')
+                    }
+                    borderRadius="md"
+                    borderWidth={isSelected ? "2px" : "1px"}
+                    borderColor={isSelected 
+                      ? useColorModeValue('green.200', 'green.600')
+                      : useColorModeValue('gray.200', 'gray.600')
+                    }
+                  >
+                    <Flex justify="space-between" align="start" mb={2}>
+                      <VStack align="start" spacing={1} flex={1}>
+                        <HStack>
+                          {isSelected && <Icon as={FaCheckCircle} color="green.500" />}
+                          <Text fontWeight="semibold" fontSize="sm" noOfLines={1}>
+                            {gift.name}
+                          </Text>
+                        </HStack>
+                        <Text fontSize="xs" color="gray.600" noOfLines={2}>
+                          {gift.description}
+                        </Text>
+                        <HStack spacing={2}>
+                          <Badge colorScheme="green" size="sm">
+                            ${gift.price}
+                          </Badge>
+                          <Badge colorScheme="blue" size="sm" variant="outline">
+                            {gift.category}
+                          </Badge>
+                          <Badge colorScheme="orange" size="sm" variant="subtle">
+                            {Math.round(gift.confidence * 100)}% match
+                          </Badge>
+                          {isSelected && (
+                            <Badge colorScheme="green" size="sm" variant="solid">
+                              Selected
+                            </Badge>
+                          )}
+                        </HStack>
+                      </VStack>
+                      <VStack spacing={1}>
+                        {isSelected ? (
+                          <Button
+                            size="xs"
+                            colorScheme="red"
+                            variant="outline"
+                            leftIcon={<FaUndo />}
+                            onClick={() => selectedGift && handleUndoSelection(selectedGift)}
+                            isLoading={giftLoading}
+                          >
+                            Undo
+                          </Button>
+                        ) : (
+                          <Button
+                            size="xs"
+                            colorScheme="purple"
+                            leftIcon={<FaHeart />}
+                            onClick={() => handleSelectGift(gift)}
+                            isLoading={giftLoading}
+                          >
+                            Select
+                          </Button>
+                        )}
+                        {gift.purchaseUrl && (
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            leftIcon={<FaExternalLinkAlt />}
+                            onClick={() => window.open(gift.purchaseUrl, '_blank')}
+                          >
+                            View
+                          </Button>
+                        )}
+                      </VStack>
+                    </Flex>
+                    {gift.reasoning && (
+                      <Text fontSize="xs" color="gray.500" fontStyle="italic">
+                        💡 {gift.reasoning}
                       </Text>
-                      <Text fontSize="xs" color="gray.600" noOfLines={2}>
-                        {gift.description}
-                      </Text>
-                      <HStack spacing={2}>
-                        <Badge colorScheme="green" size="sm">
-                          ${gift.price}
-                        </Badge>
-                        <Badge colorScheme="blue" size="sm" variant="outline">
-                          {gift.category}
-                        </Badge>
-                        <Badge colorScheme="orange" size="sm" variant="subtle">
-                          {Math.round(gift.confidence * 100)}% match
-                        </Badge>
-                      </HStack>
-                    </VStack>
-                    <VStack spacing={1}>
-                      <Button
-                        size="xs"
-                        colorScheme="purple"
-                        leftIcon={<FaHeart />}
-                        onClick={() => handleSelectGift(gift)}
-                      >
-                        Select
-                      </Button>
-                      {gift.purchaseUrl && (
-                        <Button
-                          size="xs"
-                          variant="outline"
-                          leftIcon={<FaExternalLinkAlt />}
-                          onClick={() => window.open(gift.purchaseUrl, '_blank')}
-                        >
-                          View
-                        </Button>
-                      )}
-                    </VStack>
-                  </Flex>
-                  {gift.reasoning && (
-                    <Text fontSize="xs" color="gray.500" fontStyle="italic">
-                      💡 {gift.reasoning}
-                    </Text>
-                  )}
-                </Box>
-              ))}
+                    )}
+                  </Box>
+                );
+              })}
             </VStack>
           </Box>
         </Collapse>
