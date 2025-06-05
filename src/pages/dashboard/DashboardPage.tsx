@@ -420,20 +420,24 @@ const DashboardPage: React.FC = () => {
                                   </Text>
                                 )}
                                 
-                                {recipient.interests && recipient.interests.length > 0 && (
-                                  <Flex gap={1} flexWrap="wrap" mt={1}>
-                                    {recipient.interests.slice(0, 3).map((interest, index) => (
-                                      <Badge key={index} colorScheme={getInterestColor(index)} variant="subtle" fontSize="xs">
-                                        {interest}
-                                      </Badge>
-                                    ))}
-                                    {recipient.interests.length > 3 && (
-                                      <Badge colorScheme="gray" variant="subtle" fontSize="xs">
-                                        +{recipient.interests.length - 3}
-                                      </Badge>
-                                    )}
-                                  </Flex>
-                                )}
+                                {/* Show gift occasions instead of interests */}
+                                {(() => {
+                                  const recipientOccasions = occasions[recipient.id] || [];
+                                  return recipientOccasions.length > 0 && (
+                                    <Flex gap={1} flexWrap="wrap" mt={1}>
+                                      {recipientOccasions.slice(0, 3).map((occasion, index) => (
+                                        <Badge key={occasion.id} colorScheme={getInterestColor(index)} variant="subtle" fontSize="xs">
+                                          {occasion.name}
+                                        </Badge>
+                                      ))}
+                                      {recipientOccasions.length > 3 && (
+                                        <Badge colorScheme="gray" variant="subtle" fontSize="xs">
+                                          +{recipientOccasions.length - 3} more
+                                        </Badge>
+                                      )}
+                                    </Flex>
+                                  );
+                                })()}
                               </VStack>
                             </Flex>
                             
