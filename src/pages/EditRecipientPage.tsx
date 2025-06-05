@@ -351,10 +351,10 @@ const EditRecipientPage: React.FC = () => {
 
                 <Divider />
 
-                <FormControl>
+                <FormControl isRequired>
                   <Flex align="center" gap={2} mb={2}>
                     <Icon as={FaMapMarkerAlt} color="green.500" />
-                    <FormLabel mb={0}>Delivery Address (Optional)</FormLabel>
+                    <FormLabel mb={0}>Delivery Address</FormLabel>
                   </Flex>
                   <Text fontSize="sm" color="gray.600" mb={3}>
                     Where should gifts be delivered for this recipient?
@@ -362,7 +362,7 @@ const EditRecipientPage: React.FC = () => {
                   <AddressForm
                     address={deliveryAddress}
                     onChange={setDeliveryAddress}
-                    isRequired={false}
+                    isRequired={true}
                     helperText="We'll use this address to deliver gifts directly to your recipient."
                   />
                 </FormControl>

@@ -59,7 +59,8 @@ const AddRecipientPage: React.FC = () => {
   // Validation
   const [touched, setTouched] = useState({
     name: false,
-    relationship: false
+    relationship: false,
+    deliveryAddress: false
   });
   
   // Background colors
@@ -74,6 +75,7 @@ const AddRecipientPage: React.FC = () => {
 
   const isNameInvalid = touched.name && name.trim() === '';
   const isRelationshipInvalid = touched.relationship && relationship.trim() === '';
+  const isDeliveryAddressInvalid = touched.deliveryAddress && !deliveryAddress;
 
   const handleAddInterest = () => {
     if (interest.trim() !== '' && !interests.includes(interest.trim())) {
@@ -92,10 +94,11 @@ const AddRecipientPage: React.FC = () => {
     // Mark fields as touched for validation
     setTouched({
       name: true,
-      relationship: true
+      relationship: true,
+      deliveryAddress: true
     });
     
-    if (isNameInvalid || isRelationshipInvalid) {
+    if (isNameInvalid || isRelationshipInvalid || isDeliveryAddressInvalid) {
       return;
     }
     
@@ -283,20 +286,27 @@ const AddRecipientPage: React.FC = () => {
 
                 <Divider />
 
-                <FormControl>
+                <FormControl isRequired isInvalid={isDeliveryAddressInvalid}>
                   <Flex align="center" gap={2} mb={2}>
                     <Icon as={FaMapMarkerAlt} color="green.500" />
-                    <FormLabel mb={0}>Delivery Address (Optional)</FormLabel>
+                    <FormLabel mb={0}>Delivery Address</FormLabel>
                   </Flex>
                   <Text fontSize="sm" color="gray.600" mb={3}>
                     Where should gifts be delivered for this recipient?
                   </Text>
-                  <AddressForm
-                    address={deliveryAddress}
-                    onChange={setDeliveryAddress}
-                    isRequired={false}
-                    helperText="We'll use this address to deliver gifts directly to your recipient."
-                  />
+                  <Box
+                    onBlur={() => setTouched({ ...touched, deliveryAddress: true })}
+                  >
+                    <AddressForm
+                      address={deliveryAddress}
+                      onChange={setDeliveryAddress}
+                      isRequired={true}
+                      helperText="We'll use this address to deliver gifts directly to your recipient."
+                    />
+                  </Box>
+                  {isDeliveryAddressInvalid && (
+                    <FormErrorMessage>Delivery address is required</FormErrorMessage>
+                  )}
                 </FormControl>
                 
                 <Divider />
