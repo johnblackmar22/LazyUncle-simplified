@@ -423,28 +423,28 @@ export default function SettingsPage() {
             </Flex>
           </CardHeader>
           <CardBody>
-            <VStack spacing={4} align="stretch">
-              <FormControl display="flex" alignItems="center">
-                <FormLabel mb="0" flex="1">Email Notifications</FormLabel>
+            <VStack spacing={5} align="stretch">
+              <HStack justify="space-between" align="center">
+                <FormLabel mb="0">Email Notifications</FormLabel>
                 <Switch 
                   isChecked={settings.emailNotifications}
                   onChange={handleSwitchChange('emailNotifications')}
                   colorScheme="blue"
                 />
-              </FormControl>
+              </HStack>
               
-              <FormControl display="flex" alignItems="center">
-                <FormLabel mb="0" flex="1">Text Notifications</FormLabel>
+              <HStack justify="space-between" align="center">
+                <FormLabel mb="0">Text Notifications</FormLabel>
                 <Switch 
                   isChecked={settings.textNotifications}
                   onChange={handleTextNotificationsToggle}
                   colorScheme="blue"
                 />
-              </FormControl>
+              </HStack>
               
               {/* Phone number field appears only if text notifications is enabled */}
               {settings.textNotifications && (
-                <FormControl isRequired maxW="400px">
+                <FormControl maxW="400px">
                   <FormLabel>Phone Number</FormLabel>
                   <InputGroup>
                     <InputLeftAddon>+1</InputLeftAddon>
@@ -455,12 +455,12 @@ export default function SettingsPage() {
                       placeholder="(555) 123-4567"
                     />
                   </InputGroup>
-                  <FormHelperText>Your phone number is used for text notifications (10 digits required)</FormHelperText>
+                  <FormHelperText>Required for text notifications (10 digits)</FormHelperText>
                 </FormControl>
               )}
 
-              <FormControl maxW="200px">
-                <FormLabel>Reminder Days Before Event</FormLabel>
+              <FormControl maxW="250px">
+                <FormLabel>Reminder Days</FormLabel>
                 <NumberInput 
                   value={settings.reminderDays} 
                   min={1} 
@@ -473,7 +473,7 @@ export default function SettingsPage() {
                     <NumberDecrementStepper />
                   </NumberInputStepper>
                 </NumberInput>
-                <FormHelperText>How many days before an event to send a reminder</FormHelperText>
+                <FormHelperText>Days before an event to send reminders</FormHelperText>
               </FormControl>
 
               <HStack spacing={4} pt={2}>
