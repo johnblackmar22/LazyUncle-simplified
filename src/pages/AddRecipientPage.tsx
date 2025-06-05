@@ -35,7 +35,7 @@ import type { Address } from '../types';
 import AddressForm from '../components/AddressForm';
 
 const relationshipOptions = [
-  'Nephew', 'Niece', 'Wife', 'Husband', 'Brother', 'Sister', 'Mom', 'Dad', 'Friend', 'Colleague', 'Other'
+  'Nephew', 'Niece', 'Son', 'Daughter', 'Wife', 'Husband', 'Brother', 'Sister', 'Mom', 'Dad', 'Friend', 'Colleague', 'Other'
 ];
 
 const AddRecipientPage: React.FC = () => {
@@ -46,6 +46,7 @@ const AddRecipientPage: React.FC = () => {
   // Form values
   const [name, setName] = useState('');
   const [relationship, setRelationship] = useState('');
+  const [customRelationship, setCustomRelationship] = useState('');
   const [birthMonth, setBirthMonth] = useState<string>('');
   const [birthDay, setBirthDay] = useState<string>('');
   const [birthYear, setBirthYear] = useState<string>('');
@@ -108,9 +109,11 @@ const AddRecipientPage: React.FC = () => {
         birthdateStr = `${birthYear}-${birthMonth}-${birthDay}`;
       }
       
+      const finalRelationship = relationship === 'Other' ? customRelationship : relationship;
+      
       await addRecipient({
         name,
-        relationship,
+        relationship: finalRelationship,
         birthdate: birthdateStr || undefined,
         interests,
         description: description.trim() || undefined,
@@ -186,6 +189,14 @@ const AddRecipientPage: React.FC = () => {
                       <option key={option} value={option}>{option}</option>
                     ))}
                   </Select>
+                  {relationship === 'Other' && (
+                    <Input
+                      value={customRelationship}
+                      onChange={(e) => setCustomRelationship(e.target.value)}
+                      placeholder="Enter custom relationship"
+                      mt={2}
+                    />
+                  )}
                   {isRelationshipInvalid && (
                     <FormErrorMessage>Relationship is required</FormErrorMessage>
                   )}

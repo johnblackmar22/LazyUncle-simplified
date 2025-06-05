@@ -306,6 +306,11 @@ export default function SettingsPage() {
             <Heading size="xl" mb={2}>Settings</Heading>
             <Text color="gray.600">
               Customize your LazyUncle experience
+              {(user?.displayName || user?.email) && (
+                <Text as="span" fontWeight="medium" ml={2}>
+                  • {user.displayName || user.email?.split('@')[0]}
+                </Text>
+              )}
             </Text>
           </Box>
         </Flex>
@@ -345,62 +350,66 @@ export default function SettingsPage() {
 
               <Divider />
 
-              {!isPasswordChangeVisible ? (
-                <Button 
-                  onClick={() => setIsPasswordChangeVisible(true)}
-                  colorScheme="blue"
-                  variant="outline"
-                  size="sm"
-                >
-                  Change Password
-                </Button>
-              ) : (
-                <VStack spacing={4} align="stretch">
-                  <FormControl>
-                    <FormLabel>Current Password</FormLabel>
-                    <Input 
-                      type="password" 
-                      value={currentPassword} 
-                      onChange={(e) => setCurrentPassword(e.target.value)} 
-                    />
-                  </FormControl>
-                  
-                  <FormControl>
-                    <FormLabel>New Password</FormLabel>
-                    <Input 
-                      type="password" 
-                      value={newPassword} 
-                      onChange={(e) => setNewPassword(e.target.value)} 
-                    />
-                  </FormControl>
-                  
-                  <FormControl>
-                    <FormLabel>Confirm New Password</FormLabel>
-                    <Input 
-                      type="password" 
-                      value={confirmPassword} 
-                      onChange={(e) => setConfirmPassword(e.target.value)} 
-                    />
-                  </FormControl>
-                  
-                  <HStack>
-                    <Button 
-                      onClick={handlePasswordChange}
-                      colorScheme="blue"
-                      size="sm"
-                    >
-                      Update Password
-                    </Button>
-                    <Button 
-                      onClick={() => setIsPasswordChangeVisible(false)}
-                      variant="ghost"
-                      size="sm"
-                    >
-                      Cancel
-                    </Button>
-                  </HStack>
-                </VStack>
-              )}
+              {/* Change Password Section */}
+              <Box>
+                <Text fontWeight="medium" mb={3}>Change Password</Text>
+                {!isPasswordChangeVisible ? (
+                  <Button 
+                    onClick={() => setIsPasswordChangeVisible(true)}
+                    colorScheme="blue"
+                    variant="outline"
+                    size="sm"
+                  >
+                    Change Password
+                  </Button>
+                ) : (
+                  <VStack spacing={4} align="stretch">
+                    <FormControl>
+                      <FormLabel>Current Password</FormLabel>
+                      <Input 
+                        type="password" 
+                        value={currentPassword} 
+                        onChange={(e) => setCurrentPassword(e.target.value)} 
+                      />
+                    </FormControl>
+                    
+                    <FormControl>
+                      <FormLabel>New Password</FormLabel>
+                      <Input 
+                        type="password" 
+                        value={newPassword} 
+                        onChange={(e) => setNewPassword(e.target.value)} 
+                      />
+                    </FormControl>
+                    
+                    <FormControl>
+                      <FormLabel>Confirm New Password</FormLabel>
+                      <Input 
+                        type="password" 
+                        value={confirmPassword} 
+                        onChange={(e) => setConfirmPassword(e.target.value)} 
+                      />
+                    </FormControl>
+                    
+                    <HStack>
+                      <Button 
+                        onClick={handlePasswordChange}
+                        colorScheme="blue"
+                        size="sm"
+                      >
+                        Update Password
+                      </Button>
+                      <Button 
+                        onClick={() => setIsPasswordChangeVisible(false)}
+                        variant="ghost"
+                        size="sm"
+                      >
+                        Cancel
+                      </Button>
+                    </HStack>
+                  </VStack>
+                )}
+              </Box>
             </VStack>
           </CardBody>
         </Card>
@@ -414,9 +423,9 @@ export default function SettingsPage() {
             </Flex>
           </CardHeader>
           <CardBody>
-            <VStack spacing={6} align="stretch">
-              <FormControl display="flex" alignItems="center" mb={4}>
-                <FormLabel mb="0">Email Notifications</FormLabel>
+            <VStack spacing={4} align="stretch">
+              <FormControl display="flex" alignItems="center">
+                <FormLabel mb="0" flex="1">Email Notifications</FormLabel>
                 <Switch 
                   isChecked={settings.emailNotifications}
                   onChange={handleSwitchChange('emailNotifications')}
@@ -424,8 +433,8 @@ export default function SettingsPage() {
                 />
               </FormControl>
               
-              <FormControl display="flex" alignItems="center" mb={4}>
-                <FormLabel mb="0">Text Notifications</FormLabel>
+              <FormControl display="flex" alignItems="center">
+                <FormLabel mb="0" flex="1">Text Notifications</FormLabel>
                 <Switch 
                   isChecked={settings.textNotifications}
                   onChange={handleTextNotificationsToggle}
@@ -435,7 +444,7 @@ export default function SettingsPage() {
               
               {/* Phone number field appears only if text notifications is enabled */}
               {settings.textNotifications && (
-                <FormControl mb={4} isRequired maxW="400px">
+                <FormControl isRequired maxW="400px">
                   <FormLabel>Phone Number</FormLabel>
                   <InputGroup>
                     <InputLeftAddon>+1</InputLeftAddon>
@@ -450,7 +459,7 @@ export default function SettingsPage() {
                 </FormControl>
               )}
 
-              <FormControl mb={4} maxW="200px">
+              <FormControl maxW="200px">
                 <FormLabel>Reminder Days Before Event</FormLabel>
                 <NumberInput 
                   value={settings.reminderDays} 
@@ -467,7 +476,7 @@ export default function SettingsPage() {
                 <FormHelperText>How many days before an event to send a reminder</FormHelperText>
               </FormControl>
 
-              <HStack spacing={4}>
+              <HStack spacing={4} pt={2}>
                 <Button 
                   onClick={handleTestNotifications}
                   colorScheme="blue"

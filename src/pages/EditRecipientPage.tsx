@@ -41,7 +41,7 @@ import type { Address } from '../types';
 import AddressForm from '../components/AddressForm';
 
 const relationshipOptions = [
-  'Nephew', 'Niece', 'Wife', 'Husband', 'Brother', 'Sister', 'Mom', 'Dad', 'Friend', 'Colleague', 'Other'
+  'Nephew', 'Niece', 'Son', 'Daughter', 'Wife', 'Husband', 'Brother', 'Sister', 'Mom', 'Dad', 'Friend', 'Colleague', 'Other'
 ];
 
 const EditRecipientPage: React.FC = () => {
@@ -53,6 +53,7 @@ const EditRecipientPage: React.FC = () => {
   // Form values
   const [name, setName] = useState('');
   const [relationship, setRelationship] = useState('');
+  const [customRelationship, setCustomRelationship] = useState('');
   const [birthMonth, setBirthMonth] = useState<string>('');
   const [birthDay, setBirthDay] = useState<string>('');
   const [birthYear, setBirthYear] = useState<string>('');
@@ -85,7 +86,16 @@ const EditRecipientPage: React.FC = () => {
       const recipient = recipients.find(r => r.id === id);
       if (recipient) {
         setName(recipient.name);
-        setRelationship(recipient.relationship);
+        
+        // Handle custom relationships - if it's not in the standard options, set as "Other"
+        if (relationshipOptions.includes(recipient.relationship)) {
+          setRelationship(recipient.relationship);
+          setCustomRelationship('');
+        } else {
+          setRelationship('Other');
+          setCustomRelationship(recipient.relationship);
+        }
+        
         setDescription(recipient.description || '');
         setDeliveryAddress(recipient.deliveryAddress);
         if (recipient.birthdate) {
@@ -150,9 +160,11 @@ const EditRecipientPage: React.FC = () => {
         birthdateStr = `${birthYear}-${birthMonth}-${birthDay}`;
       }
       
+      const finalRelationship = relationship === 'Other' ? customRelationship : relationship;
+      
       const updateData = {
         name,
-        relationship,
+        relationship: finalRelationship,
         birthdate: birthdateStr || undefined,
         interests,
         description: description.trim() || undefined,
@@ -254,6 +266,14 @@ const EditRecipientPage: React.FC = () => {
                       <option key={option} value={option}>{option}</option>
                     ))}
                   </Select>
+                  {relationship === 'Other' && (
+                    <Input
+                      value={customRelationship}
+                      onChange={(e) => setCustomRelationship(e.target.value)}
+                      placeholder="Enter custom relationship"
+                      mt={2}
+                    />
+                  )}
                   {isRelationshipInvalid && (
                     <FormErrorMessage>Relationship is required</FormErrorMessage>
                   )}
