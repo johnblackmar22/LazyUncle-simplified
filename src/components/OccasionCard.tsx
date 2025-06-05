@@ -458,8 +458,14 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
                         : useColorModeValue('gray.200', 'gray.600')
                       }
                     >
-                      <Flex justify="space-between" align="start" mb={2}>
-                        <VStack align="start" spacing={1} flex={1}>
+                      <Flex
+                        direction={{ base: 'column', md: 'row' }}
+                        justify="space-between"
+                        align={{ base: 'stretch', md: 'start' }}
+                        mb={2}
+                        gap={4}
+                      >
+                        <VStack align="start" spacing={1} flex={1} minW={0}>
                           <HStack>
                             {isSelected && <Icon as={FaCheckCircle} color="green.500" />}
                             <Text fontWeight="semibold" fontSize="sm" noOfLines={1}>
@@ -499,7 +505,7 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
                             </Badge>
                           </HStack>
                         </VStack>
-                        <VStack spacing={1}>
+                        <VStack spacing={1} minW="120px" maxW="140px" align="stretch">
                           {isSelected ? (
                             <Button
                               size="xs"

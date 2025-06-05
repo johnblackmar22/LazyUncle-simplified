@@ -16,7 +16,8 @@ import {
   AlertIcon,
   Divider,
   IconButton,
-  Tooltip
+  Tooltip,
+  Flex
 } from '@chakra-ui/react';
 import { FiRefreshCw, FiHeart, FiShoppingCart, FiInfo } from 'react-icons/fi';
 import { giftRecommendationEngine, type GiftRecommendationRequest, type GiftRecommendation } from '../services/giftRecommendationEngine';
@@ -253,7 +254,11 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
               {recommendations.map((gift, index) => (
                 <Card key={gift.id} size="md" variant="outline" w="100%">
                   <CardBody>
-                    <HStack spacing={4} align="start">
+                    <Flex
+                      direction={{ base: 'column', md: 'row' }}
+                      align={{ base: 'stretch', md: 'start' }}
+                      gap={4}
+                    >
                       {/* Gift Image */}
                       <Box flexShrink={0}>
                         {gift.imageUrl ? (
@@ -295,7 +300,7 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
                       </Box>
 
                       {/* Gift Details */}
-                      <VStack align="start" spacing={3} flex={1}>
+                      <VStack align="start" spacing={3} flex={1} minW={0}>
                         <VStack align="start" spacing={1}>
                           <HStack justify="space-between" w="100%">
                             <Text fontSize="lg" fontWeight="bold">
@@ -357,7 +362,7 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
                       </VStack>
 
                       {/* Action Buttons */}
-                      <VStack spacing={2}>
+                      <VStack spacing={2} minW="120px" maxW="140px" align="stretch">
                         <Button
                           colorScheme="green"
                           leftIcon={<FiShoppingCart />}
@@ -377,7 +382,7 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
                           />
                         </Tooltip>
                       </VStack>
-                    </HStack>
+                    </Flex>
                   </CardBody>
                 </Card>
               ))}
