@@ -228,9 +228,9 @@ export const RecipientDetailPage: React.FC = () => {
     checkDeliveryAddressAndProceed(() => setIsModalOpen(true));
   };
 
-  if (loading && !currentRecipient) {
+  if (loading && !recipients.length) {
     return (
-      <Container maxW="container.lg" mt={8}>
+      <Container maxW="container.xl" mt={8}>
         <Flex justify="center" align="center" h="200px">
           <Spinner size="xl" color="blue.500" />
         </Flex>
@@ -240,18 +240,20 @@ export const RecipientDetailPage: React.FC = () => {
 
   if (error) {
     return (
-      <Container maxW="container.lg" mt={8}>
-        <Box p={4} bg="red.50" color="red.500" borderRadius="md">
-          <Text>Error: {error}</Text>
-        </Box>
+      <Container maxW="container.xl" mt={8}>
+        <Alert status="error">
+          <AlertIcon />
+          <AlertTitle>Error loading recipient</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       </Container>
     );
   }
 
   if (!currentRecipient) {
     return (
-      <Container maxW="container.lg" mt={8}>
-        <Box textAlign="center" p={8}>
+      <Container maxW="container.xl" mt={8}>
+        <Box textAlign="center">
           <Text fontSize="lg" mb={4}>Recipient not found</Text>
           <Button as={RouterLink} to="/recipients" leftIcon={<ArrowBackIcon />}>
             Back to Recipients
@@ -262,7 +264,7 @@ export const RecipientDetailPage: React.FC = () => {
   }
 
   return (
-    <Container maxW="container.lg" mt={4}>
+    <Container maxW="container.xl" mt={4}>
       {/* Header */}
       <Flex justify="space-between" align="center" mb={6}>
         <HStack>

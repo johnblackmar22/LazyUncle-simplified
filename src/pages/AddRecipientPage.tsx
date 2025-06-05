@@ -132,7 +132,7 @@ const AddRecipientPage: React.FC = () => {
   };
 
   return (
-    <Container maxW="container.md" mt={4}>
+    <Container maxW="container.xl" mt={4}>
       <VStack spacing={6} align="stretch">
         {/* Header with back navigation */}
         <Box>

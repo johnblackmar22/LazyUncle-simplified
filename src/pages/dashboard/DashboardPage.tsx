@@ -310,27 +310,30 @@ const DashboardPage: React.FC = () => {
   };
 
   return (
-    <Container maxW="7xl" py={8}>
-      <VStack spacing={8} align="stretch">
+    <Container maxW="container.xl" mt={4}>
+      <VStack spacing={6} align="stretch">
         {/* Header */}
-        <Box textAlign="center">
-          <Heading 
-            as="h1" 
-            size="2xl" 
-            bgGradient="linear(to-r, blue.400, purple.500)" 
-            bgClip="text"
-            mb={4}
+        <Flex justify="space-between" align="center">
+          <Box>
+            <Heading size="xl" mb={2}>Dashboard</Heading>
+            <Text color="gray.600">
+              Here's what's happening with your gift planning
+            </Text>
+          </Box>
+          <Button
+            as={RouterLink}
+            to="/recipients/add"
+            colorScheme="blue"
+            leftIcon={<AddIcon />}
+            size="lg"
           >
-            Welcome back!
-          </Heading>
-          <Text fontSize="lg" color="gray.600">
-            Here's what's happening with your gift planning
-          </Text>
-        </Box>
+            Add Recipient
+          </Button>
+        </Flex>
 
         {/* Stats Cards */}
         <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-          <Card bg="white" shadow="lg" borderRadius="xl" borderTop="4px solid" borderTopColor="blue.500">
+          <Card bg="white" shadow="md" borderRadius="lg" borderTop="4px solid" borderTopColor="blue.500">
             <CardBody p={8}>
               <VStack spacing={4} align="start">
                 <HStack spacing={3}>
@@ -347,7 +350,7 @@ const DashboardPage: React.FC = () => {
             </CardBody>
           </Card>
 
-          <Card bg="white" shadow="lg" borderRadius="xl" borderTop="4px solid" borderTopColor="purple.500">
+          <Card bg="white" shadow="md" borderRadius="lg" borderTop="4px solid" borderTopColor="purple.500">
             <CardBody p={8}>
               <VStack spacing={4} align="start">
                 <HStack spacing={3}>

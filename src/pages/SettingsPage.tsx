@@ -25,12 +25,17 @@ import {
   InputGroup,
   InputLeftAddon,
   Flex,
+  Card,
+  CardHeader,
+  CardBody,
+  Icon,
 } from '@chakra-ui/react';
 import type { UserSettings } from '../types/settings';
 import { DEFAULT_SETTINGS } from '../types/settings';
 import { checkAndSendReminders } from '../services/notificationService';
 import { Link as RouterLink } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { FaUser, FaBell } from 'react-icons/fa';
 
 export default function SettingsPage() {
   const toast = useToast();
@@ -293,184 +298,203 @@ export default function SettingsPage() {
   const isValidPhone = (phone: string) => /^(\(\d{3}\)\s?|\d{3}-)\d{3}-\d{4}$/.test(phone) || /^\d{10}$/.test(phone.replace(/\D/g, ''));
 
   return (
-    <Container maxW="container.md" py={4}>
-      <Stack spacing={6}>
+    <Container maxW="container.xl" mt={4}>
+      <VStack spacing={6} align="stretch">
+        {/* Header */}
         <Flex justify="space-between" align="center">
           <Box>
-            <Heading as="h1" size="xl">Settings</Heading>
-            <Text mt={2} color="gray.500">Customize your LazyUncle experience</Text>
+            <Heading size="xl" mb={2}>Settings</Heading>
+            <Text color="gray.600">
+              Customize your LazyUncle experience
+            </Text>
           </Box>
         </Flex>
 
         {/* Account Settings */}
-        <Box bg="white" shadow="md" borderRadius="md" p={6}>
-          <Heading as="h2" size="md" mb={4}>Account Settings</Heading>
-          
-          {/* Email field with change workflow */}
-          <FormControl mb={4} isRequired>
-            <FormLabel>Email Address</FormLabel>
-            {editingEmail ? (
-              <Stack direction="row" spacing={2} align="center">
-                <Input
-                  type="email"
-                  value={newEmail}
-                  onChange={e => setNewEmail(e.target.value)}
-                  placeholder="your@email.com"
-                />
-                <Button colorScheme="blue" size="sm" onClick={handleEmailUpdate}>Save</Button>
-                <Button size="sm" variant="ghost" onClick={() => { setEditingEmail(false); setNewEmail(user?.email || ''); }}>Cancel</Button>
-              </Stack>
-            ) : (
-              <Stack direction="row" spacing={2} align="center">
-                <Text>{demoMode ? newEmail : user?.email}</Text>
-                <Button size="sm" variant="outline" onClick={() => setEditingEmail(true)}>Change Email</Button>
-              </Stack>
-            )}
-            <FormHelperText>Your email is used for account recovery and notifications</FormHelperText>
-          </FormControl>
+        <Card bg="white" shadow="md" borderRadius="lg" borderColor="gray.200" borderWidth="1px">
+          <CardHeader>
+            <Flex align="center" gap={2}>
+              <Icon as={FaUser} color="blue.500" />
+              <Heading size="md">Account Settings</Heading>
+            </Flex>
+          </CardHeader>
+          <CardBody>
+            <VStack spacing={6} align="stretch">
+              {/* Email field with change workflow */}
+              <FormControl isRequired>
+                <FormLabel>Email Address</FormLabel>
+                {editingEmail ? (
+                  <Stack direction="row" spacing={2} align="center">
+                    <Input
+                      type="email"
+                      value={newEmail}
+                      onChange={e => setNewEmail(e.target.value)}
+                      placeholder="your@email.com"
+                    />
+                    <Button colorScheme="blue" size="sm" onClick={handleEmailUpdate}>Save</Button>
+                    <Button size="sm" variant="ghost" onClick={() => { setEditingEmail(false); setNewEmail(user?.email || ''); }}>Cancel</Button>
+                  </Stack>
+                ) : (
+                  <Stack direction="row" spacing={2} align="center">
+                    <Text>{demoMode ? newEmail : user?.email}</Text>
+                    <Button size="sm" variant="outline" onClick={() => setEditingEmail(true)}>Change Email</Button>
+                  </Stack>
+                )}
+                <FormHelperText>Your email is used for account recovery and notifications</FormHelperText>
+              </FormControl>
 
-          <Divider my={4} />
+              <Divider />
 
-          {!isPasswordChangeVisible ? (
-            <Button 
-              onClick={() => setIsPasswordChangeVisible(true)}
-              colorScheme="blue"
-              variant="outline"
-              size="sm"
-            >
-              Change Password
-            </Button>
-          ) : (
-            <VStack spacing={4} align="stretch">
-              <FormControl>
-                <FormLabel>Current Password</FormLabel>
-                <Input 
-                  type="password" 
-                  value={currentPassword} 
-                  onChange={(e) => setCurrentPassword(e.target.value)} 
-                />
-              </FormControl>
-              
-              <FormControl>
-                <FormLabel>New Password</FormLabel>
-                <Input 
-                  type="password" 
-                  value={newPassword} 
-                  onChange={(e) => setNewPassword(e.target.value)} 
-                />
-              </FormControl>
-              
-              <FormControl>
-                <FormLabel>Confirm New Password</FormLabel>
-                <Input 
-                  type="password" 
-                  value={confirmPassword} 
-                  onChange={(e) => setConfirmPassword(e.target.value)} 
-                />
-              </FormControl>
-              
-              <HStack>
+              {!isPasswordChangeVisible ? (
                 <Button 
-                  onClick={handlePasswordChange}
+                  onClick={() => setIsPasswordChangeVisible(true)}
                   colorScheme="blue"
+                  variant="outline"
                   size="sm"
                 >
-                  Update Password
+                  Change Password
                 </Button>
-                <Button 
-                  onClick={() => setIsPasswordChangeVisible(false)}
-                  variant="ghost"
-                  size="sm"
-                >
-                  Cancel
-                </Button>
-              </HStack>
+              ) : (
+                <VStack spacing={4} align="stretch">
+                  <FormControl>
+                    <FormLabel>Current Password</FormLabel>
+                    <Input 
+                      type="password" 
+                      value={currentPassword} 
+                      onChange={(e) => setCurrentPassword(e.target.value)} 
+                    />
+                  </FormControl>
+                  
+                  <FormControl>
+                    <FormLabel>New Password</FormLabel>
+                    <Input 
+                      type="password" 
+                      value={newPassword} 
+                      onChange={(e) => setNewPassword(e.target.value)} 
+                    />
+                  </FormControl>
+                  
+                  <FormControl>
+                    <FormLabel>Confirm New Password</FormLabel>
+                    <Input 
+                      type="password" 
+                      value={confirmPassword} 
+                      onChange={(e) => setConfirmPassword(e.target.value)} 
+                    />
+                  </FormControl>
+                  
+                  <HStack>
+                    <Button 
+                      onClick={handlePasswordChange}
+                      colorScheme="blue"
+                      size="sm"
+                    >
+                      Update Password
+                    </Button>
+                    <Button 
+                      onClick={() => setIsPasswordChangeVisible(false)}
+                      variant="ghost"
+                      size="sm"
+                    >
+                      Cancel
+                    </Button>
+                  </HStack>
+                </VStack>
+              )}
             </VStack>
-          )}
-        </Box>
+          </CardBody>
+        </Card>
 
         {/* Notification Settings */}
-        <Box bg="white" shadow="md" borderRadius="md" p={6}>
-          <Heading as="h2" size="md" mb={4}>Notifications</Heading>
-          
-          <FormControl display="flex" alignItems="center" mb={4}>
-            <FormLabel mb="0">Email Notifications</FormLabel>
-            <Switch 
-              isChecked={settings.emailNotifications}
-              onChange={handleSwitchChange('emailNotifications')}
-              colorScheme="blue"
-            />
-          </FormControl>
-          
-          <FormControl display="flex" alignItems="center" mb={4}>
-            <FormLabel mb="0">Text Notifications</FormLabel>
-            <Switch 
-              isChecked={settings.textNotifications}
-              onChange={handleTextNotificationsToggle}
-              colorScheme="blue"
-            />
-          </FormControl>
-          
-          {/* Phone number field appears only if text notifications is enabled */}
-          {settings.textNotifications && (
-            <FormControl mb={4} isRequired maxW="400px">
-              <FormLabel>Phone Number</FormLabel>
-              <InputGroup>
-                <InputLeftAddon>+1</InputLeftAddon>
-                <Input 
-                  type="tel" 
-                  value={tempPhoneNumber} 
-                  onChange={handlePhoneNumberChange}
-                  placeholder="(555) 123-4567"
+        <Card bg="white" shadow="md" borderRadius="lg" borderColor="gray.200" borderWidth="1px">
+          <CardHeader>
+            <Flex align="center" gap={2}>
+              <Icon as={FaBell} color="purple.500" />
+              <Heading size="md">Notifications</Heading>
+            </Flex>
+          </CardHeader>
+          <CardBody>
+            <VStack spacing={6} align="stretch">
+              <FormControl display="flex" alignItems="center" mb={4}>
+                <FormLabel mb="0">Email Notifications</FormLabel>
+                <Switch 
+                  isChecked={settings.emailNotifications}
+                  onChange={handleSwitchChange('emailNotifications')}
+                  colorScheme="blue"
                 />
-              </InputGroup>
-              <FormHelperText>Your phone number is used for text notifications (10 digits required)</FormHelperText>
-            </FormControl>
-          )}
+              </FormControl>
+              
+              <FormControl display="flex" alignItems="center" mb={4}>
+                <FormLabel mb="0">Text Notifications</FormLabel>
+                <Switch 
+                  isChecked={settings.textNotifications}
+                  onChange={handleTextNotificationsToggle}
+                  colorScheme="blue"
+                />
+              </FormControl>
+              
+              {/* Phone number field appears only if text notifications is enabled */}
+              {settings.textNotifications && (
+                <FormControl mb={4} isRequired maxW="400px">
+                  <FormLabel>Phone Number</FormLabel>
+                  <InputGroup>
+                    <InputLeftAddon>+1</InputLeftAddon>
+                    <Input 
+                      type="tel" 
+                      value={tempPhoneNumber} 
+                      onChange={handlePhoneNumberChange}
+                      placeholder="(555) 123-4567"
+                    />
+                  </InputGroup>
+                  <FormHelperText>Your phone number is used for text notifications (10 digits required)</FormHelperText>
+                </FormControl>
+              )}
 
-          <FormControl mb={4} maxW="200px">
-            <FormLabel>Reminder Days Before Event</FormLabel>
-            <NumberInput 
-              value={settings.reminderDays} 
-              min={1} 
-              max={90}
-              onChange={(_, value) => handleSettingChange('reminderDays', value)}
-            >
-              <NumberInputField />
-              <NumberInputStepper>
-                <NumberIncrementStepper />
-                <NumberDecrementStepper />
-              </NumberInputStepper>
-            </NumberInput>
-            <FormHelperText>How many days before an event to send a reminder</FormHelperText>
-          </FormControl>
+              <FormControl mb={4} maxW="200px">
+                <FormLabel>Reminder Days Before Event</FormLabel>
+                <NumberInput 
+                  value={settings.reminderDays} 
+                  min={1} 
+                  max={90}
+                  onChange={(_, value) => handleSettingChange('reminderDays', value)}
+                >
+                  <NumberInputField />
+                  <NumberInputStepper>
+                    <NumberIncrementStepper />
+                    <NumberDecrementStepper />
+                  </NumberInputStepper>
+                </NumberInput>
+                <FormHelperText>How many days before an event to send a reminder</FormHelperText>
+              </FormControl>
 
-          <HStack spacing={4}>
-            <Button 
-              onClick={handleTestNotifications}
-              colorScheme="blue"
-              variant="outline"
-            >
-              Test Notifications
-            </Button>
-            
-            {hasUnsavedChanges && (
-              <Button 
-                onClick={handleSaveAllSettings}
-                colorScheme="green"
-              >
-                Save Settings
-              </Button>
-            )}
-          </HStack>
-        </Box>
+              <HStack spacing={4}>
+                <Button 
+                  onClick={handleTestNotifications}
+                  colorScheme="blue"
+                  variant="outline"
+                >
+                  Test Notifications
+                </Button>
+                
+                {hasUnsavedChanges && (
+                  <Button 
+                    onClick={handleSaveAllSettings}
+                    colorScheme="green"
+                  >
+                    Save Settings
+                  </Button>
+                )}
+              </HStack>
+            </VStack>
+          </CardBody>
+        </Card>
 
         <Box textAlign="right">
           <Button colorScheme="red" variant="outline" onClick={handleReset}>
             Reset to Defaults
           </Button>
         </Box>
-      </Stack>
+      </VStack>
     </Container>
   );
 } 
