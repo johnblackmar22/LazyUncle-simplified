@@ -329,18 +329,18 @@ const DashboardPage: React.FC = () => {
         </Box>
 
         {/* Stats Cards */}
-        <SimpleGrid columns={{ base: 1, sm: 2, md: 4 }} spacing={6}>
+        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
           <Card bg="linear-gradient(135deg, blue.400, blue.600)" color="white" shadow="lg" borderRadius="xl">
-            <CardBody p={6}>
-              <VStack spacing={2} align="start">
-                <HStack justify="space-between" w="full">
-                  <Icon as={FaUser} boxSize="24px" opacity={0.8} />
-                  <Text fontSize="sm" fontWeight="medium" opacity={0.9}>Recipients</Text>
+            <CardBody p={8}>
+              <VStack spacing={4} align="start">
+                <HStack spacing={3}>
+                  <Icon as={FaUser} boxSize="32px" opacity={0.9} />
+                  <Text fontSize="lg" fontWeight="semibold" opacity={0.9}>Recipients</Text>
                 </HStack>
-                <Text fontSize="3xl" fontWeight="bold" lineHeight="1">
+                <Text fontSize="4xl" fontWeight="bold" lineHeight="1">
                   {totalRecipients}
                 </Text>
-                <Text fontSize="xs" opacity={0.8}>
+                <Text fontSize="sm" opacity={0.8}>
                   {totalRecipients === 1 ? 'person' : 'people'} to gift
                 </Text>
               </VStack>
@@ -348,128 +348,22 @@ const DashboardPage: React.FC = () => {
           </Card>
 
           <Card bg="linear-gradient(135deg, purple.400, purple.600)" color="white" shadow="lg" borderRadius="xl">
-            <CardBody p={6}>
-              <VStack spacing={2} align="start">
-                <HStack justify="space-between" w="full">
-                  <Icon as={FaCalendarAlt} boxSize="24px" opacity={0.8} />
-                  <Text fontSize="sm" fontWeight="medium" opacity={0.9}>Occasions</Text>
+            <CardBody p={8}>
+              <VStack spacing={4} align="start">
+                <HStack spacing={3}>
+                  <Icon as={FaCalendarAlt} boxSize="32px" opacity={0.9} />
+                  <Text fontSize="lg" fontWeight="semibold" opacity={0.9}>Gift Occasions</Text>
                 </HStack>
-                <Text fontSize="3xl" fontWeight="bold" lineHeight="1">
+                <Text fontSize="4xl" fontWeight="bold" lineHeight="1">
                   {totalOccasions}
                 </Text>
-                <Text fontSize="xs" opacity={0.8}>
-                  in next 60 days
-                </Text>
-              </VStack>
-            </CardBody>
-          </Card>
-
-          <Card bg="linear-gradient(135deg, green.400, green.600)" color="white" shadow="lg" borderRadius="xl">
-            <CardBody p={6}>
-              <VStack spacing={2} align="start">
-                <HStack justify="space-between" w="full">
-                  <Icon as={FaGift} boxSize="24px" opacity={0.8} />
-                  <Text fontSize="sm" fontWeight="medium" opacity={0.9}>Gifts Ready</Text>
-                </HStack>
-                <Text fontSize="3xl" fontWeight="bold" lineHeight="1">
-                  0
-                </Text>
-                <Text fontSize="xs" opacity={0.8}>
-                  awaiting approval
-                </Text>
-              </VStack>
-            </CardBody>
-          </Card>
-
-          <Card bg="linear-gradient(135deg, orange.400, orange.600)" color="white" shadow="lg" borderRadius="xl">
-            <CardBody p={6}>
-              <VStack spacing={2} align="start">
-                <HStack justify="space-between" w="full">
-                  <Icon as={FaClock} boxSize="24px" opacity={0.8} />
-                  <Text fontSize="sm" fontWeight="medium" opacity={0.9}>Time Saved</Text>
-                </HStack>
-                <Text fontSize="3xl" fontWeight="bold" lineHeight="1">
-                  {totalOccasions * 2}h
-                </Text>
-                <Text fontSize="xs" opacity={0.8}>
-                  this month
+                <Text fontSize="sm" opacity={0.8}>
+                  upcoming in next 60 days
                 </Text>
               </VStack>
             </CardBody>
           </Card>
         </SimpleGrid>
-
-        {/* Quick Actions */}
-        <Card bg={bgColor} shadow="md" borderRadius="xl" borderColor={borderColor} borderWidth="1px">
-          <CardHeader pb={3}>
-            <Heading size="md">Quick Actions</Heading>
-          </CardHeader>
-          <CardBody pt={0}>
-            <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
-              <Button
-                as={RouterLink}
-                to="/recipients/add"
-                leftIcon={<Icon as={FaUser} />}
-                colorScheme="blue"
-                variant="outline"
-                size="lg"
-                h="auto"
-                py={4}
-                flexDirection="column"
-                gap={2}
-              >
-                <Text fontWeight="semibold">Add Recipient</Text>
-                <Text fontSize="xs" opacity={0.7}>Start gifting someone new</Text>
-              </Button>
-
-              <Button
-                as={RouterLink}
-                to="/recipients"
-                leftIcon={<Icon as={FaCalendarAlt} />}
-                colorScheme="purple"
-                variant="outline"
-                size="lg"
-                h="auto"
-                py={4}
-                flexDirection="column"
-                gap={2}
-              >
-                <Text fontWeight="semibold">Add Occasion</Text>
-                <Text fontSize="xs" opacity={0.7}>Set up gift timing</Text>
-              </Button>
-
-              <Button
-                leftIcon={<Icon as={FaGift} />}
-                colorScheme="green"
-                variant="outline"
-                size="lg"
-                h="auto"
-                py={4}
-                flexDirection="column"
-                gap={2}
-                isDisabled
-              >
-                <Text fontWeight="semibold">View Suggestions</Text>
-                <Text fontSize="xs" opacity={0.7}>Coming soon</Text>
-              </Button>
-
-              <Button
-                leftIcon={<Icon as={FaClock} />}
-                colorScheme="orange"
-                variant="outline"
-                size="lg"
-                h="auto"
-                py={4}
-                flexDirection="column"
-                gap={2}
-                isDisabled
-              >
-                <Text fontWeight="semibold">Auto-Send Setup</Text>
-                <Text fontSize="xs" opacity={0.7}>Coming soon</Text>
-              </Button>
-            </SimpleGrid>
-          </CardBody>
-        </Card>
 
         <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={8}>
           {/* Recipients Grid */}
