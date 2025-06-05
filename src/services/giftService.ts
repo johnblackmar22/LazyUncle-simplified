@@ -27,17 +27,21 @@ export const getGifts = async (): Promise<Gift[]> => {
   }
 
   try {
+    // Simplified query to avoid index requirement
     const q = query(
       collection(db, COLLECTION), 
-      where("userId", "==", user.id),
-      orderBy("createdAt", "desc")
+      where("userId", "==", user.id)
+      // Removed orderBy to avoid index requirement for testing
     );
     const querySnapshot = await getDocs(q);
     
-    return querySnapshot.docs.map(doc => ({
+    const gifts = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     } as Gift));
+    
+    // Sort in memory instead of using orderBy in query
+    return gifts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   } catch (error) {
     console.error('Error getting gifts:', error);
     return [];
@@ -55,18 +59,23 @@ export const getGiftsByRecipient = async (recipientId: string): Promise<Gift[]> 
   }
 
   try {
+    // Simplified query to avoid composite index requirement
+    // TODO: Create Firebase composite index for production: userId + recipientId + createdAt
     const q = query(
       collection(db, COLLECTION), 
       where("userId", "==", user.id),
-      where("recipientId", "==", recipientId),
-      orderBy("createdAt", "desc")
+      where("recipientId", "==", recipientId)
+      // Removed orderBy to avoid composite index requirement for testing
     );
     const querySnapshot = await getDocs(q);
     
-    return querySnapshot.docs.map(doc => ({
+    const gifts = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     } as Gift));
+    
+    // Sort in memory instead of using orderBy in query
+    return gifts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   } catch (error) {
     console.error('Error getting gifts for recipient:', error);
     return [];

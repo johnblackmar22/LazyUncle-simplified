@@ -156,17 +156,24 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
       const newGift: Omit<Gift, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {
         recipientId: recipient.id,
         name: gift.name,
-        description: gift.description,
+        description: gift.description || '',
         price: gift.price,
         category: gift.category,
         occasionId: occasion.id,
         date: new Date(occasion.date).getTime(),
         status: 'selected',
-        imageUrl: gift.imageUrl,
-        purchaseUrl: gift.purchaseUrl,
-        notes: gift.reasoning,
+        notes: gift.reasoning || '',
         recurring: occasion.recurring || false
       };
+
+      // Only add optional fields if they have actual values
+      if (gift.imageUrl) {
+        newGift.imageUrl = gift.imageUrl;
+      }
+      
+      if (gift.purchaseUrl) {
+        newGift.purchaseUrl = gift.purchaseUrl;
+      }
 
       await createGift(newGift);
       
