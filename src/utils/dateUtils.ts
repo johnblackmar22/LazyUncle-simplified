@@ -1,4 +1,4 @@
-import { format, isAfter, isBefore, addDays, subDays, parseISO, startOfDay } from 'date-fns';
+import { format, isBefore, startOfDay } from 'date-fns';
 
 /**
  * Format a date string to a more readable format
@@ -8,7 +8,8 @@ import { format, isAfter, isBefore, addDays, subDays, parseISO, startOfDay } fro
 export const formatDate = (date: Date | string): string => {
   if (typeof date === 'string') {
     // Create date from YYYY-MM-DD string in local timezone to avoid UTC issues
-    const [year, month, day] = date.split('-').map(Number);
+    const [, month, day] = date.split('-').map(Number);
+    const year = new Date().getFullYear(); // Use current year for display
     return format(new Date(year, month - 1, day), 'MMM dd, yyyy');
   }
   return format(date, 'MMM dd, yyyy');
@@ -27,7 +28,7 @@ export const getDaysUntil = (dateString: string): number => {
     const today = startOfDay(new Date());
     
     // Parse the date, but use current year in local timezone
-    const [year, month, day] = dateString.split('-').map(Number);
+    const [, month, day] = dateString.split('-').map(Number);
     let nextOccurrence = new Date(today.getFullYear(), month - 1, day);
     
     // If the date has already passed this year, use next year
@@ -100,7 +101,7 @@ export const getNextOccurrence = (monthDay: string, referenceYear?: number): str
 // Get the next birthday date from a birthdate string in local timezone
 export const getNextBirthday = (birthdate: string): string => {
   try {
-    const [year, month, day] = birthdate.split('-').map(Number);
+    const [, month, day] = birthdate.split('-').map(Number);
     // Use just the month-day to calculate next occurrence
     return getNextOccurrence(`${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`);
   } catch (error) {

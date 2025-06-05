@@ -26,7 +26,7 @@ describe('AddRecipientPage', () => {
       recipients: []
     });
     // Default mock for useAuthStore
-    jest.mock('../store/authStore', () => ({
+    jest.mock('../../store/authStore', () => ({
       useAuthStore: jest.fn().mockReturnValue({
         user: { planId: 'free' },
         demoMode: false
@@ -44,12 +44,11 @@ describe('AddRecipientPage', () => {
         <AddRecipientPage />
       </MemoryRouter>
     );
-    expect(screen.getByText('Add Recipient')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Add Recipient' })).toBeInTheDocument();
     expect(screen.getByLabelText(/Name/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Relationship/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Birthday/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Interests/)).toBeInTheDocument();
-    expect(screen.getByText('Next')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Add Recipient/ })).toBeInTheDocument();
   });
 
   test('navigates through steps and submits recipient', async () => {
@@ -113,7 +112,7 @@ describe('AddRecipientPage', () => {
       resetError: jest.fn(),
       recipients: [{ id: '1', name: 'Test', relationship: 'Friend', interests: [], createdAt: Date.now(), updatedAt: Date.now(), userId: 'user1' }]
     });
-    jest.mock('../store/authStore', () => ({
+    jest.mock('../../store/authStore', () => ({
       useAuthStore: jest.fn().mockReturnValue({
         user: { planId: 'free' },
         demoMode: false

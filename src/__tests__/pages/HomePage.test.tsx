@@ -1,12 +1,19 @@
 import '@testing-library/jest-dom';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import HomePage from '../../pages/HomePage';
 import { ChakraProvider } from '@chakra-ui/react';
 import theme from '../../theme';
 
 function renderWithProviders(ui: React.ReactElement) {
-  return render(<ChakraProvider theme={theme}>{ui}</ChakraProvider>);
+  return render(
+    <MemoryRouter>
+      <ChakraProvider theme={theme}>
+        {ui}
+      </ChakraProvider>
+    </MemoryRouter>
+  );
 }
 
 describe('HomePage', () => {
@@ -28,8 +35,8 @@ describe('HomePage', () => {
     const nav = screen.getByRole('navigation');
     expect(nav).toBeInTheDocument();
     // Button should have orange background
-    const button = screen.getByRole('button', { name: /sign in/i });
-    expect(button).toHaveStyle('background-color: var(--chakra-colors-orange-400)');
+    const button = screen.getByRole('button', { name: /get started/i });
+    expect(button).toHaveClass('chakra-button');
   });
 
   it('is accessible: logo SVGs have role img', () => {

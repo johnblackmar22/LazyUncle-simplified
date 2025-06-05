@@ -104,7 +104,6 @@ export const AddressForm: React.FC<AddressFormProps> = ({
   // Validation state
   const [validationResult, setValidationResult] = useState<AddressValidationResult | null>(null);
   const [isValidating, setIsValidating] = useState(false);
-  const [hasBeenValidated, setHasBeenValidated] = useState(false);
   
   // Memoize the onChange callback to prevent infinite re-renders
   const handleAddressChange = useCallback(() => {
@@ -160,7 +159,6 @@ export const AddressForm: React.FC<AddressFormProps> = ({
     try {
       const result = await AddressVerificationService.validateAddress(currentAddress);
       setValidationResult(result);
-      setHasBeenValidated(true);
       
       if (result.isValid && result.standardizedAddress) {
         // Update form with standardized address
@@ -207,7 +205,6 @@ export const AddressForm: React.FC<AddressFormProps> = ({
     setState(suggestion.state);
     setPostalCode(suggestion.postalCode);
     setValidationResult(null);
-    setHasBeenValidated(false);
   };
   
   const isFormFilled = line1.trim() && city.trim() && state.trim() && postalCode.trim();
