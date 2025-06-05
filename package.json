@@ -10,10 +10,6 @@
     "preview": "vite preview",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:build": "node test-build.cjs",
-    "serve": "vite preview --port 5000",
-    "prepare-env": "cp env.sample .env",
-    "deploy:firebase": "firebase deploy --only hosting",
     "deploy:netlify": "netlify deploy --prod"
   },
   "dependencies": {

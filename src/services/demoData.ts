@@ -413,9 +413,6 @@ export const demoOccasions = {
   ]
 };
 
-// Import Firebase environment modules
-import { getEnv as browserGetEnv } from './firebase.env';
-
 // A function to safely get data from localStorage with error handling
 const safeGetItem = (key: string, defaultValue: any = null) => {
   try {
@@ -438,8 +435,10 @@ const safeSetItem = (key: string, value: any) => {
   }
 };
 
-// Use the browser version of getEnv (we don't need the Node.js version here since it's for tests)
-let getEnv: (key: string) => string | undefined = browserGetEnv;
+// Simple environment variable getter
+const getEnv = (key: string): string | undefined => {
+  return import.meta.env[key];
+};
 
 // A function to initialize all demo data
 export const initializeDemoData = () => {

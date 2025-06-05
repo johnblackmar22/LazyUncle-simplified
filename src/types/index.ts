@@ -9,26 +9,17 @@ export interface User {
   updatedAt: number;
 }
 
+// Address type
+export interface Address {
+  line1: string;
+  line2?: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+}
+
 // Auto-send preferences types
-export type OccasionPreference = {
-  enabled: boolean;
-  budget: number;
-  leadTime: number;
-};
-
-export type AutoSendOccasions = {
-  birthday?: OccasionPreference;
-  christmas?: OccasionPreference;
-  anniversary?: OccasionPreference;
-  [key: string]: OccasionPreference | undefined;
-};
-
-export type PaymentMethod = {
-  type: 'creditCard' | 'paypal' | 'other';
-  last4?: string;
-  brand?: string;
-};
-
 export interface AutoSendPreferences {
   enabled: boolean;
   defaultBudget: number;
@@ -49,40 +40,30 @@ export interface Recipient {
   relationship: string;
   birthdate?: string; // Format: 'YYYY-MM-DD'
   interests: string[];
-  description?: string; // Free text description about the recipient and relationship
-  deliveryAddress?: Address; // Where to deliver gifts for this recipient
+  description?: string;
+  deliveryAddress?: Address;
   autoSendPreferences?: AutoSendPreferences;
   createdAt: number;
   updatedAt: number;
 }
 
-// Address type - keep for future use
-export interface Address {
-  line1: string;
-  line2?: string;
-  city: string;
-  state: string;
-  postalCode: string;
-  country: string;
-}
-
-// Occasion type - new first-class entity
+// Occasion type
 export interface Occasion {
   id: string;
   recipientId: string;
-  userId: string; // Required - Owner's user ID (for security)
+  userId: string;
   name: string; // e.g., 'Birthday', 'Anniversary', 'Graduation', etc.
   date: string; // Format: 'YYYY-MM-DD' - when the occasion actually happens
-  deliveryDate?: string; // Format: 'YYYY-MM-DD' - when to deliver the gift (usually 1 week before)
+  deliveryDate?: string; // Format: 'YYYY-MM-DD' - when to deliver the gift
   type: 'birthday' | 'anniversary' | 'custom' | 'christmas';
   notes?: string;
-  budget?: number; // Gift budget for this occasion
+  budget?: number;
   recurring?: boolean; // Annual repeat
   createdAt: number;
   updatedAt: number;
 }
 
-// Gift types - updated to use occasionId
+// Gift types - simplified
 export interface Gift {
   id: string;
   recipientId: string;
@@ -91,36 +72,18 @@ export interface Gift {
   description?: string;
   price: number;
   category: string;
-  occasionId: string; // New: link to Occasion entity
-  date: number; // Required - Timestamp when gift is for
-  status: 'planned' | 'ordered' | 'shipped' | 'delivered' | 'given' | 'archived' | 'idea' | 'purchased';
+  occasionId: string;
+  date: number; // Timestamp when gift is for
+  status: 'idea' | 'selected' | 'ordered' | 'shipped' | 'delivered';
   imageUrl?: string;
-  affiliateLink?: string;
+  purchaseUrl?: string;
   notes?: string;
-  autoSend?: boolean; // For test compatibility
-  recurring?: boolean; // Deliver this gift every year
-  
-  // AI recommendation metadata (added for AI-generated gifts)
-  isAIGenerated?: boolean; // Flag to indicate if this gift was AI-recommended
-  aiMetadata?: {
-    model?: string; // AI model used (e.g., 'gpt-4o-mini')
-    confidence?: number; // AI confidence score 0-1
-    reasoning?: string; // AI reasoning for this recommendation
-    tags?: string[]; // AI-generated tags
-    generatedAt?: number; // Timestamp when AI generated this recommendation
-    requestData?: { // Original request data for debugging/re-generation
-      interests?: string[];
-      budget?: number;
-      occasion?: string;
-      relationship?: string;
-    };
-  };
-  
+  recurring?: boolean;
   createdAt: number;
   updatedAt: number;
 }
 
-// Gift suggestion/recommendation types
+// Simple gift suggestion type
 export interface GiftSuggestion {
   id: string;
   name: string;
@@ -128,22 +91,5 @@ export interface GiftSuggestion {
   price: number;
   category: string;
   imageUrl?: string;
-  affiliateLink?: string;
-  score?: number;
-  confidence?: number; // Confidence score from 0-1 for AI suggestions
-  tags?: string[];
+  purchaseUrl?: string;
 }
-
-// Legacy type for backward compatibility (will be removed)
-export interface GiftRecommendation {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  category: string;
-  imageUrl?: string;
-  score?: number;
-}
-
-// Legacy type for backward compatibility (will be removed)  
-export interface RecipientAutoSendPreferences extends AutoSendPreferences {} 

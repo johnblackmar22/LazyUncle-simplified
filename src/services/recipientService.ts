@@ -18,7 +18,7 @@ const COLLECTION = 'recipients';
 // Get all recipients for current user
 export const getRecipients = async (): Promise<Recipient[]> => {
   const { user } = useAuthStore.getState();
-  if (!user) return [];
+  if (!user) throw new Error('User not authenticated');
   
   // In demo mode, return mock recipients
   if (DEMO_MODE) {
@@ -26,23 +26,22 @@ export const getRecipients = async (): Promise<Recipient[]> => {
   }
 
   try {
-    const q = query(collection(db, COLLECTION), where("userId", "==", user.id));
+    const q = query(collection(db, COLLECTION), where('userId', '==', user.id));
     const querySnapshot = await getDocs(q);
-    
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     } as Recipient));
   } catch (error) {
     console.error('Error getting recipients:', error);
-    return [];
+    throw error;
   }
 };
 
 // Get a single recipient by ID
 export const getRecipient = async (id: string): Promise<Recipient | null> => {
   const { user } = useAuthStore.getState();
-  if (!user) return null;
+  if (!user) throw new Error('User not authenticated');
   
   // In demo mode, return mock recipient
   if (DEMO_MODE) {
@@ -50,22 +49,20 @@ export const getRecipient = async (id: string): Promise<Recipient | null> => {
   }
 
   try {
-    const docRef = doc(db, COLLECTION, id);
-    const docSnap = await getDoc(docRef);
+    const docSnap = await getDoc(doc(db, COLLECTION, id));
+    if (!docSnap.exists()) return null;
     
-    if (docSnap.exists()) {
-      const recipient = { id: docSnap.id, ...docSnap.data() } as Recipient;
-      
-      // Security check - only return if it belongs to current user
-      if (recipient.userId === user.id) {
-        return recipient;
-      }
+    const recipient = { id: docSnap.id, ...docSnap.data() } as Recipient;
+    
+    // Verify ownership
+    if (recipient.userId !== user.id) {
+      throw new Error('Not authorized to access this recipient');
     }
     
-    return null;
+    return recipient;
   } catch (error) {
     console.error('Error getting recipient:', error);
-    return null;
+    throw error;
   }
 };
 
@@ -79,21 +76,17 @@ export const addRecipient = async (data: Omit<Recipient, 'id' | 'userId' | 'crea
     return addMockRecipient(user.id, data);
   }
 
+  const now = Date.now();
+  const newRecipient = {
+    ...data,
+    userId: user.id,
+    createdAt: now,
+    updatedAt: now
+  };
+
   try {
-    const now = Date.now();
-    const newRecipient = {
-      ...data,
-      userId: user.id,
-      createdAt: now,
-      updatedAt: now
-    };
-    
     const docRef = await addDoc(collection(db, COLLECTION), newRecipient);
-    
-    return {
-      id: docRef.id,
-      ...newRecipient
-    } as Recipient;
+    return { id: docRef.id, ...newRecipient };
   } catch (error) {
     console.error('Error adding recipient:', error);
     throw error;
@@ -116,18 +109,10 @@ export const updateRecipient = async (id: string, data: Partial<Recipient>): Pro
     if (!recipient) throw new Error('Recipient not found');
     if (recipient.userId !== user.id) throw new Error('Not authorized to update this recipient');
     
-    const updateData = {
-      ...data,
-      updatedAt: Date.now()
-    };
+    const updatedData = { ...data, updatedAt: Date.now() };
+    await updateDoc(doc(db, COLLECTION, id), updatedData);
     
-    await updateDoc(doc(db, COLLECTION, id), updateData);
-    
-    // Get updated recipient
-    const updatedRecipient = await getRecipient(id);
-    if (!updatedRecipient) throw new Error('Failed to retrieve updated recipient');
-    
-    return updatedRecipient;
+    return { ...recipient, ...updatedData };
   } catch (error) {
     console.error('Error updating recipient:', error);
     throw error;
@@ -159,7 +144,7 @@ export const deleteRecipient = async (id: string): Promise<void> => {
 };
 
 // Update a recipient's auto-send preferences
-export const updateRecipientAutoSendPreferences = async (
+export const updateAutoSendPreferences = async (
   recipientId: string, 
   preferences: Partial<AutoSendPreferences>
 ): Promise<Recipient> => {
@@ -180,20 +165,13 @@ export const updateRecipientAutoSendPreferences = async (
     // Create or update the auto-send preferences
     const currentPreferences = recipient.autoSendPreferences || {
       enabled: false,
-      budget: 0,
-      occasions: {
-        birthday: false,
-        christmas: false,
-        anniversary: false,
-        custom: []
-      },
-      lastUpdated: Date.now()
+      defaultBudget: 50,
+      requireApproval: true
     };
     
     const updatedPreferences = {
       ...currentPreferences,
-      ...preferences,
-      lastUpdated: Date.now()
+      ...preferences
     };
     
     // Update the recipient with the new preferences
@@ -218,7 +196,7 @@ const generateSampleRecipients = (userId: string): Recipient[] => {
       userId,
       name: 'John Smith',
       relationship: 'Brother',
-      interests: ['Gaming', 'Hiking'],
+      interests: ['gaming', 'hiking'],
       birthdate: '1985-06-15',
       createdAt: now,
       updatedAt: now
@@ -228,7 +206,7 @@ const generateSampleRecipients = (userId: string): Recipient[] => {
       userId,
       name: 'Sarah Johnson',
       relationship: 'Friend',
-      interests: ['Reading', 'Cooking'],
+      interests: ['reading', 'cooking'],
       birthdate: '1990-03-22',
       createdAt: now,
       updatedAt: now
@@ -263,10 +241,7 @@ const addMockRecipient = (userId: string, data: Partial<Recipient>): Recipient =
     birthdate: data.birthdate,
     deliveryAddress: data.deliveryAddress,
     description: data.description,
-    anniversary: data.anniversary,
-    giftPreferences: data.giftPreferences,
     autoSendPreferences: data.autoSendPreferences,
-    occasionIds: data.occasionIds,
     createdAt: now,
     updatedAt: now
   };
@@ -306,20 +281,13 @@ const updateMockRecipientAutoSendPreferences = (
   // Create or update the auto-send preferences
   const currentPreferences = mockRecipients[index].autoSendPreferences || {
     enabled: false,
-    budget: 0,
-    occasions: {
-      birthday: false,
-      christmas: false,
-      anniversary: false,
-      custom: []
-    },
-    lastUpdated: Date.now()
+    defaultBudget: 50,
+    requireApproval: true
   };
   
   const updatedPreferences = {
     ...currentPreferences,
-    ...preferences,
-    lastUpdated: Date.now()
+    ...preferences
   };
   
   // Update the mock recipient
