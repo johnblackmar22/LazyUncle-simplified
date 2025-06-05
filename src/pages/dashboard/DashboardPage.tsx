@@ -310,13 +310,18 @@ const DashboardPage: React.FC = () => {
   };
 
   return (
-    <Container maxW="container.xl" mt={4}>
-      <VStack spacing={6} align="stretch">
+    <Container maxW="container.xl" mt={{ base: 2, md: 4 }} px={{ base: 4, md: 6 }}>
+      <VStack spacing={{ base: 4, md: 6 }} align="stretch">
         {/* Header */}
-        <Flex justify="space-between" align="center">
+        <Flex 
+          direction={{ base: "column", md: "row" }} 
+          justify="space-between" 
+          align={{ base: "start", md: "center" }} 
+          gap={{ base: 4, md: 0 }}
+        >
           <Box>
-            <Heading size="xl" mb={2}>Dashboard</Heading>
-            <Text color="gray.600">
+            <Heading size={{ base: "lg", md: "xl" }} mb={2}>Dashboard</Heading>
+            <Text color="gray.600" fontSize={{ base: "sm", md: "md" }}>
               Here's what's happening with your gift planning
             </Text>
           </Box>
@@ -325,21 +330,22 @@ const DashboardPage: React.FC = () => {
             to="/recipients/add"
             colorScheme="blue"
             leftIcon={<AddIcon />}
-            size="lg"
+            size={{ base: "md", md: "lg" }}
+            width={{ base: "full", md: "auto" }}
           >
             Add Recipient
           </Button>
         </Flex>
 
         {/* Main Content Cards */}
-        <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={8}>
+        <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={{ base: 4, md: 8 }}>
           {/* Recipients Card */}
           <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
             <CardHeader>
               <Flex justify="space-between" align="center">
                 <Flex align="center" gap={2}>
                   <Icon as={FaUser} color="blue.500" />
-                  <Heading size="md">Recipients ({totalRecipients})</Heading>
+                  <Heading size={{ base: "sm", md: "md" }}>Recipients ({totalRecipients})</Heading>
                 </Flex>
                 <Button
                   as={RouterLink}
@@ -391,12 +397,17 @@ const DashboardPage: React.FC = () => {
                         _hover={{ bg: useColorModeValue('gray.50', 'gray.700') }}
                         onClick={() => navigate(`/recipients/${recipient.id}`)}
                       >
-                        <CardBody p={4}>
-                          <Flex justify="space-between" align="start">
+                        <CardBody p={{ base: 3, md: 4 }}>
+                          <Flex 
+                            direction={{ base: "column", sm: "row" }}
+                            justify="space-between" 
+                            align={{ base: "start", sm: "start" }}
+                            gap={{ base: 3, sm: 0 }}
+                          >
                             <Flex align="start" gap={3} flex="1">
-                              <Avatar name={recipient.name} size="md" />
+                              <Avatar name={recipient.name} size={{ base: "sm", md: "md" }} />
                               <VStack align="start" spacing={1} flex="1">
-                                <Text fontWeight="semibold" fontSize="md">
+                                <Text fontWeight="semibold" fontSize={{ base: "sm", md: "md" }}>
                                   {recipient.name}
                                 </Text>
                                 <Badge colorScheme="blue" size="sm">
@@ -404,7 +415,7 @@ const DashboardPage: React.FC = () => {
                                 </Badge>
                                 
                                 {birthdayInfo && (
-                                  <Text fontSize="sm" color="gray.600">
+                                  <Text fontSize="xs" color="gray.600">
                                     Birthday: {birthdayInfo.monthDay} (Age {birthdayInfo.age})
                                   </Text>
                                 )}
@@ -427,7 +438,7 @@ const DashboardPage: React.FC = () => {
                             </Flex>
                             
                             {nextOccasion && daysUntil !== null && (
-                              <VStack align="end" spacing={1} minW="100px">
+                              <VStack align={{ base: "start", sm: "end" }} spacing={1} minW={{ base: "auto", sm: "100px" }}>
                                 <Text fontSize="xs" fontWeight="medium" color={daysUntil <= 7 ? "red.500" : daysUntil <= 30 ? "orange.500" : "blue.500"}>
                                   {nextOccasion.name}
                                 </Text>
@@ -471,7 +482,7 @@ const DashboardPage: React.FC = () => {
             <CardHeader>
               <Flex align="center" gap={2}>
                 <Icon as={FaCalendarAlt} color="purple.500" />
-                <Heading size="md">Upcoming Occasions ({totalOccasions})</Heading>
+                <Heading size={{ base: "sm", md: "md" }}>Upcoming Occasions ({totalOccasions})</Heading>
               </Flex>
             </CardHeader>
             <CardBody pt={0}>
@@ -498,20 +509,22 @@ const DashboardPage: React.FC = () => {
                     return (
                       <Flex 
                         key={`${occasion.recipientId}-${occasion.id}`}
-                        p={3}
+                        p={{ base: 2, md: 3 }}
                         borderRadius="md"
                         cursor="pointer"
                         _hover={{ bg: useColorModeValue('gray.50', 'gray.700') }}
                         onClick={() => navigate(`/recipients/${occasion.recipientId}`)}
-                        justify="space-between"
-                        align="center"
+                        direction={{ base: "column", sm: "row" }}
+                        justify={{ base: "start", sm: "space-between" }}
+                        align={{ base: "start", sm: "center" }}
+                        gap={{ base: 2, sm: 0 }}
                         borderLeft="3px solid"
                         borderLeftColor={daysUntil <= 7 ? "red.500" : daysUntil <= 30 ? "orange.500" : "blue.500"}
                       >
                         <Flex align="center" gap={3}>
-                          <Avatar name={occasion.recipient?.name} size="sm" />
+                          <Avatar name={occasion.recipient?.name} size={{ base: "xs", sm: "sm" }} />
                           <VStack align="start" spacing={0}>
-                            <Text fontWeight="medium" fontSize="sm">
+                            <Text fontWeight="medium" fontSize={{ base: "xs", sm: "sm" }}>
                               {occasion.recipient?.name}
                             </Text>
                             <Text fontSize="xs" color="gray.500">
@@ -520,7 +533,7 @@ const DashboardPage: React.FC = () => {
                           </VStack>
                         </Flex>
                         
-                        <VStack align="end" spacing={0}>
+                        <VStack align={{ base: "start", sm: "end" }} spacing={0}>
                           <Text fontSize="xs" fontWeight="medium" color={daysUntil <= 7 ? "red.500" : "gray.600"}>
                             {format(displayDate, 'MMM dd')}
                           </Text>
@@ -539,8 +552,8 @@ const DashboardPage: React.FC = () => {
                 </VStack>
               ) : (
                 <Box textAlign="center" py={8}>
-                  <Icon as={FaCalendarAlt} boxSize="48px" color="gray.400" mb={4} />
-                  <Text color="gray.500" mb={4}>
+                  <Icon as={FaCalendarAlt} boxSize={{ base: "40px", md: "48px" }} color="gray.400" mb={4} />
+                  <Text color="gray.500" mb={4} fontSize={{ base: "sm", md: "md" }}>
                     No upcoming occasions in the next 60 days
                   </Text>
                   <Button
@@ -563,19 +576,20 @@ const DashboardPage: React.FC = () => {
           <Card bg="blue.50" shadow="md" borderRadius="lg" borderColor="blue.200" borderWidth="1px">
             <CardBody>
               <VStack spacing={4} textAlign="center">
-                <Icon as={FaGift} boxSize="60px" color="blue.500" />
-                <Heading size="lg" color="blue.700">
+                <Icon as={FaGift} boxSize={{ base: "50px", md: "60px" }} color="blue.500" />
+                <Heading size={{ base: "md", md: "lg" }} color="blue.700">
                   Ready to start gifting?
                 </Heading>
-                <Text color="blue.600" maxW="md">
+                <Text color="blue.600" maxW="md" fontSize={{ base: "sm", md: "md" }}>
                   Add your first recipient to begin setting up automated gift suggestions and delivery.
                 </Text>
                 <Button
                   as={RouterLink}
                   to="/recipients/add"
                   colorScheme="blue"
-                  size="lg"
+                  size={{ base: "md", md: "lg" }}
                   leftIcon={<AddIcon />}
+                  width={{ base: "full", sm: "auto" }}
                 >
                   Add Your First Recipient
                 </Button>
