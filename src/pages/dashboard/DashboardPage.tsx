@@ -44,7 +44,7 @@ import { initializeDemoData } from '../../services/demoData';
 import { useOccasionStore } from '../../store/occasionStore';
 import { FaGift, FaCalendarAlt, FaUser, FaClock } from 'react-icons/fa';
 import { AddIcon, CheckIcon } from '@chakra-ui/icons';
-import { formatDistanceToNow, isWithinInterval, addDays, parseISO, format, startOfDay } from 'date-fns';
+import { formatDistanceToNow, isWithinInterval, addDays, parseISO, format, startOfDay, differenceInDays } from 'date-fns';
 import { getNextBirthday, getNextChristmas } from '../../utils/dateUtils';
 
 const DashboardPage: React.FC = () => {
@@ -102,13 +102,6 @@ const DashboardPage: React.FC = () => {
     }
   }, [recipients.length, fetchOccasions]);
   
-  // Calculate stats
-  const totalRecipients = recipients.length;
-  const totalOccasions = Object.values(occasions).flat().length;
-  
-  // For now, just count all occasions as pending until we rebuild the gift system
-  const pendingSuggestions = totalOccasions;
-
   // Get upcoming occasions (within next 60 days)
   const upcomingOccasions = Object.entries(occasions)
     .flatMap(([recipientId, recipientOccasions]) => 
@@ -119,63 +112,55 @@ const DashboardPage: React.FC = () => {
       }))
     )
     .filter(occasion => {
-      if (!occasion.date) return false;
-      try {
-        let occasionDate: Date;
+      const today = startOfDay(new Date());
+      
+      if (occasion.type === 'birthday' || occasion.type === 'christmas' || occasion.type === 'anniversary') {
+        // For annual events, get the next occurrence
+        const [, month, day] = occasion.date.split('-').map(Number);
+        const currentYear = new Date().getFullYear();
         
-        // Handle recurring annual events (birthday, Christmas, anniversary)
-        if (occasion.type === 'birthday' || occasion.type === 'christmas' || occasion.type === 'anniversary') {
-          // For annual events, we need to find the next occurrence in local timezone
-          const [year, month, day] = occasion.date.split('-').map(Number);
-          const currentYear = new Date().getFullYear();
-          const today = startOfDay(new Date());
-          
-          // Create this year's date in local timezone
-          let thisYearDate = new Date(currentYear, month - 1, day);
-          
-          // If this year's date has passed, use next year
-          if (thisYearDate < today) {
-            thisYearDate = new Date(currentYear + 1, month - 1, day);
-          }
-          
-          occasionDate = thisYearDate;
-        } else {
-          // For one-time events, parse in local timezone
-          const [year, month, day] = occasion.date.split('-').map(Number);
-          occasionDate = new Date(year, month - 1, day);
+        // Try this year first
+        let nextOccurrence = new Date(currentYear, month - 1, day);
+        if (nextOccurrence < today) {
+          // If it's already passed this year, use next year
+          nextOccurrence = new Date(currentYear + 1, month - 1, day);
         }
         
-        const today = startOfDay(new Date());
-        const in60Days = addDays(today, 60);
-        return isWithinInterval(occasionDate, { start: today, end: in60Days });
-      } catch {
-        return false;
+        const daysUntil = differenceInDays(nextOccurrence, today);
+        return daysUntil >= 0 && daysUntil <= 60;
+      } else {
+        // For one-time events, use the actual date
+        const [year, month, day] = occasion.date.split('-').map(Number);
+        const occasionDate = new Date(year, month - 1, day);
+        const daysUntil = differenceInDays(occasionDate, today);
+        return daysUntil >= 0 && daysUntil <= 60;
       }
     })
     .sort((a, b) => {
-      try {
-        // Calculate the actual next occurrence date for sorting
-        const getNextOccurrenceDate = (occasion: any) => {
-          if (occasion.type === 'birthday' || occasion.type === 'christmas' || occasion.type === 'anniversary') {
-            const [year, month, day] = occasion.date.split('-').map(Number);
-            const currentYear = new Date().getFullYear();
-            const today = startOfDay(new Date());
-            let thisYearDate = new Date(currentYear, month - 1, day);
-            if (thisYearDate < today) {
-              thisYearDate = new Date(currentYear + 1, month - 1, day);
-            }
-            return thisYearDate;
+      // Sort by next occurrence date
+      const getNextOccurrenceDate = (occasion: any) => {
+        if (occasion.type === 'birthday' || occasion.type === 'christmas' || occasion.type === 'anniversary') {
+          const [, month, day] = occasion.date.split('-').map(Number);
+          const currentYear = new Date().getFullYear();
+          const today = startOfDay(new Date());
+          
+          let nextOccurrence = new Date(currentYear, month - 1, day);
+          if (nextOccurrence < today) {
+            nextOccurrence = new Date(currentYear + 1, month - 1, day);
           }
+          return nextOccurrence;
+        } else {
           const [year, month, day] = occasion.date.split('-').map(Number);
           return new Date(year, month - 1, day);
-        };
-        
-        return getNextOccurrenceDate(a).getTime() - getNextOccurrenceDate(b).getTime();
-      } catch {
-        return 0;
-      }
-    })
-    .slice(0, 5); // Show only next 5
+        }
+      };
+      
+      return getNextOccurrenceDate(a).getTime() - getNextOccurrenceDate(b).getTime();
+    });
+
+  // Calculate stats
+  const totalRecipients = recipients.length;
+  const totalOccasions = upcomingOccasions.length;
 
   const openOccasionModal = (recipientId: string) => {
     const recipient = recipients.find(r => r.id === recipientId);
@@ -325,39 +310,31 @@ const DashboardPage: React.FC = () => {
   };
 
   return (
-    <Container maxW="container.xl" mt={4}>
+    <Container maxW="7xl" py={8}>
       <VStack spacing={8} align="stretch">
-        {/* Welcome Header with Add Recipient Button */}
-        <Flex justify="space-between" align="center" flexWrap="wrap" gap={4}>
-          <Box>
-            <Heading size="xl" mb={2}>
-              Welcome back{user?.displayName ? `, ${user.displayName}` : ''}!
-            </Heading>
-            <Text color="gray.600" fontSize="lg">
-              Here's what's happening with your gift management
-            </Text>
-          </Box>
-          <Button
-            as={RouterLink}
-            to="/recipients/add"
-            colorScheme="blue"
-            leftIcon={<AddIcon />}
-            size="lg"
+        {/* Header */}
+        <Box textAlign="center">
+          <Heading 
+            as="h1" 
+            size="2xl" 
+            bgGradient="linear(to-r, blue.400, purple.500)" 
+            bgClip="text"
+            mb={4}
           >
-            Add Recipient
-          </Button>
-        </Flex>
+            Welcome back!
+          </Heading>
+          <Text fontSize="lg" color="gray.600">
+            Here's what's happening with your gift planning
+          </Text>
+        </Box>
 
-        {/* Overview Stats */}
+        {/* Stats Cards */}
         <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
           <CardHeader>
-            <Flex align="center" gap={2}>
-              <Icon as={FaGift} color="blue.500" />
-              <Heading size="md">Overview</Heading>
-            </Flex>
+            <Heading size="md">Overview</Heading>
           </CardHeader>
-          <CardBody pt={0}>
-            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
+          <CardBody>
+            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
               <Stat>
                 <StatLabel>
                   <HStack>
@@ -379,18 +356,6 @@ const DashboardPage: React.FC = () => {
                 </StatLabel>
                 <StatNumber fontSize="3xl" color="purple.500">
                   {totalOccasions}
-                </StatNumber>
-              </Stat>
-              
-              <Stat>
-                <StatLabel>
-                  <HStack>
-                    <Icon as={FaClock} color="orange.500" />
-                    <Text>Pending Reviews</Text>
-                  </HStack>
-                </StatLabel>
-                <StatNumber fontSize="3xl" color="orange.500">
-                  {pendingSuggestions}
                 </StatNumber>
               </Stat>
             </SimpleGrid>
