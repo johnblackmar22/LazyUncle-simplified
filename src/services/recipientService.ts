@@ -112,7 +112,8 @@ export const updateRecipient = async (id: string, data: Partial<Recipient>): Pro
     const updatedData = { ...data, updatedAt: Date.now() };
     await updateDoc(doc(db, COLLECTION, id), updatedData);
     
-    return { ...recipient, ...updatedData };
+    const updatedRecipient = { ...recipient, ...updatedData };
+    return updatedRecipient;
   } catch (error) {
     console.error('Error updating recipient:', error);
     throw error;

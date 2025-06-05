@@ -149,14 +149,17 @@ const EditRecipientPage: React.FC = () => {
       if (birthYear && birthMonth && birthDay) {
         birthdateStr = `${birthYear}-${birthMonth}-${birthDay}`;
       }
-      await updateRecipient(id, {
+      
+      const updateData = {
         name,
         relationship,
         birthdate: birthdateStr || undefined,
         interests,
         description: description.trim() || undefined,
         deliveryAddress,
-      });
+      };
+      
+      await updateRecipient(id, updateData);
       
       toast({
         title: 'Recipient updated',

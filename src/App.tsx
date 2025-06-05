@@ -16,6 +16,7 @@ import RecipientsListPage from './pages/RecipientsListPage';
 import AddRecipientPage from './pages/AddRecipientPage';
 import EditRecipientPage from './pages/EditRecipientPage';
 import { RecipientDetailPage } from './pages/RecipientDetailPage';
+import DebugRecipientPage from './pages/DebugRecipientPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import SettingsPage from './pages/SettingsPage';
@@ -131,6 +132,7 @@ function App() {
             <Route path="/recipients/add" element={<AddRecipientPage />} />
             <Route path="/recipients/:id" element={<RecipientDetailPage />} />
             <Route path="/recipients/:id/edit" element={<EditRecipientPage />} />
+            <Route path="/recipients/:id/debug" element={<DebugRecipientPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
         </Route>
