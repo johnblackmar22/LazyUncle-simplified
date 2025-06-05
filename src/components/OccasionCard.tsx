@@ -329,6 +329,11 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
             <Icon as={FaDollarSign} color="green.500" />
             <Text fontSize="sm">
               <strong>Budget:</strong> ${occasion.budget}
+              {occasion.giftWrap && (
+                <Text as="span" fontSize="xs" color="gray.500" ml={2}>
+                  (includes $4.99 gift wrap)
+                </Text>
+              )}
             </Text>
           </HStack>
 
@@ -466,19 +471,26 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
                           </Text>
                           <HStack spacing={2}>
                             <Badge colorScheme="green" size="sm">
-                              ${gift.price}
+                              Gift: ${gift.price}
                             </Badge>
                             {gift.costBreakdown && (
-                              <Tooltip 
-                                label={`Gift: $${gift.costBreakdown.giftPrice} | Shipping: $${gift.costBreakdown.estimatedShipping} | ${gift.costBreakdown.giftWrapping > 0 ? `Gift Wrap: $${gift.costBreakdown.giftWrapping} | ` : ''}Total: $${gift.costBreakdown.total}`}
-                                placement="top"
-                              >
-                                <Badge colorScheme="blue" size="sm" variant="outline">
+                              <>
+                                {gift.costBreakdown.estimatedShipping > 0 && (
+                                  <Badge colorScheme="blue" size="sm" variant="outline">
+                                    Shipping: ${gift.costBreakdown.estimatedShipping}
+                                  </Badge>
+                                )}
+                                {gift.costBreakdown.giftWrapping > 0 && (
+                                  <Badge colorScheme="purple" size="sm" variant="outline">
+                                    Gift Wrap: ${gift.costBreakdown.giftWrapping}
+                                  </Badge>
+                                )}
+                                <Badge colorScheme="orange" size="sm" variant="solid">
                                   Total: ${gift.costBreakdown.total}
                                 </Badge>
-                              </Tooltip>
+                              </>
                             )}
-                            <Badge colorScheme="orange" size="sm" variant="subtle">
+                            <Badge colorScheme="gray" size="sm" variant="subtle">
                               {Math.round(gift.confidence * 100)}% match
                             </Badge>
                           </HStack>
