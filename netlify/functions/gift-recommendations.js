@@ -16,11 +16,14 @@ const handler = async (event) => {
   try {
     console.log('📝 Parsing request body...');
     const requestData = JSON.parse(event.body || '{}');
-    console.log('✅ Request parsed:', {
-      hasRecipient: !!requestData.recipient,
-      hasOccasion: !!requestData.occasion,
-      hasBudget: !!requestData.budget
-    });
+    const { recipient, occasion, budget, preferences, instructions } = requestData;
+    
+    if (!recipient || !occasion || !budget) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Missing recipient, occasion, or budget' }),
+      };
+    }
 
     // Check if OpenAI API key exists
     if (!process.env.OPENAI_API_KEY) {
@@ -37,21 +40,17 @@ const handler = async (event) => {
     });
     console.log('✅ OpenAI client initialized');
 
-    // Simple AI request for testing
-    console.log('📞 Making OpenAI API call...');
+    // Build a dynamic prompt for the AI
+    const prompt = `You are a helpful gift recommendation assistant. Respond only with valid JSON.\n\nHere is the recipient's information:\n- Name: ${recipient.name}\n- Relationship: ${recipient.relationship}\n- Age: ${recipient.age || 'unknown'}\n- Interests: ${recipient.interests?.join(', ') || 'none'}\n- Location: ${recipient.location || 'unknown'}\n\nOccasion:\n- Type: ${occasion.type}\n- Date: ${occasion.date}\n- Significance: ${occasion.significance || 'regular'}\n\nBudget:\n- Total: $${budget.total}\n- Gift Budget: $${budget.giftBudget}\n- Gift Wrap: ${budget.giftWrap ? 'yes' : 'no'}\n\nPreferences:\n- Exclude Categories: ${(preferences?.excludeCategories || []).join(', ') || 'none'}\n- Preferred Categories: ${(preferences?.preferredCategories || []).join(', ') || 'none'}\n- Prioritize Free Shipping: ${preferences?.prioritizeFreeShipping ? 'yes' : 'no'}\n- Max Shipping Cost: $${preferences?.maxShippingCost || 0}\n\nInstructions: ${instructions || 'Find the best gifts for this recipient and occasion. Include actual shipping cost estimates in your response.'}\n\nRespond with JSON: {"recommendations": [{"name": "Gift Name", "price": 25, "description": "Why this gift", "category": "gift_category", "confidence": 0.8, "availability": "in_stock", "estimatedDelivery": "3-5 business days", "costBreakdown": {"giftPrice": 25, "estimatedShipping": 0, "giftWrapping": 0, "total": 25}}]}`;
+
+    // OpenAI API call
     const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo', // Using cheaper model for testing
+      model: 'gpt-3.5-turbo',
       messages: [
-        {
-          role: 'system',
-          content: 'You are a helpful gift recommendation assistant. Respond only with valid JSON.'
-        },
-        {
-          role: 'user',
-          content: 'Suggest 2 gifts for a friend\'s birthday with a $50 budget. Respond with JSON: {"recommendations": [{"name": "Gift Name", "price": 25, "description": "Why this gift"}]}'
-        }
+        { role: 'system', content: 'You are a helpful gift recommendation assistant. Respond only with valid JSON.' },
+        { role: 'user', content: prompt }
       ],
-      max_tokens: 500,
+      max_tokens: 700,
       temperature: 0.7,
     });
     console.log('✅ OpenAI API call successful');
