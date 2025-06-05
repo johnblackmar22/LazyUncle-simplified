@@ -331,66 +331,30 @@ const DashboardPage: React.FC = () => {
           </Button>
         </Flex>
 
-        {/* Stats Cards */}
-        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-          <Card bg="white" shadow="md" borderRadius="lg" borderTop="4px solid" borderTopColor="blue.500">
-            <CardBody p={8}>
-              <VStack spacing={4} align="start">
-                <HStack spacing={3}>
-                  <Icon as={FaUser} boxSize="32px" color="blue.500" />
-                  <Text fontSize="lg" fontWeight="semibold" color="gray.700">Recipients</Text>
-                </HStack>
-                <Text fontSize="4xl" fontWeight="bold" lineHeight="1" color="blue.600">
-                  {totalRecipients}
-                </Text>
-                <Text fontSize="sm" color="gray.600">
-                  {totalRecipients === 1 ? 'person' : 'people'} to gift
-                </Text>
-              </VStack>
-            </CardBody>
-          </Card>
-
-          <Card bg="white" shadow="md" borderRadius="lg" borderTop="4px solid" borderTopColor="purple.500">
-            <CardBody p={8}>
-              <VStack spacing={4} align="start">
-                <HStack spacing={3}>
-                  <Icon as={FaCalendarAlt} boxSize="32px" color="purple.500" />
-                  <Text fontSize="lg" fontWeight="semibold" color="gray.700">Gift Occasions</Text>
-                </HStack>
-                <Text fontSize="4xl" fontWeight="bold" lineHeight="1" color="purple.600">
-                  {totalOccasions}
-                </Text>
-                <Text fontSize="sm" color="gray.600">
-                  upcoming in next 60 days
-                </Text>
-              </VStack>
-            </CardBody>
-          </Card>
-        </SimpleGrid>
-
+        {/* Main Content Cards */}
         <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={8}>
-          {/* Recipients */}
-          {recipients.length > 0 && (
-            <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
-              <CardHeader>
-                <Flex justify="space-between" align="center">
-                  <Flex align="center" gap={2}>
-                    <Icon as={FaUser} color="blue.500" />
-                    <Heading size="md">Recipients</Heading>
-                  </Flex>
-                  <Button
-                    as={RouterLink}
-                    to="/recipients"
-                    size="sm"
-                    variant="ghost"
-                    colorScheme="blue"
-                  >
-                    View All
-                  </Button>
+          {/* Recipients Card */}
+          <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
+            <CardHeader>
+              <Flex justify="space-between" align="center">
+                <Flex align="center" gap={2}>
+                  <Icon as={FaUser} color="blue.500" />
+                  <Heading size="md">Recipients ({totalRecipients})</Heading>
                 </Flex>
-              </CardHeader>
-              <CardBody pt={0}>
-                <VStack spacing={3} align="stretch">
+                <Button
+                  as={RouterLink}
+                  to="/recipients"
+                  size="sm"
+                  variant="ghost"
+                  colorScheme="blue"
+                >
+                  View All
+                </Button>
+              </Flex>
+            </CardHeader>
+            <CardBody pt={0}>
+              {recipients.length > 0 ? (
+                <VStack spacing={4} align="stretch">
                   {recipients.slice(0, 6).map((recipient) => {
                     // Find next upcoming occasion for this recipient
                     const recipientOccasions = upcomingOccasions.filter(
@@ -417,64 +381,103 @@ const DashboardPage: React.FC = () => {
                       daysUntil = differenceInDays(displayDate, startOfDay(new Date()));
                     }
 
+                    const birthdayInfo = formatBirthdayWithAge(recipient.birthdate);
+
                     return (
-                      <Flex
+                      <Card
                         key={recipient.id}
-                        p={3}
-                        borderRadius="md"
+                        variant="outline"
                         cursor="pointer"
                         _hover={{ bg: useColorModeValue('gray.50', 'gray.700') }}
                         onClick={() => navigate(`/recipients/${recipient.id}`)}
-                        justify="space-between"
-                        align="center"
                       >
-                        <Flex align="center" gap={3}>
-                          <Avatar name={recipient.name} size="sm" />
-                          <Box>
-                            <Text fontWeight="medium" fontSize="sm">
-                              {recipient.name}
-                            </Text>
-                            <Text fontSize="xs" color="gray.500">
-                              {recipient.relationship || 'Recipient'}
-                            </Text>
-                          </Box>
-                        </Flex>
-                        
-                        {nextOccasion && daysUntil !== null && (
-                          <Box textAlign="right">
-                            <Text fontSize="xs" fontWeight="medium" color={daysUntil <= 7 ? "red.500" : daysUntil <= 30 ? "orange.500" : "blue.500"}>
-                              {nextOccasion.name}
-                            </Text>
-                            <Text fontSize="xs" color="gray.400">
-                              {daysUntil === 0 ? 'Today' : daysUntil === 1 ? 'Tomorrow' : `${daysUntil} days`}
-                            </Text>
-                          </Box>
-                        )}
-                      </Flex>
+                        <CardBody p={4}>
+                          <Flex justify="space-between" align="start">
+                            <Flex align="start" gap={3} flex="1">
+                              <Avatar name={recipient.name} size="md" />
+                              <VStack align="start" spacing={1} flex="1">
+                                <Text fontWeight="semibold" fontSize="md">
+                                  {recipient.name}
+                                </Text>
+                                <Badge colorScheme="blue" size="sm">
+                                  {recipient.relationship || 'Recipient'}
+                                </Badge>
+                                
+                                {birthdayInfo && (
+                                  <Text fontSize="sm" color="gray.600">
+                                    Birthday: {birthdayInfo.monthDay} (Age {birthdayInfo.age})
+                                  </Text>
+                                )}
+                                
+                                {recipient.interests && recipient.interests.length > 0 && (
+                                  <Flex gap={1} flexWrap="wrap" mt={1}>
+                                    {recipient.interests.slice(0, 3).map((interest, index) => (
+                                      <Badge key={index} colorScheme={getInterestColor(index)} variant="subtle" fontSize="xs">
+                                        {interest}
+                                      </Badge>
+                                    ))}
+                                    {recipient.interests.length > 3 && (
+                                      <Badge colorScheme="gray" variant="subtle" fontSize="xs">
+                                        +{recipient.interests.length - 3}
+                                      </Badge>
+                                    )}
+                                  </Flex>
+                                )}
+                              </VStack>
+                            </Flex>
+                            
+                            {nextOccasion && daysUntil !== null && (
+                              <VStack align="end" spacing={1} minW="100px">
+                                <Text fontSize="xs" fontWeight="medium" color={daysUntil <= 7 ? "red.500" : daysUntil <= 30 ? "orange.500" : "blue.500"}>
+                                  {nextOccasion.name}
+                                </Text>
+                                <Text fontSize="xs" color="gray.400">
+                                  {daysUntil === 0 ? 'Today' : daysUntil === 1 ? 'Tomorrow' : `${daysUntil} days`}
+                                </Text>
+                              </VStack>
+                            )}
+                          </Flex>
+                        </CardBody>
+                      </Card>
                     );
                   })}
+                  {recipients.length > 6 && (
+                    <Text textAlign="center" fontSize="sm" color="gray.500" mt={2}>
+                      +{recipients.length - 6} more recipients
+                    </Text>
+                  )}
                 </VStack>
-                {recipients.length > 6 && (
-                  <Text textAlign="center" mt={4} fontSize="sm" color="gray.500">
-                    +{recipients.length - 6} more recipients
+              ) : (
+                <Box textAlign="center" py={8}>
+                  <Icon as={FaUser} boxSize="48px" color="gray.400" mb={4} />
+                  <Text color="gray.500" mb={4}>
+                    No recipients yet
                   </Text>
-                )}
-              </CardBody>
-            </Card>
-          )}
+                  <Button
+                    as={RouterLink}
+                    to="/recipients/add"
+                    colorScheme="blue"
+                    leftIcon={<AddIcon />}
+                  >
+                    Add Your First Recipient
+                  </Button>
+                </Box>
+              )}
+            </CardBody>
+          </Card>
 
-          {/* Upcoming Occasions */}
+          {/* Upcoming Occasions Card */}
           <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
             <CardHeader>
               <Flex align="center" gap={2}>
                 <Icon as={FaCalendarAlt} color="purple.500" />
-                <Heading size="md">Upcoming Occasions</Heading>
+                <Heading size="md">Upcoming Occasions ({totalOccasions})</Heading>
               </Flex>
             </CardHeader>
             <CardBody pt={0}>
               {upcomingOccasions.length > 0 ? (
                 <VStack spacing={3} align="stretch">
-                  {upcomingOccasions.slice(0, 5).map((occasion) => {
+                  {upcomingOccasions.slice(0, 8).map((occasion) => {
                     // Calculate the display date (next occurrence for annual events)
                     let displayDate: Date;
                     if (occasion.type === 'birthday' || occasion.type === 'christmas' || occasion.type === 'anniversary') {
@@ -502,34 +505,42 @@ const DashboardPage: React.FC = () => {
                         onClick={() => navigate(`/recipients/${occasion.recipientId}`)}
                         justify="space-between"
                         align="center"
+                        borderLeft="3px solid"
+                        borderLeftColor={daysUntil <= 7 ? "red.500" : daysUntil <= 30 ? "orange.500" : "blue.500"}
                       >
                         <Flex align="center" gap={3}>
                           <Avatar name={occasion.recipient?.name} size="sm" />
-                          <Box>
+                          <VStack align="start" spacing={0}>
                             <Text fontWeight="medium" fontSize="sm">
                               {occasion.recipient?.name}
                             </Text>
                             <Text fontSize="xs" color="gray.500">
                               {occasion.name}
                             </Text>
-                          </Box>
+                          </VStack>
                         </Flex>
                         
-                        <Box textAlign="right">
+                        <VStack align="end" spacing={0}>
                           <Text fontSize="xs" fontWeight="medium" color={daysUntil <= 7 ? "red.500" : "gray.600"}>
                             {format(displayDate, 'MMM dd')}
                           </Text>
                           <Text fontSize="xs" color="gray.400">
                             {daysUntil === 0 ? 'Today' : daysUntil === 1 ? 'Tomorrow' : `${daysUntil} days`}
                           </Text>
-                        </Box>
+                        </VStack>
                       </Flex>
                     );
                   })}
+                  {upcomingOccasions.length > 8 && (
+                    <Text textAlign="center" fontSize="sm" color="gray.500" mt={2}>
+                      +{upcomingOccasions.length - 8} more occasions
+                    </Text>
+                  )}
                 </VStack>
               ) : (
-                <Box textAlign="center" py={6}>
-                  <Text color="gray.500" fontSize="sm">
+                <Box textAlign="center" py={8}>
+                  <Icon as={FaCalendarAlt} boxSize="48px" color="gray.400" mb={4} />
+                  <Text color="gray.500" mb={4}>
                     No upcoming occasions in the next 60 days
                   </Text>
                   <Button
@@ -538,7 +549,6 @@ const DashboardPage: React.FC = () => {
                     size="sm"
                     variant="ghost"
                     colorScheme="blue"
-                    mt={2}
                   >
                     Add occasions to recipients
                   </Button>
