@@ -33,9 +33,12 @@ export interface AutoSendPreferences {
   enabled: boolean;
   defaultBudget: number;
   requireApproval: boolean;
-  occasions: AutoSendOccasions;
-  shippingAddress: Address;
-  paymentMethod: PaymentMethod;
+  shippingAddress?: Address;
+  paymentMethod?: {
+    type: 'creditCard' | 'paypal' | 'other';
+    last4?: string;
+    brand?: string;
+  };
 }
 
 // Recipient types
@@ -48,16 +51,7 @@ export interface Recipient {
   interests: string[];
   description?: string; // Free text description about the recipient and relationship
   deliveryAddress?: Address; // Where to deliver gifts for this recipient
-  giftPreferences?: {
-    priceRange?: {
-      min: number;
-      max: number;
-    };
-    categories?: string[];
-  };
-  anniversary?: string; // Format: 'YYYY-MM-DD'
   autoSendPreferences?: AutoSendPreferences;
-  occasionIds?: string[]; // List of occasion ids for this recipient
   createdAt: number;
   updatedAt: number;
 }
@@ -83,9 +77,7 @@ export interface Occasion {
   type: 'birthday' | 'anniversary' | 'custom' | 'christmas';
   notes?: string;
   budget?: number; // Gift budget for this occasion
-  giftWrap?: boolean; // Whether to gift wrap
-  personalizedNote?: boolean; // Whether to include a personalized note
-  noteText?: string; // Custom note text
+  recurring?: boolean; // Annual repeat
   createdAt: number;
   updatedAt: number;
 }
@@ -140,4 +132,18 @@ export interface GiftSuggestion {
   score?: number;
   confidence?: number; // Confidence score from 0-1 for AI suggestions
   tags?: string[];
-} 
+}
+
+// Legacy type for backward compatibility (will be removed)
+export interface GiftRecommendation {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  imageUrl?: string;
+  score?: number;
+}
+
+// Legacy type for backward compatibility (will be removed)  
+export interface RecipientAutoSendPreferences extends AutoSendPreferences {} 
