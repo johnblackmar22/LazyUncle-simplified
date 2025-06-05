@@ -343,11 +343,6 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
         {selectedGiftsForOccasion.length > 0 && (
           <Box mt={4}>
             <Divider mb={3} />
-            <Flex justify="space-between" align="center" mb={3}>
-              <Text fontWeight="bold" fontSize="md" color="green.600">
-                ✅ Selected Gifts
-              </Text>
-            </Flex>
             
             <VStack spacing={3} align="stretch">
               {selectedGiftsForOccasion.map((gift) => (
@@ -375,12 +370,6 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
                       <HStack spacing={2}>
                         <Badge colorScheme="green" size="sm">
                           ${gift.price}
-                        </Badge>
-                        <Badge colorScheme="blue" size="sm" variant="outline">
-                          {gift.category}
-                        </Badge>
-                        <Badge colorScheme="green" size="sm" variant="solid">
-                          Selected
                         </Badge>
                       </HStack>
                     </VStack>
@@ -479,17 +468,9 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
                             <Badge colorScheme="green" size="sm">
                               ${gift.price}
                             </Badge>
-                            <Badge colorScheme="blue" size="sm" variant="outline">
-                              {gift.category}
-                            </Badge>
                             <Badge colorScheme="orange" size="sm" variant="subtle">
                               {Math.round(gift.confidence * 100)}% match
                             </Badge>
-                            {isSelected && (
-                              <Badge colorScheme="green" size="sm" variant="solid">
-                                Selected
-                              </Badge>
-                            )}
                           </HStack>
                         </VStack>
                         <VStack spacing={1}>
@@ -569,18 +550,6 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
                 {showSuggestions ? 'Hide' : 'Show'} Suggestions
               </Button>
             )}
-          </VStack>
-        )}
-
-        {/* Show helpful message when gift is selected */}
-        {selectedGiftsForOccasion.length > 0 && (
-          <VStack w="full" spacing={2}>
-            <Text fontSize="sm" color="green.600" textAlign="center" fontWeight="medium">
-              ✅ Gift selected for this occasion
-            </Text>
-            <Text fontSize="xs" color="gray.500" textAlign="center">
-              Click "Undo" above to change your selection
-            </Text>
           </VStack>
         )}
       </CardFooter>
