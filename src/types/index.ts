@@ -45,6 +45,9 @@ export interface Occasion {
   notes?: string;
   budget?: number;
   recurring?: boolean; // Annual repeat
+  giftWrap?: boolean; // Whether to include gift wrapping
+  personalizedNote?: boolean; // Whether to include a personalized note
+  noteText?: string; // Text for the personalized note
   createdAt: number;
   updatedAt: number;
 }

@@ -11,6 +11,14 @@ export interface GiftRecommendationRequest {
   preferredCategories?: string[];
 }
 
+// Add shipping and cost calculation utilities
+export interface BudgetBreakdown {
+  giftBudget: number;
+  shippingCost: number;
+  giftWrappingCost: number;
+  totalBudget: number;
+}
+
 export interface GiftRecommendation {
   id: string;
   name: string;
@@ -24,6 +32,13 @@ export interface GiftRecommendation {
   purchaseUrl?: string;
   availability: 'in_stock' | 'limited' | 'out_of_stock';
   estimatedDelivery: string;
+  // Add cost breakdown to recommendations
+  costBreakdown?: {
+    giftPrice: number;
+    estimatedShipping: number;
+    giftWrapping: number;
+    total: number;
+  };
   metadata: {
     model: string;
     promptVersion: string;
@@ -44,17 +59,76 @@ export interface RecommendationResponse {
 class GiftRecommendationEngine {
   private baseUrl = '/.netlify/functions';
   
+  // Cost calculation constants
+  private readonly STANDARD_SHIPPING = 8.99;
+  private readonly EXPRESS_SHIPPING = 15.99;
+  private readonly GIFT_WRAPPING_COST = 4.99;
+  private readonly FREE_SHIPPING_THRESHOLD = 35; // Free shipping over $35
+  
+  /**
+   * Calculate budget breakdown including shipping and gift wrapping
+   */
+  private calculateBudgetBreakdown(occasion: Occasion): BudgetBreakdown {
+    const totalBudget = occasion.budget || 50;
+    
+    // Calculate shipping cost (free over threshold, otherwise standard rate)
+    const estimatedShippingCost = totalBudget >= this.FREE_SHIPPING_THRESHOLD ? 0 : this.STANDARD_SHIPPING;
+    
+    // Calculate gift wrapping cost if enabled
+    const giftWrappingCost = occasion.giftWrap ? this.GIFT_WRAPPING_COST : 0;
+    
+    // Calculate available budget for the actual gift
+    const giftBudget = totalBudget - estimatedShippingCost - giftWrappingCost;
+    
+    return {
+      giftBudget: Math.max(giftBudget, 5), // Minimum $5 for gift
+      shippingCost: estimatedShippingCost,
+      giftWrappingCost,
+      totalBudget
+    };
+  }
+  
+  /**
+   * Calculate total cost including shipping and wrapping for a specific gift
+   */
+  private calculateTotalCost(giftPrice: number, occasion: Occasion): {
+    giftPrice: number;
+    estimatedShipping: number;
+    giftWrapping: number;
+    total: number;
+  } {
+    const shippingCost = giftPrice >= this.FREE_SHIPPING_THRESHOLD ? 0 : this.STANDARD_SHIPPING;
+    const wrappingCost = occasion.giftWrap ? this.GIFT_WRAPPING_COST : 0;
+    
+    return {
+      giftPrice,
+      estimatedShipping: shippingCost,
+      giftWrapping: wrappingCost,
+      total: giftPrice + shippingCost + wrappingCost
+    };
+  }
+  
   /**
    * Get AI-powered gift recommendations
    */
   async getRecommendations(request: GiftRecommendationRequest): Promise<RecommendationResponse> {
     try {
+      // Calculate budget breakdown accounting for shipping and gift wrapping
+      const budgetBreakdown = this.calculateBudgetBreakdown(request.occasion);
+      
       console.log('🤖 Requesting gift recommendations:', {
         recipientName: request.recipient.name,
         occasion: request.occasion.name,
-        budget: request.budget,
+        originalBudget: request.budget,
+        adjustedBudgetBreakdown: budgetBreakdown,
         interests: request.recipient.interests
       });
+
+      // Adjust budget constraints for API call
+      const adjustedBudget = {
+        min: Math.max(5, budgetBreakdown.giftBudget * 0.8), // 80% of available gift budget as minimum
+        max: budgetBreakdown.giftBudget // Maximum is just the gift portion
+      };
 
       const response = await fetch(`${this.baseUrl}/gift-recommendations`, {
         method: 'POST',
@@ -74,7 +148,7 @@ class GiftRecommendationEngine {
             date: request.occasion.date,
             significance: request.occasion.notes || 'regular'
           },
-          budget: request.budget,
+          budget: adjustedBudget, // Use adjusted budget that accounts for shipping/wrapping
           preferences: {
             excludeCategories: request.excludeCategories || [],
             preferredCategories: request.preferredCategories || []
@@ -88,9 +162,23 @@ class GiftRecommendationEngine {
 
       const data = await response.json();
       
-      console.log('🤖 Received recommendations:', {
+      // Add cost breakdown to each recommendation
+      if (data.recommendations) {
+        data.recommendations = data.recommendations.map((rec: GiftRecommendation) => ({
+          ...rec,
+          costBreakdown: this.calculateTotalCost(rec.price, request.occasion)
+        }));
+        
+        // Filter out recommendations that exceed total budget
+        data.recommendations = data.recommendations.filter((rec: GiftRecommendation) => {
+          return rec.costBreakdown!.total <= budgetBreakdown.totalBudget;
+        });
+      }
+      
+      console.log('🤖 Received recommendations with cost breakdown:', {
         count: data.recommendations?.length || 0,
-        confidence: data.searchMetadata?.confidence
+        confidence: data.searchMetadata?.confidence,
+        budgetBreakdown
       });
 
       return data;
@@ -195,18 +283,22 @@ class GiftRecommendationEngine {
   private getFallbackRecommendations(request: GiftRecommendationRequest): RecommendationResponse {
     console.log('🔄 Using fallback recommendations');
     
+    // Calculate budget breakdown for fallback recommendations too
+    const budgetBreakdown = this.calculateBudgetBreakdown(request.occasion);
+    
     const fallbackGifts: GiftRecommendation[] = [
       {
         id: 'fallback-1',
         name: 'Amazon Gift Card',
         description: 'Let them choose exactly what they want',
-        price: Math.min(request.budget.max, 50),
+        price: Math.min(budgetBreakdown.giftBudget, 50),
         category: 'gift_cards',
         confidence: 0.8,
         reasoning: 'A safe choice that allows the recipient to select their preferred gift',
         tags: ['versatile', 'safe_choice', 'always_appreciated'],
-        availability: 'in_stock',
+        availability: 'in_stock' as const,
         estimatedDelivery: 'Digital delivery - instant',
+        costBreakdown: this.calculateTotalCost(Math.min(budgetBreakdown.giftBudget, 50), request.occasion),
         metadata: {
           model: 'fallback',
           promptVersion: '1.0',
@@ -217,20 +309,26 @@ class GiftRecommendationEngine {
         id: 'fallback-2', 
         name: 'Experience Gift Box',
         description: 'Curated local experiences and activities',
-        price: Math.min(request.budget.max * 0.8, 100),
+        price: Math.min(budgetBreakdown.giftBudget * 0.8, 100),
         category: 'experiences',
         confidence: 0.7,
         reasoning: 'Experience gifts create lasting memories and work for most people',
         tags: ['memorable', 'experiential', 'unique'],
-        availability: 'in_stock',
+        availability: 'in_stock' as const,
         estimatedDelivery: '3-5 business days',
+        costBreakdown: this.calculateTotalCost(Math.min(budgetBreakdown.giftBudget * 0.8, 100), request.occasion),
         metadata: {
           model: 'fallback',
           promptVersion: '1.0',
           generatedAt: Date.now()
         }
       }
-    ];
+    ].filter(gift => gift.costBreakdown.total <= budgetBreakdown.totalBudget); // Filter by total budget
+
+    console.log('🔄 Fallback recommendations with budget breakdown:', {
+      count: fallbackGifts.length,
+      budgetBreakdown
+    });
 
     return {
       recommendations: fallbackGifts,

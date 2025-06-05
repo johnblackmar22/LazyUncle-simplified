@@ -468,6 +468,16 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
                             <Badge colorScheme="green" size="sm">
                               ${gift.price}
                             </Badge>
+                            {gift.costBreakdown && (
+                              <Tooltip 
+                                label={`Gift: $${gift.costBreakdown.giftPrice} | Shipping: $${gift.costBreakdown.estimatedShipping} | ${gift.costBreakdown.giftWrapping > 0 ? `Gift Wrap: $${gift.costBreakdown.giftWrapping} | ` : ''}Total: $${gift.costBreakdown.total}`}
+                                placement="top"
+                              >
+                                <Badge colorScheme="blue" size="sm" variant="outline">
+                                  Total: ${gift.costBreakdown.total}
+                                </Badge>
+                              </Tooltip>
+                            )}
                             <Badge colorScheme="orange" size="sm" variant="subtle">
                               {Math.round(gift.confidence * 100)}% match
                             </Badge>
