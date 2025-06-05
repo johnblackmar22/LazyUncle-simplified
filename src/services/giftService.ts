@@ -16,7 +16,7 @@ import type { Gift, GiftSuggestion } from '../types';
 
 const COLLECTION = 'gifts';
 
-// Get all gifts for the current user
+// Get all gifts for current user
 export const getGifts = async (): Promise<Gift[]> => {
   const { user } = useAuthStore.getState();
   if (!user) return [];
@@ -30,7 +30,7 @@ export const getGifts = async (): Promise<Gift[]> => {
     const q = query(
       collection(db, COLLECTION), 
       where("userId", "==", user.id),
-      orderBy("updatedAt", "desc")
+      orderBy("createdAt", "desc")
     );
     const querySnapshot = await getDocs(q);
     
@@ -49,7 +49,7 @@ export const getGiftsByRecipient = async (recipientId: string): Promise<Gift[]> 
   const { user } = useAuthStore.getState();
   if (!user) return [];
   
-  // In demo mode, return mock gifts for this recipient
+  // In demo mode, return mock gifts for recipient
   if (DEMO_MODE) {
     return getMockGiftsByRecipient(user.id, recipientId);
   }
@@ -59,7 +59,7 @@ export const getGiftsByRecipient = async (recipientId: string): Promise<Gift[]> 
       collection(db, COLLECTION), 
       where("userId", "==", user.id),
       where("recipientId", "==", recipientId),
-      orderBy("updatedAt", "desc")
+      orderBy("createdAt", "desc")
     );
     const querySnapshot = await getDocs(q);
     
@@ -69,34 +69,6 @@ export const getGiftsByRecipient = async (recipientId: string): Promise<Gift[]> 
     } as Gift));
   } catch (error) {
     console.error('Error getting gifts for recipient:', error);
-    return [];
-  }
-};
-
-// Get gifts that are scheduled for auto-send
-export const getAutoSendGifts = async (): Promise<Gift[]> => {
-  const { user } = useAuthStore.getState();
-  if (!user) return [];
-  
-  // In demo mode, return mock auto-send gifts
-  if (DEMO_MODE) {
-    return getMockAutoSendGifts(user.id);
-  }
-
-  try {
-    const q = query(
-      collection(db, COLLECTION), 
-      where("userId", "==", user.id),
-      where("autoSend", "==", true)
-    );
-    const querySnapshot = await getDocs(q);
-    
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    } as Gift));
-  } catch (error) {
-    console.error('Error getting auto-send gifts:', error);
     return [];
   }
 };
@@ -220,36 +192,6 @@ export const deleteGift = async (id: string): Promise<void> => {
   }
 };
 
-// Schedule a gift for auto-send
-export const scheduleAutoSend = async (id: string, sendDate: string): Promise<Gift> => {
-  const { user } = useAuthStore.getState();
-  if (!user) throw new Error('User not authenticated');
-  try {
-    // Update the gift with auto-send data
-    return await updateGift(id, {
-      autoSend: true
-    });
-  } catch (error) {
-    console.error('Error scheduling gift for auto-send:', error);
-    throw error;
-  }
-};
-
-// Cancel auto-send for a gift
-export const cancelAutoSend = async (id: string): Promise<Gift> => {
-  const { user } = useAuthStore.getState();
-  if (!user) throw new Error('User not authenticated');
-  try {
-    // Update the gift to cancel auto-send
-    return await updateGift(id, {
-      autoSend: false
-    });
-  } catch (error) {
-    console.error('Error cancelling auto-send:', error);
-    throw error;
-  }
-};
-
 // Get gift suggestions based on recipient interests
 export const getGiftSuggestions = async (recipientId: string): Promise<GiftSuggestion[]> => {
   const { user } = useAuthStore.getState();
@@ -293,7 +235,7 @@ const generateSampleGifts = (userId: string): Gift[] => {
       name: 'Hiking Backpack',
       description: 'Waterproof hiking backpack with hydration system',
       price: 89.99,
-      status: 'purchased',
+      status: 'selected',
       category: 'outdoors',
       occasionId: 'birthday-occasion-1',
       date: new Date('2023-06-15').getTime(),
@@ -311,7 +253,6 @@ const generateSampleGifts = (userId: string): Gift[] => {
       category: 'classes',
       occasionId: 'anniversary-occasion-1',
       date: new Date('2023-03-15').getTime(),
-      autoSend: true,
       createdAt: now - 2000000,
       updatedAt: now - 500000
     },
@@ -322,7 +263,7 @@ const generateSampleGifts = (userId: string): Gift[] => {
       name: 'Book: The Midnight Library',
       description: 'Novel by Matt Haig',
       price: 14.99,
-      status: 'given',
+      status: 'delivered',
       category: 'books',
       occasionId: 'christmas-occasion-1',
       date: new Date('2022-12-25').getTime(),
@@ -403,16 +344,6 @@ const getMockGiftsByRecipient = (userId: string, recipientId: string): Gift[] =>
   return mockGifts.filter(g => g.userId === userId && g.recipientId === recipientId);
 };
 
-const getMockAutoSendGifts = (userId: string): Gift[] => {
-  // Initialize with sample data if empty
-  if (mockGifts.length === 0) {
-    mockGifts = generateSampleGifts(userId);
-  }
-  
-  // Filter by user ID and auto-send flag
-  return mockGifts.filter(g => g.userId === userId && g.autoSend === true);
-};
-
 const getMockGift = (id: string): Gift | null => {
   const gift = mockGifts.find(g => g.id === id);
   return gift || null;
@@ -430,10 +361,11 @@ const addMockGift = (userId: string, data: Partial<Gift>): Gift => {
     status: data.status || 'idea',
     category: data.category || '',
     occasionId: data.occasionId || '',
-    date: data.date || new Date().getTime(),
+    date: data.date || now,
     imageUrl: data.imageUrl,
+    purchaseUrl: data.purchaseUrl,
     notes: data.notes,
-    autoSend: data.autoSend || false,
+    recurring: data.recurring,
     createdAt: now,
     updatedAt: now
   };
@@ -464,6 +396,5 @@ const deleteMockGift = (id: string): void => {
 };
 
 const getMockGiftSuggestions = (recipientId: string): GiftSuggestion[] => {
-  // Return predefined suggestions for this recipient or empty array
   return mockGiftSuggestions[recipientId] || [];
 }; 

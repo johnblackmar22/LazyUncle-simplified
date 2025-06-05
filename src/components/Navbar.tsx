@@ -57,12 +57,14 @@ export const Navbar: React.FC = () => {
 
   // Minimal nav for HomePage/public pages
   const publicLinks = [
-    { label: 'Subscribe', to: '/subscription/plans' },
     { label: 'Sign In', to: '/login' },
   ];
 
-  // Authenticated nav - removed Dashboard and Recipients, keeping only Settings
-  const authLinks: { label: string; to: string }[] = [
+  // Authenticated nav links
+  const authLinks = [
+    { label: 'Dashboard', to: '/dashboard' },
+    { label: 'Recipients', to: '/recipients' },
+    { label: 'Settings', to: '/settings' },
   ];
 
   const handleSignOut = async () => {

@@ -12,7 +12,7 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../services/firebase';
-import type { Recipient, AutoSendPreferences, OccasionPreference, AutoSendOccasions, PaymentMethod, Address } from '../types';
+import type { Recipient } from '../types';
 import { useAuthStore } from './authStore';
 import { STORAGE_KEYS, COLLECTIONS, DEMO_USER_ID, DEFAULTS } from '../utils/constants';
 
@@ -26,38 +26,10 @@ interface RecipientState {
   deleteRecipient: (id: string) => Promise<void>;
   resetError: () => void;
   setRecipients: (recipients: Recipient[]) => void;
-  toggleAutoSend: (id: string, enabled: boolean) => Promise<void>;
-  toggleOccasionAutoSend: (id: string, occasion: string, enabled: boolean) => Promise<void>;
-  setDefaultBudget: (id: string, budget: number) => Promise<void>;
-  updateOccasionPreference: (id: string, occasion: string, preference: Partial<any>) => Promise<void>;
-  updateShippingAddress: (id: string, address: any) => Promise<void>;
-  toggleApprovalRequirement: (id: string, requireApproval: boolean) => Promise<void>;
 }
 
 // Constants for localStorage keys - using centralized constants
 // const RECIPIENTS_STORAGE_KEY = 'lazyuncle_recipients';
-
-const defaultAutoSendPreferences = {
-  enabled: DEFAULTS.AUTO_SEND_ENABLED,
-  defaultBudget: DEFAULTS.BUDGET,
-  requireApproval: DEFAULTS.REQUIRE_APPROVAL,
-  occasions: {},
-  shippingAddress: { line1: '', city: '', state: '', postalCode: '', country: '' },
-  paymentMethod: { type: 'creditCard' }
-};
-
-function ensureAutoSendPreferences(prefs: Partial<AutoSendPreferences> = {}): AutoSendPreferences {
-  return {
-    enabled: prefs.enabled !== undefined ? prefs.enabled : false,
-    defaultBudget: prefs.defaultBudget !== undefined ? prefs.defaultBudget : 50,
-    requireApproval: prefs.requireApproval !== undefined ? prefs.requireApproval : true,
-    occasions: prefs.occasions !== undefined ? prefs.occasions : {},
-    shippingAddress: prefs.shippingAddress !== undefined ? prefs.shippingAddress : { line1: '', city: '', state: '', postalCode: '', country: '' },
-    paymentMethod: prefs.paymentMethod && (prefs.paymentMethod.type === 'creditCard' || prefs.paymentMethod.type === 'paypal' || prefs.paymentMethod.type === 'other')
-      ? prefs.paymentMethod as PaymentMethod
-      : { type: 'creditCard' as const }
-  };
-}
 
 // Deep clean function to remove undefined values recursively (Firebase doesn't allow undefined)
 const deepCleanUndefined = (obj: any): any => {
@@ -131,7 +103,6 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
             birthdate: data.birthdate,
             interests: data.interests || [],
             deliveryAddress: data.deliveryAddress,
-            autoSendPreferences: ensureAutoSendPreferences(data.autoSendPreferences),
             createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().getTime() : data.createdAt,
             updatedAt: data.updatedAt?.toDate?.() ? data.updatedAt.toDate().getTime() : data.updatedAt,
           });
@@ -347,118 +318,4 @@ export const useRecipientStore = create<RecipientState>((set, get) => ({
   resetError: () => set({ error: null }),
 
   setRecipients: (recipients) => set({ recipients }),
-
-  toggleAutoSend: async (id, enabled) => {
-    set(state => {
-      const updatedRecipients = state.recipients.map(recipient =>
-        recipient.id === id
-          ? {
-              ...recipient,
-              autoSendPreferences: ensureAutoSendPreferences({
-                ...recipient.autoSendPreferences,
-                enabled
-              })
-            } as Recipient
-          : recipient
-      );
-      localStorage.setItem(STORAGE_KEYS.RECIPIENTS, JSON.stringify(updatedRecipients));
-      return { recipients: updatedRecipients };
-    });
-  },
-  toggleOccasionAutoSend: async (id, occasion, enabled) => {
-    set(state => {
-      const updatedRecipients = state.recipients.map(recipient => {
-        if (recipient.id !== id) return recipient;
-        const prefs = ensureAutoSendPreferences(recipient.autoSendPreferences);
-        return {
-          ...recipient,
-          autoSendPreferences: {
-            ...prefs,
-            occasions: {
-              ...prefs.occasions,
-              [occasion]: {
-                ...prefs.occasions[occasion],
-                enabled: enabled ?? false,
-                budget: prefs.occasions[occasion]?.budget ?? prefs.defaultBudget,
-                leadTime: prefs.occasions[occasion]?.leadTime ?? 7
-              }
-            }
-          }
-        } as Recipient;
-      });
-      localStorage.setItem(STORAGE_KEYS.RECIPIENTS, JSON.stringify(updatedRecipients));
-      return { recipients: updatedRecipients };
-    });
-  },
-  setDefaultBudget: async (id, budget) => {
-    set(state => {
-      const updatedRecipients = state.recipients.map(recipient => {
-        if (recipient.id !== id) return recipient;
-        const prefs = ensureAutoSendPreferences(recipient.autoSendPreferences);
-        return {
-          ...recipient,
-          autoSendPreferences: {
-            ...prefs,
-            defaultBudget: budget
-          }
-        } as Recipient;
-      });
-      localStorage.setItem(STORAGE_KEYS.RECIPIENTS, JSON.stringify(updatedRecipients));
-      return { recipients: updatedRecipients };
-    });
-  },
-  updateOccasionPreference: async (id, occasion, preference) => {
-    set(state => {
-      const updatedRecipients = state.recipients.map(recipient => {
-        if (recipient.id !== id) return recipient;
-        const prefs = ensureAutoSendPreferences(recipient.autoSendPreferences);
-        return {
-          ...recipient,
-          autoSendPreferences: {
-            ...prefs,
-            occasions: {
-              ...prefs.occasions,
-              [occasion]: {
-                enabled: preference.enabled ?? prefs.occasions[occasion]?.enabled ?? false,
-                budget: preference.budget ?? prefs.occasions[occasion]?.budget ?? prefs.defaultBudget,
-                leadTime: preference.leadTime ?? prefs.occasions[occasion]?.leadTime ?? 7
-              }
-            }
-          }
-        } as Recipient;
-      });
-      localStorage.setItem(STORAGE_KEYS.RECIPIENTS, JSON.stringify(updatedRecipients));
-      return { recipients: updatedRecipients };
-    });
-  },
-  updateShippingAddress: async (id, address) => {
-    set(state => {
-      const updatedRecipients = state.recipients.map(recipient => {
-        if (recipient.id !== id) return recipient;
-        return {
-          ...recipient,
-          deliveryAddress: address
-        } as Recipient;
-      });
-      localStorage.setItem(STORAGE_KEYS.RECIPIENTS, JSON.stringify(updatedRecipients));
-      return { recipients: updatedRecipients };
-    });
-  },
-  toggleApprovalRequirement: async (id, requireApproval) => {
-    set(state => {
-      const updatedRecipients = state.recipients.map(recipient => {
-        if (recipient.id !== id) return recipient;
-        const prefs = ensureAutoSendPreferences(recipient.autoSendPreferences);
-        return {
-          ...recipient,
-          autoSendPreferences: {
-            ...prefs,
-            requireApproval
-          }
-        } as Recipient;
-      });
-      localStorage.setItem(STORAGE_KEYS.RECIPIENTS, JSON.stringify(updatedRecipients));
-      return { recipients: updatedRecipients };
-    });
-  }
 })); 

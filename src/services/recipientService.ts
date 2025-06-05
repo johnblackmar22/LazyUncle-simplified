@@ -11,7 +11,7 @@ import {
 } from 'firebase/firestore';
 import { db, DEMO_MODE } from './firebase';
 import { useAuthStore } from '../store/authStore';
-import type { Recipient, AutoSendPreferences } from '../types';
+import type { Recipient } from '../types';
 
 const COLLECTION = 'recipients';
 
@@ -143,47 +143,6 @@ export const deleteRecipient = async (id: string): Promise<void> => {
   }
 };
 
-// Update a recipient's auto-send preferences
-export const updateAutoSendPreferences = async (
-  recipientId: string, 
-  preferences: Partial<AutoSendPreferences>
-): Promise<Recipient> => {
-  const { user } = useAuthStore.getState();
-  if (!user) throw new Error('User not authenticated');
-  
-  // In demo mode, update mock recipient auto-send preferences
-  if (DEMO_MODE) {
-    return updateMockRecipientAutoSendPreferences(recipientId, preferences);
-  }
-
-  try {
-    // First get the current recipient
-    const recipient = await getRecipient(recipientId);
-    if (!recipient) throw new Error('Recipient not found');
-    if (recipient.userId !== user.id) throw new Error('Not authorized to update this recipient');
-    
-    // Create or update the auto-send preferences
-    const currentPreferences = recipient.autoSendPreferences || {
-      enabled: false,
-      defaultBudget: 50,
-      requireApproval: true
-    };
-    
-    const updatedPreferences = {
-      ...currentPreferences,
-      ...preferences
-    };
-    
-    // Update the recipient with the new preferences
-    return updateRecipient(recipientId, {
-      autoSendPreferences: updatedPreferences
-    });
-  } catch (error) {
-    console.error('Error updating recipient auto-send preferences:', error);
-    throw error;
-  }
-};
-
 // Demo mode implementation
 let mockRecipients: Recipient[] = [];
 
@@ -241,7 +200,6 @@ const addMockRecipient = (userId: string, data: Partial<Recipient>): Recipient =
     birthdate: data.birthdate,
     deliveryAddress: data.deliveryAddress,
     description: data.description,
-    autoSendPreferences: data.autoSendPreferences,
     createdAt: now,
     updatedAt: now
   };
@@ -269,33 +227,4 @@ const deleteMockRecipient = (id: string): void => {
   if (index !== -1) {
     mockRecipients.splice(index, 1);
   }
-};
-
-const updateMockRecipientAutoSendPreferences = (
-  id: string, 
-  preferences: Partial<AutoSendPreferences>
-): Recipient => {
-  const index = mockRecipients.findIndex(r => r.id === id);
-  if (index === -1) throw new Error('Recipient not found');
-  
-  // Create or update the auto-send preferences
-  const currentPreferences = mockRecipients[index].autoSendPreferences || {
-    enabled: false,
-    defaultBudget: 50,
-    requireApproval: true
-  };
-  
-  const updatedPreferences = {
-    ...currentPreferences,
-    ...preferences
-  };
-  
-  // Update the mock recipient
-  mockRecipients[index] = {
-    ...mockRecipients[index],
-    autoSendPreferences: updatedPreferences,
-    updatedAt: Date.now()
-  };
-  
-  return mockRecipients[index];
 }; 

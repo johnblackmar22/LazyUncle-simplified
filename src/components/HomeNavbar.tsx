@@ -68,8 +68,8 @@ export const HomeNavbar: React.FC = () => {
   }, []);
 
   // Links for the home page navbar
-  const homeLinks = [
-    { label: 'Pricing', to: '/subscription/plans' },
+  const homeLinks: { label: string; to: string }[] = [
+    // No links for now since pricing is removed
   ];
 
   // Call-to-action buttons based on auth state

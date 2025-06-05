@@ -300,11 +300,6 @@ export default function SettingsPage() {
             <Heading as="h1" size="xl">Settings</Heading>
             <Text mt={2} color="gray.500">Customize your LazyUncle experience</Text>
           </Box>
-          <Flex gap={3}>
-            <Button as={RouterLink} to="/subscription/plans" colorScheme="blue" variant="solid" size="md">
-              Manage Subscription
-            </Button>
-          </Flex>
         </Flex>
 
         {/* Account Settings */}
@@ -475,6 +470,13 @@ export default function SettingsPage() {
             Reset to Defaults
           </Button>
         </Box>
+
+        <HStack spacing={4}>
+          <VStack align="start" flex={1}>
+            <Text fontWeight="bold">Current Plan</Text>
+            <Text color="gray.600">{user?.planId || 'Free'}</Text>
+          </VStack>
+        </HStack>
       </Stack>
     </Container>
   );

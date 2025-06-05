@@ -1,44 +1,35 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Button,
+  Container,
   FormControl,
   FormLabel,
-  Input,
-  VStack,
+  FormErrorMessage,
   Heading,
-  Text,
-  useToast,
-  Container,
+  Input,
   Select,
-  Flex,
-  AlertDialog,
-  AlertDialogBody,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogContent,
-  AlertDialogOverlay,
-  HStack,
   Textarea,
-  Card,
-  CardHeader,
-  CardBody,
-  CardFooter,
-  IconButton,
-  Badge,
+  VStack,
+  useToast,
+  Text,
+  HStack,
+  Tag,
+  TagLabel,
+  TagCloseButton,
+  SimpleGrid,
   useColorModeValue,
-  Divider,
-  Icon,
+  Spinner,
+  Alert,
+  AlertIcon,
+  Divider
 } from '@chakra-ui/react';
+import { ArrowBackIcon, AddIcon } from '@chakra-ui/icons';
 import { useRecipientStore } from '../store/recipientStore';
 import { useAuthStore } from '../store/authStore';
-import { getPlanById } from '../services/subscription/plans';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { months, days, years } from '../utils/dateUtils';
-import { ArrowBackIcon, AddIcon } from '@chakra-ui/icons';
-import { FaUser, FaHeart, FaMapMarkerAlt } from 'react-icons/fa';
-import type { Address } from '../types';
-import AddressForm from '../components/AddressForm';
+import type { Recipient } from '../types';
+import { showErrorToast } from '../utils/toastUtils';
 
 const relationshipOptions = [
   'Nephew', 'Niece', 'Wife', 'Husband', 'Brother', 'Sister', 'Mom', 'Dad', 'Friend', 'Colleague', 'Other'
@@ -375,31 +366,6 @@ const AddRecipientPage: React.FC = () => {
             </CardFooter>
           </form>
         </Card>
-        
-        <AlertDialog
-          isOpen={isPaywallOpen}
-          leastDestructiveRef={cancelRef}
-          onClose={() => setPaywallOpen(false)}
-        >
-          <AlertDialogOverlay>
-            <AlertDialogContent>
-              <AlertDialogHeader fontSize="lg" fontWeight="bold">
-                Upgrade Required
-              </AlertDialogHeader>
-              <AlertDialogBody>
-                The Free plan allows only 1 recipient. Upgrade to Pro for unlimited recipients and more features!
-              </AlertDialogBody>
-              <AlertDialogFooter>
-                <Button ref={cancelRef} onClick={() => setPaywallOpen(false)}>
-                  Cancel
-                </Button>
-                <Button colorScheme="blue" ml={3} as={RouterLink} to="/subscription/plans">
-                  Upgrade Now
-                </Button>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialogOverlay>
-        </AlertDialog>
       </VStack>
     </Container>
   );

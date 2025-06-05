@@ -19,20 +19,7 @@ export interface Address {
   country: string;
 }
 
-// Auto-send preferences types
-export interface AutoSendPreferences {
-  enabled: boolean;
-  defaultBudget: number;
-  requireApproval: boolean;
-  shippingAddress?: Address;
-  paymentMethod?: {
-    type: 'creditCard' | 'paypal' | 'other';
-    last4?: string;
-    brand?: string;
-  };
-}
-
-// Recipient types
+// Recipient types - simplified
 export interface Recipient {
   id: string;
   userId: string;
@@ -42,7 +29,6 @@ export interface Recipient {
   interests: string[];
   description?: string;
   deliveryAddress?: Address;
-  autoSendPreferences?: AutoSendPreferences;
   createdAt: number;
   updatedAt: number;
 }

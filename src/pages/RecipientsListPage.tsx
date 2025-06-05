@@ -1,43 +1,66 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import {
   Box,
+  Button,
+  Container,
+  Flex,
   Heading,
   Text,
-  Button,
-  Input,
-  InputGroup,
-  InputLeftElement,
-  VStack,
-  HStack,
-  Flex,
   SimpleGrid,
   Card,
   CardHeader,
   CardBody,
   CardFooter,
-  Avatar,
   Badge,
-  IconButton,
+  VStack,
+  HStack,
+  Icon,
   useColorModeValue,
   Spinner,
+  Alert,
+  AlertIcon,
+  Stack,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  IconButton,
   useToast,
-  Tooltip,
-  Container,
-  Icon,
+  Tag,
+  TagLabel,
+  TagCloseButton,
+  Wrap,
+  WrapItem,
+  Stat,
+  StatLabel,
+  StatNumber,
+  StatHelpText,
+  useBreakpointValue,
+  Input,
+  InputGroup,
+  InputLeftElement,
+  Avatar
 } from '@chakra-ui/react';
 import { 
   AddIcon, 
-  SearchIcon, 
   EditIcon, 
-  DeleteIcon 
+  DeleteIcon, 
+  SettingsIcon,
+  ChevronDownIcon,
+  CalendarIcon,
+  EmailIcon,
+  PhoneIcon,
+  ExternalLinkIcon,
+  SearchIcon
 } from '@chakra-ui/icons';
 import { useRecipientStore } from '../store/recipientStore';
+import { useAuthStore } from '../store/authStore';
+import { DEMO_USER_ID } from '../utils/constants';
+import { showErrorToast } from '../utils/toastUtils';
+import type { Recipient } from '../types';
 import { formatDate, safeFormatDate } from '../utils/dateUtils';
 import { format } from 'date-fns';
-import { showErrorToast } from '../utils/toastUtils';
-import { useAuthStore } from '../store/authStore';
-import { getPlanById } from '../services/subscription/plans';
 import { useOccasionStore } from '../store/occasionStore';
 import { FaGift, FaUser } from 'react-icons/fa';
 
@@ -53,15 +76,12 @@ const RecipientsListPage: React.FC = () => {
   const { occasions, fetchOccasions } = useOccasionStore();
   const { user, demoMode } = useAuthStore();
   const planId = user?.planId || 'free';
-  const plan = getPlanById(planId);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
-
-  const firstLoad = useRef(true);
 
   // Helper function to get diverse colors for interests
   const getInterestColor = (index: number) => {
@@ -110,19 +130,6 @@ const RecipientsListPage: React.FC = () => {
       });
     }
   }, [recipients.length, fetchOccasions]); // Only trigger when number of recipients changes
-
-  // Monitor recipients changes
-  useEffect(() => {
-    if (recipients.length > 0 && firstLoad.current) {
-      toast({
-        title: `Found ${recipients.length} recipients`,
-        status: 'info',
-        duration: 3000,
-        isClosable: true,
-      });
-      firstLoad.current = false;
-    }
-  }, [recipients.length]);
 
   // Filter recipients by search query
   const filteredRecipients = recipients.filter(recipient => 

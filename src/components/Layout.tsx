@@ -13,7 +13,7 @@ const Layout: React.FC = () => {
   const location = useLocation();
   
   // Public paths that should never show sidebar
-  const publicPaths = ['/', '/login', '/register', '/onboarding', '/subscription/plans', '/checkout'];
+  const publicPaths = ['/', '/login', '/register', '/onboarding', '/checkout'];
   
   // Consider a user authenticated if they have a user object OR any demo mode is active
   const isAuthenticated = !!user || demoMode || storedDemoMode || DEMO_MODE;
