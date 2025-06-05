@@ -424,23 +424,27 @@ export default function SettingsPage() {
           </CardHeader>
           <CardBody>
             <VStack spacing={5} align="stretch">
-              <Flex justify="space-between" align="center">
-                <FormLabel mb="0" mr={2}>Email Notifications</FormLabel>
-                <Switch 
-                  isChecked={settings.emailNotifications}
-                  onChange={handleSwitchChange('emailNotifications')}
-                  colorScheme="blue"
-                />
-              </Flex>
+              <FormControl>
+                <Flex justify="space-between" align="center">
+                  <FormLabel mb="0" mr={2}>Email Notifications</FormLabel>
+                  <Switch 
+                    isChecked={settings.emailNotifications}
+                    onChange={handleSwitchChange('emailNotifications')}
+                    colorScheme="blue"
+                  />
+                </Flex>
+              </FormControl>
               
-              <Flex justify="space-between" align="center">
-                <FormLabel mb="0" mr={2}>Text Notifications</FormLabel>
-                <Switch 
-                  isChecked={settings.textNotifications}
-                  onChange={handleTextNotificationsToggle}
-                  colorScheme="blue"
-                />
-              </Flex>
+              <FormControl>
+                <Flex justify="space-between" align="center">
+                  <FormLabel mb="0" mr={2}>Text Notifications</FormLabel>
+                  <Switch 
+                    isChecked={settings.textNotifications}
+                    onChange={handleTextNotificationsToggle}
+                    colorScheme="blue"
+                  />
+                </Flex>
+              </FormControl>
               
               {/* Phone number field appears only if text notifications is enabled */}
               {settings.textNotifications && (
@@ -459,24 +463,26 @@ export default function SettingsPage() {
                 </FormControl>
               )}
 
-              <Flex align="center" gap={3}>
-                <FormLabel mb="0">Reminder Days</FormLabel>
-                <NumberInput 
-                  value={settings.reminderDays} 
-                  min={1} 
-                  max={90}
-                  onChange={(_, value) => handleSettingChange('reminderDays', value)}
-                  maxW="100px"
-                  size="sm"
-                >
-                  <NumberInputField />
-                  <NumberInputStepper>
-                    <NumberIncrementStepper />
-                    <NumberDecrementStepper />
-                  </NumberInputStepper>
-                </NumberInput>
-                <FormHelperText mb="0">days before an event to send reminders</FormHelperText>
-              </Flex>
+              <FormControl>
+                <Flex align="center" gap={3}>
+                  <FormLabel mb="0">Reminder Days</FormLabel>
+                  <NumberInput 
+                    value={settings.reminderDays} 
+                    min={1} 
+                    max={90}
+                    onChange={(_, value) => handleSettingChange('reminderDays', value)}
+                    maxW="100px"
+                    size="sm"
+                  >
+                    <NumberInputField />
+                    <NumberInputStepper>
+                      <NumberIncrementStepper />
+                      <NumberDecrementStepper />
+                    </NumberInputStepper>
+                  </NumberInput>
+                  <FormHelperText mb="0">days before an event to send reminders</FormHelperText>
+                </Flex>
+              </FormControl>
 
               <HStack spacing={4} pt={2}>
                 <Button 
