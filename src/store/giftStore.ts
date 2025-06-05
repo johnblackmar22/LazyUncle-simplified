@@ -202,7 +202,20 @@ export const useGiftStore = create<GiftState>()(
       removeGift: async (id) => {
         set({ loading: true, error: null });
         try {
-          const giftToDelete = get().gifts.find(g => g.id === id);
+          // Look for the gift in both the main list and recipient-specific lists
+          let giftToDelete = get().gifts.find(g => g.id === id);
+          
+          if (!giftToDelete) {
+            // Look in recipient-specific lists
+            const { recipientGifts } = get();
+            for (const recipientId in recipientGifts) {
+              const found = recipientGifts[recipientId].find(g => g.id === id);
+              if (found) {
+                giftToDelete = found;
+                break;
+              }
+            }
+          }
           
           if (!giftToDelete) {
             throw new Error('Gift not found');
