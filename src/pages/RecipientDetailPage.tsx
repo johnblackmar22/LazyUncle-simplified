@@ -378,6 +378,19 @@ export const RecipientDetailPage: React.FC = () => {
                   </Flex>
                 </VStack>
               )}
+              
+              {/* About/Description */}
+              {currentRecipient.description && (
+                <VStack align="start" spacing={1}>
+                  <HStack>
+                    <FaComments color="purple" />
+                    <Text fontWeight="bold">About {currentRecipient.name}:</Text>
+                  </HStack>
+                  <Box pl={6} fontSize="sm">
+                    <Text>{currentRecipient.description}</Text>
+                  </Box>
+                </VStack>
+              )}
             </SimpleGrid>
           </CardBody>
         </Card>
@@ -426,18 +439,6 @@ export const RecipientDetailPage: React.FC = () => {
             )}
           </CardBody>
         </Card>
-
-        {/* Description */}
-        {currentRecipient.description && (
-          <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
-            <CardHeader>
-              <Heading size="md">About {currentRecipient.name}</Heading>
-            </CardHeader>
-            <CardBody>
-              <Text>{currentRecipient.description}</Text>
-            </CardBody>
-          </Card>
-        )}
       </Stack>
 
       {/* Occasion Modal */}
