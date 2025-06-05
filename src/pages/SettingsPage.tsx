@@ -470,13 +470,6 @@ export default function SettingsPage() {
             Reset to Defaults
           </Button>
         </Box>
-
-        <HStack spacing={4}>
-          <VStack align="start" flex={1}>
-            <Text fontWeight="bold">Current Plan</Text>
-            <Text color="gray.600">{user?.planId || 'Free'}</Text>
-          </VStack>
-        </HStack>
       </Stack>
     </Container>
   );

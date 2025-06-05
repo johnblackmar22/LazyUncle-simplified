@@ -174,30 +174,18 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
       </CardBody>
 
       <CardFooter pt={2}>
-        <VStack spacing={2} w="full">
-          <Button
-            size="sm"
-            colorScheme="purple"
-            variant="outline"
-            leftIcon={<FaMagic />}
-            onClick={handleGenerateSuggestions}
-            isLoading={generating}
-            loadingText="Generating..."
-            w="full"
-          >
-            Generate Gift Suggestions
-          </Button>
-          <Button
-            as={RouterLink}
-            to={`/recipients/${recipient.id}/occasions/${occasion.id}/plan`}
-            size="sm"
-            colorScheme="blue"
-            leftIcon={<FaShoppingCart />}
-            w="full"
-          >
-            Plan Gifts
-          </Button>
-        </VStack>
+        <Button
+          size="sm"
+          colorScheme="purple"
+          variant="outline"
+          leftIcon={<FaMagic />}
+          onClick={handleGenerateSuggestions}
+          isLoading={generating}
+          loadingText="Generating..."
+          w="full"
+        >
+          Generate Gift Suggestions
+        </Button>
       </CardFooter>
     </Card>
   );

@@ -60,13 +60,6 @@ export const Navbar: React.FC = () => {
     { label: 'Sign In', to: '/login' },
   ];
 
-  // Authenticated nav links
-  const authLinks = [
-    { label: 'Dashboard', to: '/dashboard' },
-    { label: 'Recipients', to: '/recipients' },
-    { label: 'Settings', to: '/settings' },
-  ];
-
   const handleSignOut = async () => {
     try {
       console.log('Signing out...');
@@ -98,11 +91,6 @@ export const Navbar: React.FC = () => {
   const navLinks = user
     ? (
       <>
-        {authLinks.map((link) => (
-          <Button key={link.to} as={RouterLink} to={link.to} variant="ghost" colorScheme="blue" w={{ base: 'full', md: 'auto' }}>
-            {link.label}
-          </Button>
-        ))}
         <Button onClick={handleSignOut} variant="outline" colorScheme="blue" w={{ base: 'full', md: 'auto' }}>
           Sign Out
         </Button>
@@ -122,19 +110,6 @@ export const Navbar: React.FC = () => {
   const mobileNavLinks = user
     ? (
       <>
-        {authLinks.map((link) => (
-          <Button
-            key={link.to}
-            as={RouterLink}
-            to={link.to}
-            variant="ghost"
-            colorScheme="blue"
-            w="full"
-            onClick={onClose}
-          >
-            {link.label}
-          </Button>
-        ))}
         <Button
           onClick={async () => {
             try {

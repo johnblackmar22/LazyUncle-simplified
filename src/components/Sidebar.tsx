@@ -12,7 +12,7 @@ import {
 import { 
   MdDashboard, 
   MdPeople, 
-  MdCardGiftcard, 
+  MdCardGiftcard,
   MdSettings
 } from 'react-icons/md';
 

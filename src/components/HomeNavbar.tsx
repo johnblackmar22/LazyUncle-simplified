@@ -67,71 +67,15 @@ export const HomeNavbar: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Links for the home page navbar
-  const homeLinks: { label: string; to: string }[] = [
-    // No links for now since pricing is removed
-  ];
-
   // Call-to-action buttons based on auth state
   const ctaButton = user 
-    ? { label: 'Settings', to: '/settings' }
+    ? { label: 'Go to App', to: '/dashboard' }
     : { label: 'Get Started', to: '/register' };
 
   // Secondary button based on auth state
   const secondaryButton = user
     ? null  // No secondary button needed when logged in
     : { label: 'Login', to: '/login' };
-
-  // Desktop nav links
-  const navLinks = (
-    <>
-      {homeLinks.map((link) => (
-        <Button key={link.to} as={RouterLink} to={link.to} variant="ghost" colorScheme="blue" w={{ base: 'full', md: 'auto' }}>
-          {link.label}
-        </Button>
-      ))}
-    </>
-  );
-
-  // Mobile nav links (close drawer on click)
-  const mobileNavLinks = (
-    <>
-      {homeLinks.map((link) => (
-        <Button
-          key={link.to}
-          as={RouterLink}
-          to={link.to}
-          variant="ghost"
-          colorScheme="blue"
-          w="full"
-          onClick={onClose}
-        >
-          {link.label}
-        </Button>
-      ))}
-      <Button
-        as={RouterLink}
-        to={ctaButton.to}
-        colorScheme="orange"
-        w="full"
-        onClick={onClose}
-      >
-        {ctaButton.label}
-      </Button>
-      {secondaryButton && (
-        <Button
-          as={RouterLink}
-          to={secondaryButton.to}
-          variant="outline"
-          colorScheme="blue"
-          w="full"
-          onClick={onClose}
-        >
-          {secondaryButton.label}
-        </Button>
-      )}
-    </>
-  );
 
   return (
     <Box 
@@ -155,7 +99,6 @@ export const HomeNavbar: React.FC = () => {
           </Box>
           {/* Desktop Nav */}
           <HStack spacing={4} display={{ base: 'none', md: 'flex' }}>
-            {navLinks}
             <Button as={RouterLink} to={ctaButton.to} colorScheme="orange" size="md">
               {ctaButton.label}
             </Button>
@@ -184,7 +127,28 @@ export const HomeNavbar: React.FC = () => {
           <DrawerHeader>Menu</DrawerHeader>
           <DrawerBody>
             <VStack spacing={4} align="stretch">
-              {mobileNavLinks}
+              {/* Mobile nav links (close drawer on click) */}
+              <Button
+                as={RouterLink}
+                to={ctaButton.to}
+                colorScheme="orange"
+                w="full"
+                onClick={onClose}
+              >
+                {ctaButton.label}
+              </Button>
+              {secondaryButton && (
+                <Button
+                  as={RouterLink}
+                  to={secondaryButton.to}
+                  variant="outline"
+                  colorScheme="blue"
+                  w="full"
+                  onClick={onClose}
+                >
+                  {secondaryButton.label}
+                </Button>
+              )}
             </VStack>
           </DrawerBody>
         </DrawerContent>
