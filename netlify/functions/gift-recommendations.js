@@ -1,180 +1,242 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.handler = void 0;
-const openai_1 = require("openai");
+const { OpenAI } = require('openai');
+
 // Initialize OpenAI client
-const openai = new openai_1.OpenAI({
+const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
-const handler = async (event, context) => {
-    // Handle CORS
-    const headers = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Content-Type': 'application/json',
-    };
-    if (event.httpMethod === 'OPTIONS') {
-        return {
-            statusCode: 200,
-            headers,
-            body: '',
-        };
-    }
+
+const handler = async (event) => {
+    // Only allow POST requests
     if (event.httpMethod !== 'POST') {
         return {
             statusCode: 405,
-            headers,
             body: JSON.stringify({ error: 'Method not allowed' }),
         };
     }
+
     try {
-        // Parse request body
-        const requestData = JSON.parse(event.body || '{}');
+        const requestData = JSON.parse(event.body);
         console.log('🎁 Processing gift recommendation request:', {
-            recipient: requestData.recipient.name,
-            budget: requestData.budget.total,
-            occasion: requestData.occasion.type
+            recipient: requestData.recipient?.name || 'Unknown',
+            budget: requestData.budget?.total || 'Unknown',
+            occasion: requestData.occasion?.type || 'Unknown'
         });
-        // Create AI prompt for gift recommendations
-        const prompt = `You are a professional gift consultant. Generate 3 thoughtful gift recommendations based on these details:
+
+        // Calculate budget breakdown
+        const totalBudget = requestData.budget?.total || 50;
+        const giftWrapCost = requestData.budget?.giftWrap ? 4.99 : 0;
+        const shippingBuffer = Math.min(15, totalBudget * 0.2); // Max $15 or 20% of budget
+        const giftBudget = totalBudget - giftWrapCost - shippingBuffer;
+
+        if (giftBudget <= 0) {
+            throw new Error('Budget too low for gift recommendations');
+        }
+
+        // Create the AI prompt
+        const prompt = `You are a gift recommendation expert. Based on the following information, suggest 3 personalized gifts:
 
 RECIPIENT:
-- Name: ${requestData.recipient.name}
-- Age: ${requestData.recipient.age || 'Not specified'}
-- Interests: ${requestData.recipient.interests.join(', ')}
-- Relationship: ${requestData.recipient.relationship}
-- Location: ${requestData.recipient.location}
+- Name: ${requestData.recipient?.name || 'Unknown'}
+- Age: ${requestData.recipient?.age || 'Unknown'}
+- Interests: ${requestData.recipient?.interests?.join(', ') || 'None specified'}
+- Relationship: ${requestData.recipient?.relationship || 'Unknown'}
+- Location: ${requestData.recipient?.location || 'US'}
 
 OCCASION:
-- Type: ${requestData.occasion.type}
-- Date: ${requestData.occasion.date}
-- Significance: ${requestData.occasion.significance}
+- Type: ${requestData.occasion?.type || 'Unknown'}
+- Date: ${requestData.occasion?.date || 'Unknown'}
+- Significance: ${requestData.occasion?.significance || 'regular'}
 
-BUDGET & CONSTRAINTS:
-- Total budget: $${requestData.budget.total}
-- Gift budget (after shipping/wrapping): $${requestData.budget.giftBudget}
-- Gift wrap needed: ${requestData.budget.giftWrap ? 'Yes' : 'No'}
-- Prioritize free shipping: ${requestData.preferences.prioritizeFreeShipping ? 'Yes' : 'No'}
-- Max shipping cost: $${requestData.preferences.maxShippingCost}
+BUDGET CONSTRAINTS:
+- Total Budget: $${totalBudget}
+- Gift Budget: $${giftBudget.toFixed(2)} (after shipping and gift wrap)
+- Gift Wrap: ${requestData.budget?.giftWrap ? 'Yes (+$4.99)' : 'No'}
 
-REQUIREMENTS:
-- Find gifts available on Amazon with Prime shipping when possible
-- Include realistic prices and shipping costs
-- Provide actual purchase recommendations, not generic categories
-- Consider the recipient's interests and relationship to gift-giver
-- Stay within the specified budget including shipping and wrapping
+PREFERENCES:
+- Prioritize free shipping options (Amazon Prime, etc.)
+- Exclude categories: ${requestData.preferences?.excludeCategories?.join(', ') || 'None'}
+- Preferred categories: ${requestData.preferences?.preferredCategories?.join(', ') || 'None'}
 
-For each recommendation, provide:
-1. Specific product name
-2. Detailed description explaining why it's perfect for them
-3. Realistic price
-4. Shipping cost (0 if Prime/free shipping available)
-5. Category
-6. Confidence score (0-1)
-7. Reasoning for the recommendation
+Please respond with exactly 3 gift recommendations in this JSON format:
+{
+  "recommendations": [
+    {
+      "id": "gift-1",
+      "name": "Gift Name",
+      "description": "Brief description explaining why this gift is perfect",
+      "price": 29.99,
+      "category": "category_name",
+      "confidence": 0.85,
+      "reasoning": "Why this gift matches the recipient and occasion",
+      "tags": ["tag1", "tag2", "tag3"],
+      "availability": "in_stock",
+      "estimatedDelivery": "2-3 business days",
+      "shippingCost": 0,
+      "purchaseUrl": "https://amazon.com/example"
+    }
+  ]
+}
 
-Format as JSON array with exactly this structure:
-[
-  {
-    "name": "Specific Product Name",
-    "description": "Detailed description of the gift",
-    "price": 35.99,
-    "shippingCost": 0,
-    "category": "books",
-    "confidence": 0.85,
-    "reasoning": "Why this gift is perfect for them",
-    "tags": ["thoughtful", "practical"],
-    "availability": "in_stock",
-    "estimatedDelivery": "2-3 business days"
-  }
-]`;
+Focus on:
+1. Gifts that match the recipient's interests and age
+2. Appropriate for the occasion and relationship
+3. Within the specified budget including shipping
+4. Prioritize items with free shipping when possible
+5. Include realistic pricing and purchase URLs`;
+
         // Call OpenAI API
         const completion = await openai.chat.completions.create({
             model: 'gpt-4',
             messages: [
                 {
                     role: 'system',
-                    content: 'You are a professional gift consultant who specializes in finding thoughtful, personalized gifts within specific budgets. Always respond with valid JSON only.'
+                    content: 'You are a helpful gift recommendation assistant. Always respond with valid JSON in the exact format requested.'
                 },
                 {
                     role: 'user',
                     content: prompt
                 }
             ],
-            temperature: 0.7,
             max_tokens: 2000,
+            temperature: 0.7,
         });
+
         const aiResponse = completion.choices[0]?.message?.content;
+        
         if (!aiResponse) {
             throw new Error('No response from OpenAI');
         }
-        // Parse AI response
-        let recommendations;
+
+        // Parse the AI response
+        let parsedResponse;
         try {
-            const parsedRecommendations = JSON.parse(aiResponse);
-            // Add IDs and ensure proper structure
-            recommendations = parsedRecommendations.map((rec, index) => ({
-                id: `ai-gift-${Date.now()}-${index}`,
-                name: rec.name || 'Unnamed Gift',
-                description: rec.description || 'Gift recommendation',
-                price: typeof rec.price === 'number' ? rec.price : 25,
-                category: rec.category || 'general',
-                confidence: typeof rec.confidence === 'number' ? rec.confidence : 0.7,
-                reasoning: rec.reasoning || 'AI recommended gift',
-                tags: Array.isArray(rec.tags) ? rec.tags : ['gift'],
-                availability: rec.availability || 'in_stock',
-                estimatedDelivery: rec.estimatedDelivery || '3-5 business days',
-                shippingCost: typeof rec.shippingCost === 'number' ? rec.shippingCost : 0,
-                imageUrl: rec.imageUrl,
-                purchaseUrl: rec.purchaseUrl
-            }));
+            parsedResponse = JSON.parse(aiResponse);
+        } catch (parseError) {
+            console.warn('Failed to parse AI response as JSON:', aiResponse);
+            throw new Error('Invalid AI response format');
         }
-        catch (parseError) {
-            console.error('Failed to parse AI response:', parseError);
-            // Fallback recommendations
-            recommendations = [
-                {
-                    id: 'fallback-1',
-                    name: 'Amazon Gift Card',
-                    description: 'A versatile gift card that lets them choose exactly what they want',
-                    price: Math.min(requestData.budget.giftBudget, 50),
-                    category: 'gift_cards',
-                    confidence: 0.8,
-                    reasoning: 'Safe choice when other recommendations fail',
-                    tags: ['versatile', 'practical'],
-                    availability: 'in_stock',
-                    estimatedDelivery: 'Digital delivery - instant',
-                    shippingCost: 0
-                }
-            ];
-        }
-        const response = {
-            recommendations,
-            totalFound: recommendations.length,
-            searchMetadata: {
-                processingTime: Date.now(),
-                confidence: recommendations.reduce((sum, rec) => sum + rec.confidence, 0) / recommendations.length,
-                fallbackUsed: false
+
+        // Validate and enhance the response
+        const recommendations = parsedResponse.recommendations || [];
+        const enhancedRecommendations = recommendations.map((gift, index) => ({
+            id: gift.id || `ai-gift-${Date.now()}-${index}`,
+            name: gift.name || 'AI Recommended Gift',
+            description: gift.description || 'A personalized gift recommendation',
+            price: gift.price || Math.min(giftBudget, 25),
+            category: gift.category || 'general',
+            confidence: gift.confidence || 0.8,
+            reasoning: gift.reasoning || 'Selected based on recipient preferences',
+            tags: gift.tags || ['ai_recommended'],
+            imageUrl: gift.imageUrl || '',
+            purchaseUrl: gift.purchaseUrl || '',
+            availability: gift.availability || 'in_stock',
+            estimatedDelivery: gift.estimatedDelivery || '3-5 business days',
+            costBreakdown: {
+                giftPrice: gift.price || Math.min(giftBudget, 25),
+                estimatedShipping: gift.shippingCost || 0,
+                giftWrapping: giftWrapCost,
+                total: (gift.price || Math.min(giftBudget, 25)) + (gift.shippingCost || 0) + giftWrapCost
+            },
+            metadata: {
+                model: 'gpt-4',
+                promptVersion: '1.0',
+                generatedAt: Date.now()
             }
-        };
-        console.log('✅ Successfully generated recommendations:', recommendations.length);
+        }));
+
+        console.log(`✅ Generated ${enhancedRecommendations.length} AI recommendations`);
+
         return {
             statusCode: 200,
-            headers,
-            body: JSON.stringify(response),
-        };
-    }
-    catch (error) {
-        console.error('❌ Gift recommendation error:', error);
-        return {
-            statusCode: 500,
-            headers,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type',
+            },
             body: JSON.stringify({
-                error: 'Failed to generate recommendations',
-                message: error instanceof Error ? error.message : 'Unknown error'
+                success: true,
+                recommendations: enhancedRecommendations,
+                metadata: {
+                    requestId: `req-${Date.now()}`,
+                    source: 'openai-gpt4',
+                    generatedAt: new Date().toISOString()
+                }
+            }),
+        };
+
+    } catch (error) {
+        console.error('❌ Gift recommendation error:', error);
+
+        // Return fallback recommendations
+        const fallbackRecommendations = [
+            {
+                id: 'fallback-1',
+                name: 'Amazon Gift Card',
+                description: 'Let them choose exactly what they want',
+                price: Math.min(requestData.budget?.total || 50, 50),
+                category: 'gift_cards',
+                confidence: 0.8,
+                reasoning: 'A safe choice that allows the recipient to select their preferred gift',
+                tags: ['versatile', 'safe_choice', 'always_appreciated'],
+                availability: 'in_stock',
+                estimatedDelivery: 'Digital delivery - instant',
+                costBreakdown: {
+                    giftPrice: Math.min(requestData.budget?.total || 50, 50),
+                    estimatedShipping: 0,
+                    giftWrapping: 0,
+                    total: Math.min(requestData.budget?.total || 50, 50)
+                },
+                metadata: {
+                    model: 'fallback',
+                    promptVersion: '1.0',
+                    generatedAt: Date.now()
+                }
+            },
+            {
+                id: 'fallback-2',
+                name: 'Experience Gift Box',
+                description: 'A curated collection of local experiences',
+                price: Math.min(requestData.budget?.total || 50, 35),
+                category: 'experiences',
+                confidence: 0.7,
+                reasoning: 'Experience gifts create lasting memories and work for most occasions',
+                tags: ['memorable', 'experiential', 'flexible'],
+                availability: 'in_stock',
+                estimatedDelivery: '3-5 business days',
+                costBreakdown: {
+                    giftPrice: Math.min(requestData.budget?.total || 50, 35),
+                    estimatedShipping: 0,
+                    giftWrapping: requestData.budget?.giftWrap ? 4.99 : 0,
+                    total: Math.min(requestData.budget?.total || 50, 35) + (requestData.budget?.giftWrap ? 4.99 : 0)
+                },
+                metadata: {
+                    model: 'fallback',
+                    promptVersion: '1.0',
+                    generatedAt: Date.now()
+                }
+            }
+        ];
+
+        return {
+            statusCode: 200,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type',
+            },
+            body: JSON.stringify({
+                success: true,
+                recommendations: fallbackRecommendations,
+                metadata: {
+                    requestId: `req-${Date.now()}`,
+                    source: 'fallback',
+                    error: error.message,
+                    generatedAt: new Date().toISOString()
+                }
             }),
         };
     }
 };
-exports.handler = handler;
+
+module.exports = { handler };
