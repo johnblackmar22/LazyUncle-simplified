@@ -41,16 +41,16 @@ const handler = async (event) => {
     console.log('✅ OpenAI client initialized');
 
     // Build a dynamic prompt for the AI
-    const prompt = `You are a helpful gift recommendation assistant. Respond only with valid JSON.\n\nHere is the recipient's information:\n- Name: ${recipient.name}\n- Relationship: ${recipient.relationship}\n- Age: ${recipient.age || 'unknown'}\n- Interests: ${recipient.interests?.join(', ') || 'none'}\n- Location: ${recipient.location || 'unknown'}\n\nOccasion:\n- Type: ${occasion.type}\n- Date: ${occasion.date}\n- Significance: ${occasion.significance || 'regular'}\n\nBudget:\n- Total: $${budget.total}\n- Gift Budget: $${budget.giftBudget}\n- Gift Wrap: ${budget.giftWrap ? 'yes' : 'no'}\n\nPreferences:\n- Exclude Categories: ${(preferences?.excludeCategories || []).join(', ') || 'none'}\n- Preferred Categories: ${(preferences?.preferredCategories || []).join(', ') || 'none'}\n- Prioritize Free Shipping: ${preferences?.prioritizeFreeShipping ? 'yes' : 'no'}\n- Max Shipping Cost: $${preferences?.maxShippingCost || 0}\n\nInstructions: ${instructions || 'Find the best gifts for this recipient and occasion. Include actual shipping cost estimates in your response.'}\n\nRespond with JSON: {"recommendations": [{"name": "Gift Name", "price": 25, "description": "Why this gift", "category": "gift_category", "confidence": 0.8, "availability": "in_stock", "estimatedDelivery": "3-5 business days", "costBreakdown": {"giftPrice": 25, "estimatedShipping": 0, "giftWrapping": 0, "total": 25}}]}\n\nReturn exactly 3 different gift recommendations in the recommendations array.`;
+    const prompt = `You are a gift recommendation assistant using GPT-4.0.\n\nYour task is to recommend exactly 3 specific, popular, and in-stock gifts for the following recipient and occasion.\n\nYou must search Amazon.com (or simulate doing so) and return real product names, not generic categories. For each gift, include:\n- The exact product name as listed on Amazon\n- A short description\n- The current price (USD)\n- A direct Amazon purchase URL (if possible)\n- Estimated shipping cost (if not free)\n- Whether gift wrapping is available\n- Why this gift is a good fit for the recipient and occasion\n\nOnly suggest gifts that are easily findable and fulfillable on Amazon.com. Do not suggest generic items or categories. If the recipient is an infant, ensure all gifts are age-appropriate and safe.\n\nRecipient info:\n- Name: ${recipient.name}\n- Age: ${recipient.age || 'unknown'}\n- Interests: ${recipient.interests?.join(', ') || 'none'}\n- Relationship: ${recipient.relationship}\n- Location: ${recipient.location || 'unknown'}\nOccasion:\n- Type: ${occasion.type}\n- Date: ${occasion.date}\n- Notes: ${occasion.significance || 'regular'}\nBudget: $${budget.total}\nAdditional instructions: ${instructions || 'Find the best gifts for this recipient and occasion.'}\n\nRespond only with valid JSON in the following format:\n{\n  "recommendations": [\n    {\n      "name": "...",\n      "description": "...",\n      "price": ...,\n      "purchaseUrl": "...",\n      "shippingCost": ...,\n      "giftWrappingAvailable": true/false,\n      "reasoning": "..."\n    },\n    ...\n  ]\n}`;
 
     // OpenAI API call
     const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4',
       messages: [
         { role: 'system', content: 'You are a helpful gift recommendation assistant. Respond only with valid JSON.' },
         { role: 'user', content: prompt }
       ],
-      max_tokens: 700,
+      max_tokens: 900,
       temperature: 0.7,
     });
     console.log('✅ OpenAI API call successful');
