@@ -102,7 +102,7 @@ const DashboardPage: React.FC = () => {
     }
   }, [recipients.length, fetchOccasions]);
   
-  // Get upcoming occasions (within next 60 days)
+  // Get upcoming occasions (next 5, no matter how far into the future)
   const upcomingOccasions = Object.entries(occasions)
     .flatMap(([recipientId, recipientOccasions]) => 
       recipientOccasions.map(occasion => ({
@@ -127,13 +127,13 @@ const DashboardPage: React.FC = () => {
         }
         
         const daysUntil = differenceInDays(nextOccurrence, today);
-        return daysUntil >= 0 && daysUntil <= 60;
+        return daysUntil >= 0; // Remove 60-day limit
       } else {
         // For one-time events, use the actual date
         const [year, month, day] = occasion.date.split('-').map(Number);
         const occasionDate = new Date(year, month - 1, day);
         const daysUntil = differenceInDays(occasionDate, today);
-        return daysUntil >= 0 && daysUntil <= 60;
+        return daysUntil >= 0; // Remove 60-day limit
       }
     })
     .sort((a, b) => {
@@ -160,7 +160,7 @@ const DashboardPage: React.FC = () => {
 
   // Calculate stats
   const totalRecipients = recipients.length;
-  const totalOccasions = upcomingOccasions.length;
+  const nextFiveOccasions = upcomingOccasions.slice(0, 5); // Get next 5 occasions
 
   const openOccasionModal = (recipientId: string) => {
     const recipient = recipients.find(r => r.id === recipientId);
@@ -482,13 +482,13 @@ const DashboardPage: React.FC = () => {
             <CardHeader>
               <Flex align="center" gap={2}>
                 <Icon as={FaCalendarAlt} color="purple.500" />
-                <Heading size={{ base: "sm", md: "md" }}>Upcoming Occasions ({totalOccasions})</Heading>
+                <Heading size={{ base: "sm", md: "md" }}>Next 5 Occasions</Heading>
               </Flex>
             </CardHeader>
             <CardBody pt={0}>
-              {upcomingOccasions.length > 0 ? (
+              {nextFiveOccasions.length > 0 ? (
                 <VStack spacing={3} align="stretch">
-                  {upcomingOccasions.slice(0, 8).map((occasion) => {
+                  {nextFiveOccasions.map((occasion) => {
                     // Calculate the display date (next occurrence for annual events)
                     let displayDate: Date;
                     if (occasion.type === 'birthday' || occasion.type === 'christmas' || occasion.type === 'anniversary') {
@@ -544,17 +544,12 @@ const DashboardPage: React.FC = () => {
                       </Flex>
                     );
                   })}
-                  {upcomingOccasions.length > 8 && (
-                    <Text textAlign="center" fontSize="sm" color="gray.500" mt={2}>
-                      +{upcomingOccasions.length - 8} more occasions
-                    </Text>
-                  )}
                 </VStack>
               ) : (
                 <Box textAlign="center" py={8}>
                   <Icon as={FaCalendarAlt} boxSize={{ base: "40px", md: "48px" }} color="gray.400" mb={4} />
                   <Text color="gray.500" mb={4} fontSize={{ base: "sm", md: "md" }}>
-                    No upcoming occasions in the next 60 days
+                    No upcoming occasions
                   </Text>
                   <Button
                     as={RouterLink}
