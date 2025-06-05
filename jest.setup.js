@@ -1,7 +1,28 @@
 require('@testing-library/jest-dom'); 
 
-// Mock import.meta for Jest
-global.import = { meta: { env: {} } };
+// Mock import.meta for Jest with comprehensive environment variables
+global.import = { 
+  meta: { 
+    env: {
+      VITE_DEMO_MODE: 'true',
+      VITE_FIREBASE_API_KEY: 'demo-key',
+      VITE_FIREBASE_AUTH_DOMAIN: 'demo-domain',
+      VITE_FIREBASE_PROJECT_ID: 'demo-project',
+      VITE_FIREBASE_STORAGE_BUCKET: 'demo-storage',
+      VITE_FIREBASE_MESSAGING_SENDER_ID: 'demo-sender',
+      VITE_FIREBASE_APP_ID: 'demo-app'
+    }
+  } 
+};
+
+// Set process.env for fallback compatibility
+process.env.VITE_DEMO_MODE = 'true';
+process.env.VITE_FIREBASE_API_KEY = 'demo-key';
+process.env.VITE_FIREBASE_AUTH_DOMAIN = 'demo-domain';
+process.env.VITE_FIREBASE_PROJECT_ID = 'demo-project';
+process.env.VITE_FIREBASE_STORAGE_BUCKET = 'demo-storage';
+process.env.VITE_FIREBASE_MESSAGING_SENDER_ID = 'demo-sender';
+process.env.VITE_FIREBASE_APP_ID = 'demo-app';
 
 // Mock Firebase modules
 jest.mock('firebase/firestore', () => ({
@@ -39,6 +60,27 @@ jest.mock('firebase/app', () => ({
     name: 'mock-app',
     options: {}
   }))
+}));
+
+// Mock the entire firebase service module
+jest.mock('./src/services/firebase', () => ({
+  DEMO_MODE: true,
+  auth: {
+    onAuthStateChanged: jest.fn(),
+    signInWithEmailAndPassword: jest.fn(),
+    createUserWithEmailAndPassword: jest.fn(),
+    signOut: jest.fn(),
+    currentUser: null,
+  },
+  db: {
+    collection: jest.fn(),
+    doc: jest.fn(),
+    addDoc: jest.fn(),
+    updateDoc: jest.fn(),
+    deleteDoc: jest.fn(),
+    getDocs: jest.fn(),
+    getDoc: jest.fn(),
+  }
 }));
 
 // Mock fetch for API calls

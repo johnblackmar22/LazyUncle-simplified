@@ -127,7 +127,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  signUp: async (email, password, displayName) => {
+  signUp: async (email, password, _displayName) => {
     set({ loading: true, error: null });
     try {
       // If Firebase is in demo mode, prevent real registration

@@ -11,11 +11,9 @@ import {
   SimpleGrid,
   Icon,
   useBreakpointValue,
-  Image,
   HStack,
 } from '@chakra-ui/react';
-import { FaRegCalendarCheck, FaRegSmile, FaRegCheckCircle, FaTruck, FaGift } from 'react-icons/fa';
-import SmallLogo from '/Logos/Small-logo.svg';
+import { FaRegCalendarCheck, FaTruck, FaGift } from 'react-icons/fa';
 import SmallLogoJpeg from '/Logos/Small logo.jpeg';
 import ConvertedHero from '/Logos/converted_1747771169_5314 (1).svg';
 import { keyframes } from '@emotion/react';
@@ -24,10 +22,8 @@ import { HomeNavbar } from '../components/HomeNavbar';
 
 // Theme colors from logo
 const ACCENT_BLUE = 'brand.700';
-const ACCENT_YELLOW = 'yellow.400';
 const ACCENT_ORANGE = 'orange.400';
 const BG_GRADIENT = 'linear(to-b, #f8fafc 0%, #e0f2fe 100%)';
-const CARD_BG = 'white';
 const CARD_BORDER = 'gray.200';
 
 // Animation for fade-in
@@ -36,27 +32,6 @@ const fadeIn = keyframes`
   to { opacity: 1; transform: none; }
 `;
 const fadeInSync = `${fadeIn} 1s ease`;
-
-// Brand logo for universal use
-function BrandLogo({ size = 36 }: { size?: number }) {
-  return (
-    <HStack spacing={2}>
-      <img 
-        src={SmallLogoJpeg} 
-        alt="Lazy Uncle Logo" 
-        style={{ width: size, height: size }} 
-        onError={(e) => {
-          console.error('Failed to load logo image');
-          e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 36 36'%3E%3Crect width='36' height='36' fill='%23F97316'/%3E%3Ctext x='18' y='24' font-family='Arial' font-size='24' fill='white' text-anchor='middle'%3ELU%3C/text%3E%3C/svg%3E";
-        }}
-      />
-      <Text fontWeight={900} fontSize="xl" letterSpacing={1}>
-        <Box as="span" color={ACCENT_ORANGE}>Lazy</Box>
-        <Box as="span" color={ACCENT_BLUE}>Uncle</Box>
-      </Text>
-    </HStack>
-  );
-}
 
 export default function HomePage() {
   const { user } = useAuthStore();
@@ -198,36 +173,77 @@ export default function HomePage() {
           <Heading as="h3" size="lg" color={ACCENT_BLUE} fontWeight={700} textAlign="center" mb={10} letterSpacing={-0.5}>
             Why LazyUncle?
           </Heading>
-          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={10} maxW="900px" mx="auto">
+
+          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={10}>
             <ValueProp
               icon={FaRegCalendarCheck}
-              text="Never miss a date"
-              headline="We remember so you don't have to"
-              description="We track birthdays, anniversaries, and more—so you never forget an important moment."
+              headline="Set It & Forget It"
+              text="Tell us about your loved ones once"
+              description="We remember all their birthdays, anniversaries, and special occasions automatically."
             />
             <ValueProp
               icon={FaGift}
-              text="Personalized gift recommendations"
-              headline="Gifts they'll actually love"
-              description="We learn about your recipients and suggest gifts they'll love, every time."
+              headline="Smart Recommendations"
+              text="Personalized gift suggestions"
+              description="Our AI considers their interests, your budget, and the occasion to find perfect gifts."
             />
             <ValueProp
               icon={FaTruck}
-              text="Automatic delivery"
-              headline="We handle everything"
-              description="We handle the shopping, wrapping, and shipping. You get the credit."
+              headline="Automatic Delivery"
+              text="Gifts arrive on time, every time"
+              description="We handle purchasing and delivery so you never miss an important moment."
             />
           </SimpleGrid>
         </Box>
 
+        {/* Call to Action */}
+        <Box py={16} textAlign="center">
+          <Stack spacing={4} align="center">
+            <Heading as="h3" size="lg" color={ACCENT_BLUE} fontWeight={700}>
+              Ready to never forget again?
+            </Heading>
+            <Text color="neutral.700" fontSize="lg" maxW="2xl">
+              Join thousands who've automated their gift-giving and strengthened their relationships.
+            </Text>
+            <Button
+              onClick={handleGetStarted}
+              size="lg"
+              colorScheme="orange"
+              bg={ACCENT_ORANGE}
+              color="white"
+              _hover={{ bg: '#ea580c', boxShadow: 'lg', transform: 'scale(1.05)' }}
+              fontWeight="bold"
+              rounded="full"
+              px={8}
+            >
+              {user ? 'Go to Dashboard' : 'Get Started Now'}
+            </Button>
+          </Stack>
+        </Box>
+
         {/* Footer */}
-        <Box as="footer" w="full" py={8} mt={8} borderTop={`1px solid ${CARD_BORDER}`} textAlign="center" color="gray.400">
-          <Text fontSize="sm">&copy; {new Date().getFullYear()} LazyUncle. All rights reserved.</Text>
-          <Stack direction="row" spacing={6} justify="center" mt={2}>
-            <FooterLink to="/about">About</FooterLink>
-            <FooterLink to="/contact">Contact</FooterLink>
-            <FooterLink to="/faq">FAQ</FooterLink>
-            <FooterLink to="/privacy">Privacy</FooterLink>
+        <Box py={8} borderTop="1px" borderColor={CARD_BORDER} w="full">
+          <Stack direction={{ base: 'column', md: 'row' }} spacing={8} justify="space-between" align="center">
+            <HStack spacing={2}>
+              <img 
+                src={SmallLogoJpeg} 
+                alt="Lazy Uncle Logo" 
+                style={{ width: 32, height: 32 }} 
+                onError={(e) => {
+                  console.error('Failed to load logo image');
+                  e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23F97316'/%3E%3Ctext x='16' y='22' font-family='Arial' font-size='20' fill='white' text-anchor='middle'%3ELU%3C/text%3E%3C/svg%3E";
+                }}
+              />
+              <Text fontWeight={900} fontSize="lg" letterSpacing={1}>
+                <Box as="span" color={ACCENT_ORANGE}>Lazy</Box>
+                <Box as="span" color={ACCENT_BLUE}>Uncle</Box>
+              </Text>
+            </HStack>
+            <Stack direction={{ base: 'column', md: 'row' }} spacing={4} align="center">
+              <FooterLink to="/how-it-works">How It Works</FooterLink>
+              <FooterLink to="/login">Sign In</FooterLink>
+              <FooterLink to="/register">Sign Up</FooterLink>
+            </Stack>
           </Stack>
         </Box>
       </Container>
@@ -236,42 +252,46 @@ export default function HomePage() {
 }
 
 function ValueProp({ icon, text, headline, description }: { icon: any; text: string; headline: string; description: string }) {
-  // Assign specific colors to each icon based on the icon type
+  
   const getIconColor = (iconComponent: any) => {
-    if (iconComponent === FaRegCalendarCheck) return ACCENT_BLUE;
-    if (iconComponent === FaGift) return ACCENT_ORANGE;
-    if (iconComponent === FaTruck) return 'green.500';
-    return 'gray.400'; // fallback
+    switch (iconComponent) {
+      case FaRegCalendarCheck:
+        return 'blue.500';
+      case FaGift:
+        return 'orange.500';
+      case FaTruck:
+        return 'green.500';
+      default:
+        return 'gray.500';
+    }
   };
 
   return (
-    <Box
-      bg="white"
-      borderRadius="xl"
-      boxShadow="md"
-      p={8}
-      h="full"
-      display="flex"
-      flexDirection="column"
-      alignItems="center"
-      justifyContent="flex-start"
-      transition="box-shadow 0.2s, transform 0.2s"
-      _hover={{ boxShadow: 'xl', transform: 'translateY(-4px) scale(1.03)' }}
-    >
-      <Icon as={icon} w={9} h={9} color={getIconColor(icon)} mb={4} />
-      <Text fontWeight={700} color="gray.800" fontSize="lg" mb={1} textAlign="center">{text}</Text>
-      <Text fontWeight={500} color="gray.700" fontSize="md" mb={2} textAlign="center">{headline}</Text>
-      <Text color="gray.500" fontSize="sm" textAlign="center">{description}</Text>
-    </Box>
+    <Stack align="center" spacing={4} textAlign="center" animation={fadeInSync}>
+      <Icon as={icon} w={12} h={12} color={getIconColor(icon)} />
+      <Heading as="h4" size="md" color="gray.800" fontWeight={600}>
+        {headline}
+      </Heading>
+      <Text color="gray.600" fontWeight={500}>
+        {text}
+      </Text>
+      <Text color="gray.500" fontSize="sm">
+        {description}
+      </Text>
+    </Stack>
   );
 }
 
 function FooterLink({ to, children }: { to: string; children: React.ReactNode }) {
   return (
-    <RouterLink to={to} style={{ textDecoration: 'none' }}>
-      <Text color="gray.400" fontSize="sm" _hover={{ color: ACCENT_BLUE, textDecoration: 'underline' }} transition="color 0.2s">
-        {children}
-      </Text>
-    </RouterLink>
+    <Text
+      as={RouterLink}
+      to={to}
+      color="gray.600"
+      _hover={{ color: ACCENT_BLUE, textDecoration: 'underline' }}
+      fontSize="sm"
+    >
+      {children}
+    </Text>
   );
 } 
