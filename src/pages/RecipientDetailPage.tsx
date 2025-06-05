@@ -55,6 +55,7 @@ import { safeFormatDate } from '../utils/dateUtils';
 import { useOccasionStore } from '../store/occasionStore';
 import OccasionForm from '../components/OccasionForm';
 import OccasionCard from '../components/OccasionCard';
+import AIGiftRecommendations from '../components/AIGiftRecommendations';
 
 export const RecipientDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -71,6 +72,8 @@ export const RecipientDetailPage: React.FC = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletingOccasionId, setDeletingOccasionId] = useState<string | null>(null);
   const [isDeletingOccasion, setIsDeletingOccasion] = useState(false);
+  const [selectedOccasionForGifts, setSelectedOccasionForGifts] = useState<string>('');
+  const [giftBudget, setGiftBudget] = useState({ min: 25, max: 100 });
 
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
@@ -436,6 +439,93 @@ export const RecipientDetailPage: React.FC = () => {
                   onClick={handleOpenAddOccasionModal}
                 >
                   Add First Occasion
+                </Button>
+              </Box>
+            )}
+          </CardBody>
+        </Card>
+
+        {/* AI Gift Recommendations */}
+        <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
+          <CardHeader>
+            <Heading size="md">AI Gift Recommendations</Heading>
+          </CardHeader>
+          <CardBody>
+            {id && occasions && occasions[id] && occasions[id].length > 0 ? (
+              <VStack spacing={4} align="stretch">
+                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                  <FormControl>
+                    <FormLabel>Select Occasion</FormLabel>
+                    <Select
+                      placeholder="Choose an occasion for gift ideas"
+                      value={selectedOccasionForGifts}
+                      onChange={(e) => setSelectedOccasionForGifts(e.target.value)}
+                    >
+                      {occasions[id].map((occasion: any) => (
+                        <option key={occasion.id} value={occasion.id}>
+                          {occasion.name} - {safeFormatDate(occasion.date)}
+                        </option>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  
+                  <HStack spacing={2}>
+                    <FormControl>
+                      <FormLabel>Min Budget ($)</FormLabel>
+                      <Input
+                        type="number"
+                        min="5"
+                        max="500"
+                        value={giftBudget.min}
+                        onChange={(e) => setGiftBudget(prev => ({ ...prev, min: Number(e.target.value) }))}
+                      />
+                    </FormControl>
+                    <FormControl>
+                      <FormLabel>Max Budget ($)</FormLabel>
+                      <Input
+                        type="number"
+                        min="10"
+                        max="1000"
+                        value={giftBudget.max}
+                        onChange={(e) => setGiftBudget(prev => ({ ...prev, max: Number(e.target.value) }))}
+                      />
+                    </FormControl>
+                  </HStack>
+                </SimpleGrid>
+                
+                {selectedOccasionForGifts && (() => {
+                  const selectedOccasion = occasions[id].find((occ: any) => occ.id === selectedOccasionForGifts);
+                  return selectedOccasion ? (
+                    <Box mt={4}>
+                      <AIGiftRecommendations
+                        recipient={currentRecipient}
+                        occasion={selectedOccasion}
+                        budget={giftBudget}
+                        onGiftSelected={(gift) => {
+                          toast({
+                            title: 'Gift Idea Saved!',
+                            description: `"${gift.name}" has been saved to your gift ideas`,
+                            status: 'success',
+                            duration: 3000,
+                            isClosable: true,
+                          });
+                        }}
+                      />
+                    </Box>
+                  ) : null;
+                })()}
+              </VStack>
+            ) : (
+              <Box textAlign="center" p={6}>
+                <Text mb={4} color="gray.500">
+                  Add an occasion first to get AI-powered gift recommendations
+                </Text>
+                <Button
+                  leftIcon={<AddIcon />}
+                  colorScheme="purple"
+                  onClick={handleOpenAddOccasionModal}
+                >
+                  Add Occasion
                 </Button>
               </Box>
             )}
