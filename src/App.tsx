@@ -16,6 +16,7 @@ import RecipientsListPage from './pages/RecipientsListPage';
 import AddRecipientPage from './pages/AddRecipientPage';
 import EditRecipientPage from './pages/EditRecipientPage';
 import { RecipientDetailPage } from './pages/RecipientDetailPage';
+import { GiftPlanningPage } from './pages/GiftPlanningPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import SettingsPage from './pages/SettingsPage';
@@ -62,6 +63,7 @@ function App() {
           displayName: firebaseUser.displayName || '',
           photoURL: firebaseUser.photoURL || '',
           createdAt: Date.now(),
+          updatedAt: Date.now(),
           planId: 'free',
         };
         
@@ -130,6 +132,7 @@ function App() {
             <Route path="/recipients/add" element={<AddRecipientPage />} />
             <Route path="/recipients/:id" element={<RecipientDetailPage />} />
             <Route path="/recipients/:id/edit" element={<EditRecipientPage />} />
+            <Route path="/recipients/:recipientId/occasions/:occasionId/plan" element={<GiftPlanningPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
         </Route>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import {
   Box,
   Card,
@@ -38,7 +39,8 @@ import {
   FaTimes,
   FaEye,
   FaRedo,
-  FaTruck
+  FaTruck,
+  FaShoppingCart
 } from 'react-icons/fa';
 import { EditIcon, DeleteIcon } from '@chakra-ui/icons';
 import type { Occasion, Recipient, GiftSuggestion } from '../types';
@@ -413,18 +415,64 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
 
       {suggestionsStatus === 'none' && (
         <CardFooter pt={2}>
-          <Button
-            size="sm"
-            colorScheme="purple"
-            variant="outline"
-            leftIcon={<FaMagic />}
-            onClick={handleGenerateSuggestions}
-            isLoading={generating}
-            loadingText="Generating..."
-            w="full"
-          >
-            Generate Gift Suggestions
-          </Button>
+          <VStack spacing={2} w="full">
+            <Button
+              size="sm"
+              colorScheme="purple"
+              variant="outline"
+              leftIcon={<FaMagic />}
+              onClick={handleGenerateSuggestions}
+              isLoading={generating}
+              loadingText="Generating..."
+              w="full"
+            >
+              Generate Gift Suggestions
+            </Button>
+            <Button
+              as={RouterLink}
+              to={`/recipients/${recipient.id}/occasions/${occasion.id}/plan`}
+              size="sm"
+              colorScheme="blue"
+              leftIcon={<FaShoppingCart />}
+              w="full"
+            >
+              Plan Gifts
+            </Button>
+          </VStack>
+        </CardFooter>
+      )}
+
+      {/* Add Plan Gifts button for other states too */}
+      {suggestionsStatus !== 'none' && (
+        <CardFooter pt={2}>
+          <HStack spacing={2} w="full">
+            <Button
+              as={RouterLink}
+              to={`/recipients/${recipient.id}/occasions/${occasion.id}/plan`}
+              size="sm"
+              colorScheme="blue"
+              leftIcon={<FaShoppingCart />}
+              flex={1}
+            >
+              Plan Gifts
+            </Button>
+            <IconButton
+              aria-label="Edit occasion"
+              icon={<EditIcon />}
+              size="sm"
+              variant="outline"
+              onClick={() => onEdit(occasion)}
+            />
+            <IconButton
+              aria-label="Delete occasion"
+              icon={<DeleteIcon />}
+              size="sm"
+              variant="outline"
+              colorScheme="red"
+              onClick={() => onDelete(occasion.id)}
+              isLoading={isDeleting}
+            />
+          </HStack>
         </CardFooter>
       )}
     </Card>
