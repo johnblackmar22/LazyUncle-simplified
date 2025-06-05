@@ -41,7 +41,7 @@ const handler = async (event) => {
     console.log('✅ OpenAI client initialized');
 
     // Build a dynamic prompt for the AI
-    const prompt = `You are a helpful gift recommendation assistant. Respond only with valid JSON.\n\nHere is the recipient's information:\n- Name: ${recipient.name}\n- Relationship: ${recipient.relationship}\n- Age: ${recipient.age || 'unknown'}\n- Interests: ${recipient.interests?.join(', ') || 'none'}\n- Location: ${recipient.location || 'unknown'}\n\nOccasion:\n- Type: ${occasion.type}\n- Date: ${occasion.date}\n- Significance: ${occasion.significance || 'regular'}\n\nBudget:\n- Total: $${budget.total}\n- Gift Budget: $${budget.giftBudget}\n- Gift Wrap: ${budget.giftWrap ? 'yes' : 'no'}\n\nPreferences:\n- Exclude Categories: ${(preferences?.excludeCategories || []).join(', ') || 'none'}\n- Preferred Categories: ${(preferences?.preferredCategories || []).join(', ') || 'none'}\n- Prioritize Free Shipping: ${preferences?.prioritizeFreeShipping ? 'yes' : 'no'}\n- Max Shipping Cost: $${preferences?.maxShippingCost || 0}\n\nInstructions: ${instructions || 'Find the best gifts for this recipient and occasion. Include actual shipping cost estimates in your response.'}\n\nRespond with JSON: {"recommendations": [{"name": "Gift Name", "price": 25, "description": "Why this gift", "category": "gift_category", "confidence": 0.8, "availability": "in_stock", "estimatedDelivery": "3-5 business days", "costBreakdown": {"giftPrice": 25, "estimatedShipping": 0, "giftWrapping": 0, "total": 25}}]}`;
+    const prompt = `You are a helpful gift recommendation assistant. Respond only with valid JSON.\n\nHere is the recipient's information:\n- Name: ${recipient.name}\n- Relationship: ${recipient.relationship}\n- Age: ${recipient.age || 'unknown'}\n- Interests: ${recipient.interests?.join(', ') || 'none'}\n- Location: ${recipient.location || 'unknown'}\n\nOccasion:\n- Type: ${occasion.type}\n- Date: ${occasion.date}\n- Significance: ${occasion.significance || 'regular'}\n\nBudget:\n- Total: $${budget.total}\n- Gift Budget: $${budget.giftBudget}\n- Gift Wrap: ${budget.giftWrap ? 'yes' : 'no'}\n\nPreferences:\n- Exclude Categories: ${(preferences?.excludeCategories || []).join(', ') || 'none'}\n- Preferred Categories: ${(preferences?.preferredCategories || []).join(', ') || 'none'}\n- Prioritize Free Shipping: ${preferences?.prioritizeFreeShipping ? 'yes' : 'no'}\n- Max Shipping Cost: $${preferences?.maxShippingCost || 0}\n\nInstructions: ${instructions || 'Find the best gifts for this recipient and occasion. Include actual shipping cost estimates in your response.'}\n\nRespond with JSON: {"recommendations": [{"name": "Gift Name", "price": 25, "description": "Why this gift", "category": "gift_category", "confidence": 0.8, "availability": "in_stock", "estimatedDelivery": "3-5 business days", "costBreakdown": {"giftPrice": 25, "estimatedShipping": 0, "giftWrapping": 0, "total": 25}}]}\n\nReturn exactly 3 different gift recommendations in the recommendations array.`;
 
     // OpenAI API call
     const completion = await openai.chat.completions.create({
@@ -76,6 +76,29 @@ const handler = async (event) => {
           confidence: 0.8
         }
       ];
+    }
+
+    // Ensure at least three recommendations
+    const fallbackGifts = [
+      {
+        id: 'fallback-2',
+        name: 'Experience Gift Box',
+        description: 'Create lasting memories',
+        price: 35,
+        category: 'experiences',
+        confidence: 0.7
+      },
+      {
+        id: 'fallback-3',
+        name: 'Personalized Mug',
+        description: 'A mug with their name or a special message',
+        price: 20,
+        category: 'personalized',
+        confidence: 0.6
+      }
+    ];
+    while (recommendations.length < 3) {
+      recommendations.push(fallbackGifts[recommendations.length - 1] || fallbackGifts[0]);
     }
 
     // Simple success response
