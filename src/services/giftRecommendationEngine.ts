@@ -59,54 +59,47 @@ export interface RecommendationResponse {
 class GiftRecommendationEngine {
   private baseUrl = '/.netlify/functions';
   
-  // Cost calculation constants - subscription model: customer pays exact costs
-  private readonly STANDARD_SHIPPING = 8.99;
-  private readonly EXPRESS_SHIPPING = 15.99;
+  // Cost calculation - AI handles shipping optimization
   private readonly GIFT_WRAPPING_COST = 4.99;
   
   /**
-   * Calculate budget breakdown including shipping and gift wrapping
-   * Subscription model: customer pays all costs exactly
+   * Calculate budget breakdown - AI optimizes for shipping
+   * The AI will try to find free shipping options when possible
    */
   private calculateBudgetBreakdown(occasion: Occasion): BudgetBreakdown {
     const totalBudget = occasion.budget || 50;
     
-    // Calculate shipping cost (always applies - no free shipping threshold)
-    const estimatedShippingCost = this.STANDARD_SHIPPING;
-    
     // Calculate gift wrapping cost if enabled
     const giftWrappingCost = occasion.giftWrap ? this.GIFT_WRAPPING_COST : 0;
     
-    // Calculate available budget for the actual gift
-    const giftBudget = totalBudget - estimatedShippingCost - giftWrappingCost;
+    // Reserve some budget for potential shipping, but let AI optimize
+    const shippingBuffer = Math.min(15, totalBudget * 0.2); // Max $15 or 20% of budget
+    const giftBudget = totalBudget - giftWrappingCost - shippingBuffer;
     
     return {
-      giftBudget: Math.max(giftBudget, 5), // Minimum $5 for gift
-      shippingCost: estimatedShippingCost,
+      giftBudget: Math.max(giftBudget, 10), // Minimum $10 for gift
+      shippingCost: 0, // AI will optimize for free shipping when possible
       giftWrappingCost,
       totalBudget
     };
   }
   
   /**
-   * Calculate total cost including shipping and wrapping for a specific gift
-   * Subscription model: customer pays exact costs
+   * Calculate estimated total cost - AI provides shipping estimates
    */
-  private calculateTotalCost(giftPrice: number, occasion: Occasion): {
+  private calculateTotalCost(giftPrice: number, occasion: Occasion, aiShippingEstimate: number = 0): {
     giftPrice: number;
     estimatedShipping: number;
     giftWrapping: number;
     total: number;
   } {
-    // Always charge shipping - no free shipping threshold in subscription model
-    const shippingCost = this.STANDARD_SHIPPING;
     const wrappingCost = occasion.giftWrap ? this.GIFT_WRAPPING_COST : 0;
     
     return {
       giftPrice,
-      estimatedShipping: shippingCost,
+      estimatedShipping: aiShippingEstimate, // From AI recommendation
       giftWrapping: wrappingCost,
-      total: giftPrice + shippingCost + wrappingCost
+      total: giftPrice + aiShippingEstimate + wrappingCost
     };
   }
   
@@ -150,11 +143,18 @@ class GiftRecommendationEngine {
             date: request.occasion.date,
             significance: request.occasion.notes || 'regular'
           },
-          budget: adjustedBudget, // Use adjusted budget that accounts for shipping/wrapping
+          budget: {
+            total: budgetBreakdown.totalBudget,
+            giftBudget: adjustedBudget.max,
+            giftWrap: request.occasion.giftWrap || false
+          },
           preferences: {
             excludeCategories: request.excludeCategories || [],
-            preferredCategories: request.preferredCategories || []
-          }
+            preferredCategories: request.preferredCategories || [],
+            prioritizeFreeShipping: true, // AI should prioritize free shipping options
+            maxShippingCost: 15 // Maximum acceptable shipping cost
+          },
+          instructions: "Find gifts that qualify for free shipping when possible (Amazon Prime, free shipping thresholds, etc.). Include actual shipping cost estimates in your response."
         })
       });
 
@@ -164,11 +164,15 @@ class GiftRecommendationEngine {
 
       const data = await response.json();
       
-      // Add cost breakdown to each recommendation
+      // Add cost breakdown to each recommendation using AI-provided shipping estimates
       if (data.recommendations) {
-        data.recommendations = data.recommendations.map((rec: GiftRecommendation) => ({
+        data.recommendations = data.recommendations.map((rec: any) => ({
           ...rec,
-          costBreakdown: this.calculateTotalCost(rec.price, request.occasion)
+          costBreakdown: this.calculateTotalCost(
+            rec.price, 
+            request.occasion,
+            rec.shippingCost || 0 // Use AI-provided shipping cost, default to 0 (free)
+          )
         }));
         
         // Filter out recommendations that exceed total budget
@@ -285,7 +289,7 @@ class GiftRecommendationEngine {
   private getFallbackRecommendations(request: GiftRecommendationRequest): RecommendationResponse {
     console.log('🔄 Using fallback recommendations');
     
-    // Calculate budget breakdown for fallback recommendations too
+    // Calculate budget breakdown for fallback recommendations
     const budgetBreakdown = this.calculateBudgetBreakdown(request.occasion);
     
     const fallbackGifts: GiftRecommendation[] = [
@@ -300,7 +304,11 @@ class GiftRecommendationEngine {
         tags: ['versatile', 'safe_choice', 'always_appreciated'],
         availability: 'in_stock' as const,
         estimatedDelivery: 'Digital delivery - instant',
-        costBreakdown: this.calculateTotalCost(Math.min(budgetBreakdown.giftBudget, 50), request.occasion),
+        costBreakdown: this.calculateTotalCost(
+          Math.min(budgetBreakdown.giftBudget, 50), 
+          request.occasion,
+          0 // Digital gift cards have no shipping cost
+        ),
         metadata: {
           model: 'fallback',
           promptVersion: '1.0',
@@ -318,16 +326,20 @@ class GiftRecommendationEngine {
         tags: ['memorable', 'experiential', 'unique'],
         availability: 'in_stock' as const,
         estimatedDelivery: '3-5 business days',
-        costBreakdown: this.calculateTotalCost(Math.min(budgetBreakdown.giftBudget * 0.8, 100), request.occasion),
+        costBreakdown: this.calculateTotalCost(
+          Math.min(budgetBreakdown.giftBudget * 0.8, 100), 
+          request.occasion,
+          0 // Assume free shipping for premium experience boxes
+        ),
         metadata: {
           model: 'fallback',
           promptVersion: '1.0',
           generatedAt: Date.now()
         }
       }
-    ].filter(gift => gift.costBreakdown.total <= budgetBreakdown.totalBudget); // Filter by total budget
+    ].filter(gift => gift.costBreakdown.total <= budgetBreakdown.totalBudget);
 
-    console.log('🔄 Fallback recommendations with budget breakdown:', {
+    console.log('🔄 Fallback recommendations with AI-optimized shipping:', {
       count: fallbackGifts.length,
       budgetBreakdown
     });

@@ -331,7 +331,7 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
               <strong>Budget:</strong> ${occasion.budget}
               {occasion.giftWrap && (
                 <Text as="span" fontSize="xs" color="gray.500" ml={2}>
-                  (includes $4.99 gift wrap)
+                  (includes $4.99 gift wrap + AI-optimized shipping)
                 </Text>
               )}
             </Text>
@@ -475,9 +475,13 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
                             </Badge>
                             {gift.costBreakdown && (
                               <>
-                                {gift.costBreakdown.estimatedShipping > 0 && (
-                                  <Badge colorScheme="blue" size="sm" variant="outline">
+                                {gift.costBreakdown.estimatedShipping > 0 ? (
+                                  <Badge colorScheme="orange" size="sm" variant="outline">
                                     Shipping: ${gift.costBreakdown.estimatedShipping}
+                                  </Badge>
+                                ) : (
+                                  <Badge colorScheme="blue" size="sm">
+                                    Free Shipping
                                   </Badge>
                                 )}
                                 {gift.costBreakdown.giftWrapping > 0 && (
@@ -485,7 +489,7 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
                                     Gift Wrap: ${gift.costBreakdown.giftWrapping}
                                   </Badge>
                                 )}
-                                <Badge colorScheme="orange" size="sm" variant="solid">
+                                <Badge colorScheme="gray" size="sm" variant="solid">
                                   Total: ${gift.costBreakdown.total}
                                 </Badge>
                               </>
