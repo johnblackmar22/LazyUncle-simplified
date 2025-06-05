@@ -302,7 +302,7 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
                               {gift.name}
                             </Text>
                             <Text fontSize="lg" fontWeight="bold" color="blue.600">
-                              ${gift.price}
+                              ${gift.price.toFixed(2)}
                             </Text>
                           </HStack>
                           

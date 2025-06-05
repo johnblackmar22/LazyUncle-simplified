@@ -374,7 +374,7 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
                       )}
                       <HStack spacing={2}>
                         <Badge colorScheme="green" size="sm">
-                          ${gift.price}
+                          ${gift.price.toFixed(2)}
                         </Badge>
                       </HStack>
                     </VStack>
@@ -471,13 +471,13 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
                           </Text>
                           <HStack spacing={2}>
                             <Badge colorScheme="green" size="sm">
-                              Gift: ${gift.price}
+                              Gift: ${gift.price.toFixed(2)}
                             </Badge>
                             {gift.costBreakdown && (
                               <>
                                 {gift.costBreakdown.estimatedShipping > 0 ? (
                                   <Badge colorScheme="orange" size="sm" variant="outline">
-                                    Shipping: ${gift.costBreakdown.estimatedShipping}
+                                    Shipping: ${gift.costBreakdown.estimatedShipping.toFixed(2)}
                                   </Badge>
                                 ) : (
                                   <Badge colorScheme="blue" size="sm">
@@ -486,11 +486,11 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
                                 )}
                                 {gift.costBreakdown.giftWrapping > 0 && (
                                   <Badge colorScheme="purple" size="sm" variant="outline">
-                                    Gift Wrap: ${gift.costBreakdown.giftWrapping}
+                                    Gift Wrap: ${gift.costBreakdown.giftWrapping.toFixed(2)}
                                   </Badge>
                                 )}
                                 <Badge colorScheme="gray" size="sm" variant="solid">
-                                  Total: ${gift.costBreakdown.total}
+                                  Total: ${gift.costBreakdown.total.toFixed(2)}
                                 </Badge>
                               </>
                             )}
