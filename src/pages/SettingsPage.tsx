@@ -306,11 +306,6 @@ export default function SettingsPage() {
             <Heading size="xl" mb={2}>Settings</Heading>
             <Text color="gray.600">
               Customize your LazyUncle experience
-              {(user?.displayName || user?.email) && (
-                <Text as="span" fontWeight="medium" ml={2}>
-                  • {user.displayName || user.email?.split('@')[0]}
-                </Text>
-              )}
             </Text>
           </Box>
         </Flex>
@@ -321,6 +316,11 @@ export default function SettingsPage() {
             <Flex align="center" gap={2}>
               <Icon as={FaUser} color="blue.500" />
               <Heading size="md">Account Settings</Heading>
+              {(user?.displayName || user?.email) && (
+                <Text color="gray.600" fontSize="sm" ml="auto">
+                  {user.displayName || user.email?.split('@')[0]}
+                </Text>
+              )}
             </Flex>
           </CardHeader>
           <CardBody>
@@ -424,23 +424,23 @@ export default function SettingsPage() {
           </CardHeader>
           <CardBody>
             <VStack spacing={5} align="stretch">
-              <HStack justify="space-between" align="center">
-                <FormLabel mb="0">Email Notifications</FormLabel>
+              <Flex justify="space-between" align="center">
+                <FormLabel mb="0" mr={2}>Email Notifications</FormLabel>
                 <Switch 
                   isChecked={settings.emailNotifications}
                   onChange={handleSwitchChange('emailNotifications')}
                   colorScheme="blue"
                 />
-              </HStack>
+              </Flex>
               
-              <HStack justify="space-between" align="center">
-                <FormLabel mb="0">Text Notifications</FormLabel>
+              <Flex justify="space-between" align="center">
+                <FormLabel mb="0" mr={2}>Text Notifications</FormLabel>
                 <Switch 
                   isChecked={settings.textNotifications}
                   onChange={handleTextNotificationsToggle}
                   colorScheme="blue"
                 />
-              </HStack>
+              </Flex>
               
               {/* Phone number field appears only if text notifications is enabled */}
               {settings.textNotifications && (
@@ -459,13 +459,15 @@ export default function SettingsPage() {
                 </FormControl>
               )}
 
-              <FormControl maxW="250px">
-                <FormLabel>Reminder Days</FormLabel>
+              <Flex align="center" gap={3}>
+                <FormLabel mb="0">Reminder Days</FormLabel>
                 <NumberInput 
                   value={settings.reminderDays} 
                   min={1} 
                   max={90}
                   onChange={(_, value) => handleSettingChange('reminderDays', value)}
+                  maxW="100px"
+                  size="sm"
                 >
                   <NumberInputField />
                   <NumberInputStepper>
@@ -473,8 +475,8 @@ export default function SettingsPage() {
                     <NumberDecrementStepper />
                   </NumberInputStepper>
                 </NumberInput>
-                <FormHelperText>Days before an event to send reminders</FormHelperText>
-              </FormControl>
+                <FormHelperText mb="0">days before an event to send reminders</FormHelperText>
+              </Flex>
 
               <HStack spacing={4} pt={2}>
                 <Button 
