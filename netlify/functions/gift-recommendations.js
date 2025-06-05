@@ -44,8 +44,9 @@ const handler = async (event) => {
     const prompt = `You are a gift recommendation assistant using GPT-4.0.\n\nYour task is to recommend exactly 3 specific, popular, and in-stock gifts for the following recipient and occasion.\n\nYou must search Amazon.com (or simulate doing so) and return real product names, not generic categories. For each gift, include:\n- The exact product name as listed on Amazon\n- A short description\n- The current price (USD)\n- A direct Amazon purchase URL (if possible)\n- Estimated shipping cost (if not free)\n- Whether gift wrapping is available\n- Why this gift is a good fit for the recipient and occasion\n\nOnly suggest gifts that are easily findable and fulfillable on Amazon.com. Do not suggest generic items or categories. If the recipient is an infant, ensure all gifts are age-appropriate and safe.\n\nRecipient info:\n- Name: ${recipient.name}\n- Age: ${recipient.age || 'unknown'}\n- Interests: ${recipient.interests?.join(', ') || 'none'}\n- Relationship: ${recipient.relationship}\n- Location: ${recipient.location || 'unknown'}\nOccasion:\n- Type: ${occasion.type}\n- Date: ${occasion.date}\n- Notes: ${occasion.significance || 'regular'}\nBudget: $${budget.total}\nAdditional instructions: ${instructions || 'Find the best gifts for this recipient and occasion.'}\n\nRespond only with valid JSON in the following format:\n{\n  "recommendations": [\n    {\n      "name": "...",\n      "description": "...",\n      "price": ...,\n      "purchaseUrl": "...",\n      "shippingCost": ...,\n      "giftWrappingAvailable": true/false,\n      "reasoning": "..."\n    },\n    ...\n  ]\n}`;
 
     // OpenAI API call
+    // NOTE: Using gpt-3.5-turbo for compatibility and to avoid timeout issues (Netlify 10s limit)
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'gpt-3.5-turbo',
       messages: [
         { role: 'system', content: 'You are a helpful gift recommendation assistant. Respond only with valid JSON.' },
         { role: 'user', content: prompt }
