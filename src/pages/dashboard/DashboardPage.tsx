@@ -46,7 +46,6 @@ import { FaGift, FaCalendarAlt, FaUser, FaClock } from 'react-icons/fa';
 import { AddIcon, CheckIcon } from '@chakra-ui/icons';
 import { formatDistanceToNow, isWithinInterval, addDays, parseISO, format, startOfDay } from 'date-fns';
 import { getNextBirthday, getNextChristmas } from '../../utils/dateUtils';
-import GiftSuggestionWorkflowService from '../../services/giftSuggestionWorkflow';
 
 const DashboardPage: React.FC = () => {
   const { recipients, fetchRecipients } = useRecipientStore();
@@ -107,17 +106,8 @@ const DashboardPage: React.FC = () => {
   const totalRecipients = recipients.length;
   const totalOccasions = Object.values(occasions).flat().length;
   
-  // Get pending suggestions count (occasions that need gift suggestions)
-  const pendingSuggestions = Object.values(occasions).flat().filter(occasion => {
-    // Check if occasion has suggestions that are ready for review or no suggestions yet
-    const preview = GiftSuggestionWorkflowService.getPreview(occasion.id);
-    if (!preview) {
-      // No suggestions generated yet - this counts as pending
-      return true;
-    }
-    // Count as pending if suggestions are shown but not approved/rejected
-    return preview.status === 'preview_shown';
-  }).length;
+  // For now, just count all occasions as pending until we rebuild the gift system
+  const pendingSuggestions = totalOccasions;
 
   // Get upcoming occasions (within next 60 days)
   const upcomingOccasions = Object.entries(occasions)

@@ -29,7 +29,6 @@ import { FaUser, FaDollarSign, FaCalendarAlt } from 'react-icons/fa';
 import { useRecipientStore } from '../store/recipientStore';
 import { useOccasionStore } from '../store/occasionStore';
 import { useGiftStore } from '../store/giftStore';
-import AIGiftRecommendations from '../components/AIGiftRecommendations';
 import type { Recipient, Occasion } from '../types';
 import { safeFormatDate } from '../utils/dateUtils';
 
@@ -270,13 +269,7 @@ export const GiftPlanningPage: React.FC = () => {
 
         {/* Gift Recommendations */}
         <Box>
-          <AIGiftRecommendations
-            recipient={currentRecipient}
-            occasion={currentOccasion}
-            pastGifts={pastGifts}
-            onSelectGift={handleGiftSelected}
-            onSaveForLater={handleSaveForLater}
-          />
+          {/* Placeholder for AIGiftRecommendations component */}
         </Box>
 
         {/* Selected Gifts Summary */}

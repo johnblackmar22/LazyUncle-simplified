@@ -2,7 +2,21 @@ import { useEffect, useCallback, useState } from 'react';
 import { useGiftStorage } from './useGiftStorage';
 import { useGiftStore } from '../store/giftStore';
 import type { Gift } from '../types';
-import type { EnhancedGiftSuggestion } from '../services/giftRecommendationEngine';
+
+// Temporary type until we rebuild the gift recommendation system
+interface BasicGiftSuggestion {
+  id: string;
+  name: string;
+  description?: string;
+  price?: number;
+  category?: string;
+  imageUrl?: string;
+  purchaseUrl?: string;
+  affiliateLink?: string;
+  confidence?: number;
+  reasoning?: string;
+  tags?: string[];
+}
 
 interface SyncOptions {
   recipientId: string;
@@ -102,7 +116,7 @@ export function useGiftSelectionSync({ recipientId, occasionId, autoSync = true 
   }, [getUnifiedSelections, giftStorage.isLoaded]);
 
   // Select a gift with proper synchronization
-  const selectGift = useCallback(async (gift: EnhancedGiftSuggestion): Promise<void> => {
+  const selectGift = useCallback(async (gift: BasicGiftSuggestion): Promise<void> => {
     console.log('🔄 Selecting gift with sync:', gift.name);
     
     try {

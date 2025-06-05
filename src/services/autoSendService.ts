@@ -158,77 +158,11 @@ export const AutoSendService = {
       return mockGetGiftRecommendations(recipientId, occasion, budget);
     }
     
-    try {
-      // In a real application, this would connect to a recommendation API or service
-      // This is a placeholder that would be replaced with actual recommendation logic
-      
-      // For now, return some placeholder recommendations based on recipient interests
-      const recipient = useRecipientStore.getState().recipients.find(r => r.id === recipientId);
-      
-      if (!recipient) {
-        return [];
-      }
-      
-      // Fetch relevant gifts from a recommendations collection or API
-      // This is a simplification - a real system would have a more sophisticated approach
-      const recommendationsQuery = query(
-        collection(db, 'giftRecommendations'),
-        where('priceRange', '<=', budget)
-      );
-      
-      const querySnapshot = await getDocs(recommendationsQuery);
-      const recommendations: GiftRecommendation[] = [];
-      
-      querySnapshot.forEach(doc => {
-        const data = doc.data();
-        const recommendation: GiftRecommendation = {
-          id: doc.id,
-          name: data.name,
-          description: data.description,
-          price: data.price,
-          category: data.category,
-          imageUrl: data.imageUrl,
-          affiliateLink: data.affiliateLink,
-          score: 0 // Will be calculated below
-        };
-        
-        // Calculate relevance score based on recipient interests
-        if (recipient.interests && recipient.interests.length > 0) {
-          // Simple scoring algorithm
-          const keywords = [...recipient.interests, ...(recipient.giftPreferences?.categories || [])];
-          
-          let score = 0;
-          keywords.forEach(keyword => {
-            if (recommendation.name.toLowerCase().includes(keyword.toLowerCase()) || 
-                recommendation.description.toLowerCase().includes(keyword.toLowerCase()) ||
-                recommendation.category.toLowerCase().includes(keyword.toLowerCase())) {
-              score += 10;
-            }
-          });
-          
-          // Adjust score based on price (prefer items closer to budget but not over)
-          const priceFactor = 1 - Math.abs(recommendation.price - budget) / budget;
-          score *= Math.max(0, priceFactor);
-          
-          // Penalize items over budget
-          if (recommendation.price > budget) {
-            score *= 0.5;
-          }
-          
-          recommendation.score = score;
-        }
-        
-        recommendations.push(recommendation);
-      });
-      
-      // Sort recommendations by score and return top 5
-      return recommendations
-        .sort((a, b) => (b.score || 0) - (a.score || 0))
-        .slice(0, 5);
-    } catch (error) {
-      console.error('Error getting gift recommendations:', error);
-      return [];
-    }
+    // TODO: Implement new simple gift recommendation system
+    console.log('Gift recommendations requested for:', { recipientId, occasion, budget });
+    
+    // For now, return empty array until we rebuild the system
+    return [];
   },
   
   // Process an auto-send gift (create gift and handle payment/shipping)
