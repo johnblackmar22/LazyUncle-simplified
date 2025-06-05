@@ -59,20 +59,20 @@ export interface RecommendationResponse {
 class GiftRecommendationEngine {
   private baseUrl = '/.netlify/functions';
   
-  // Cost calculation constants
+  // Cost calculation constants - subscription model: customer pays exact costs
   private readonly STANDARD_SHIPPING = 8.99;
   private readonly EXPRESS_SHIPPING = 15.99;
   private readonly GIFT_WRAPPING_COST = 4.99;
-  private readonly FREE_SHIPPING_THRESHOLD = 35; // Free shipping over $35
   
   /**
    * Calculate budget breakdown including shipping and gift wrapping
+   * Subscription model: customer pays all costs exactly
    */
   private calculateBudgetBreakdown(occasion: Occasion): BudgetBreakdown {
     const totalBudget = occasion.budget || 50;
     
-    // Calculate shipping cost (free over threshold, otherwise standard rate)
-    const estimatedShippingCost = totalBudget >= this.FREE_SHIPPING_THRESHOLD ? 0 : this.STANDARD_SHIPPING;
+    // Calculate shipping cost (always applies - no free shipping threshold)
+    const estimatedShippingCost = this.STANDARD_SHIPPING;
     
     // Calculate gift wrapping cost if enabled
     const giftWrappingCost = occasion.giftWrap ? this.GIFT_WRAPPING_COST : 0;
@@ -90,6 +90,7 @@ class GiftRecommendationEngine {
   
   /**
    * Calculate total cost including shipping and wrapping for a specific gift
+   * Subscription model: customer pays exact costs
    */
   private calculateTotalCost(giftPrice: number, occasion: Occasion): {
     giftPrice: number;
@@ -97,7 +98,8 @@ class GiftRecommendationEngine {
     giftWrapping: number;
     total: number;
   } {
-    const shippingCost = giftPrice >= this.FREE_SHIPPING_THRESHOLD ? 0 : this.STANDARD_SHIPPING;
+    // Always charge shipping - no free shipping threshold in subscription model
+    const shippingCost = this.STANDARD_SHIPPING;
     const wrappingCost = occasion.giftWrap ? this.GIFT_WRAPPING_COST : 0;
     
     return {
