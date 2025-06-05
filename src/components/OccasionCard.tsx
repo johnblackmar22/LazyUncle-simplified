@@ -113,13 +113,30 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
       });
 
       const budget = occasion.budget || 50; // Default budget if not set
+      // Build robust instructions for the AI
+      let instructions = '';
+      if (recipient.description) {
+        instructions += `Recipient info: ${recipient.description}\n`;
+      }
+      if (occasion.notes) {
+        instructions += `Occasion notes: ${occasion.notes}\n`;
+      }
+      // Special handling for infants
+      const age = recipient.birthdate ? giftRecommendationEngine.calculateAge(recipient.birthdate) : undefined;
+      if (age !== undefined && age < 2) {
+        instructions += 'The recipient is an infant. Only suggest gifts that are safe for babies, age-appropriate, and useful for their development or for their parents. Avoid items with small parts, sharp edges, or choking hazards. Suggest gifts that are available on Amazon and easy to fulfill online.';
+      } else {
+        instructions += 'Suggest gifts that are available on Amazon and easy to fulfill online.';
+      }
+
       const response = await giftRecommendationEngine.getRecommendations({
         recipient,
         occasion,
         budget: {
           min: Math.max(10, budget * 0.8), // 80% of budget as minimum
           max: budget
-        }
+        },
+        instructions
       });
 
       console.log('🎉 Generated recommendations:', response.recommendations);

@@ -9,6 +9,7 @@ export interface GiftRecommendationRequest {
   };
   excludeCategories?: string[];
   preferredCategories?: string[];
+  instructions?: string; // Optional user-provided instructions
 }
 
 // Add shipping and cost calculation utilities
@@ -125,6 +126,9 @@ class GiftRecommendationEngine {
         max: budgetBreakdown.giftBudget // Maximum is just the gift portion
       };
 
+      const defaultInstructions = "Find gifts that qualify for free shipping when possible (Amazon Prime, free shipping thresholds, etc.). Include actual shipping cost estimates in your response.";
+      const instructions = request.instructions || defaultInstructions;
+
       const response = await fetch(`${this.baseUrl}/gift-recommendations`, {
         method: 'POST',
         headers: {
@@ -154,7 +158,7 @@ class GiftRecommendationEngine {
             prioritizeFreeShipping: true, // AI should prioritize free shipping options
             maxShippingCost: 15 // Maximum acceptable shipping cost
           },
-          instructions: "Find gifts that qualify for free shipping when possible (Amazon Prime, free shipping thresholds, etc.). Include actual shipping cost estimates in your response."
+          instructions // Use user-provided or default instructions
         })
       });
 
@@ -252,7 +256,7 @@ class GiftRecommendationEngine {
     }
   }
 
-  private calculateAge(birthdate?: string): number | undefined {
+  public calculateAge(birthdate?: string): number | undefined {
     if (!birthdate) return undefined;
     
     const today = new Date();
