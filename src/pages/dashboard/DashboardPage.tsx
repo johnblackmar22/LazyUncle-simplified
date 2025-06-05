@@ -330,34 +330,34 @@ const DashboardPage: React.FC = () => {
 
         {/* Stats Cards */}
         <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-          <Card bg="linear-gradient(135deg, blue.400, blue.600)" color="white" shadow="lg" borderRadius="xl">
+          <Card bg="white" shadow="lg" borderRadius="xl" borderTop="4px solid" borderTopColor="blue.500">
             <CardBody p={8}>
               <VStack spacing={4} align="start">
                 <HStack spacing={3}>
-                  <Icon as={FaUser} boxSize="32px" opacity={0.9} />
-                  <Text fontSize="lg" fontWeight="semibold" opacity={0.9}>Recipients</Text>
+                  <Icon as={FaUser} boxSize="32px" color="blue.500" />
+                  <Text fontSize="lg" fontWeight="semibold" color="gray.700">Recipients</Text>
                 </HStack>
-                <Text fontSize="4xl" fontWeight="bold" lineHeight="1">
+                <Text fontSize="4xl" fontWeight="bold" lineHeight="1" color="blue.600">
                   {totalRecipients}
                 </Text>
-                <Text fontSize="sm" opacity={0.8}>
+                <Text fontSize="sm" color="gray.600">
                   {totalRecipients === 1 ? 'person' : 'people'} to gift
                 </Text>
               </VStack>
             </CardBody>
           </Card>
 
-          <Card bg="linear-gradient(135deg, purple.400, purple.600)" color="white" shadow="lg" borderRadius="xl">
+          <Card bg="white" shadow="lg" borderRadius="xl" borderTop="4px solid" borderTopColor="purple.500">
             <CardBody p={8}>
               <VStack spacing={4} align="start">
                 <HStack spacing={3}>
-                  <Icon as={FaCalendarAlt} boxSize="32px" opacity={0.9} />
-                  <Text fontSize="lg" fontWeight="semibold" opacity={0.9}>Gift Occasions</Text>
+                  <Icon as={FaCalendarAlt} boxSize="32px" color="purple.500" />
+                  <Text fontSize="lg" fontWeight="semibold" color="gray.700">Gift Occasions</Text>
                 </HStack>
-                <Text fontSize="4xl" fontWeight="bold" lineHeight="1">
+                <Text fontSize="4xl" fontWeight="bold" lineHeight="1" color="purple.600">
                   {totalOccasions}
                 </Text>
-                <Text fontSize="sm" opacity={0.8}>
+                <Text fontSize="sm" color="gray.600">
                   upcoming in next 60 days
                 </Text>
               </VStack>
