@@ -102,6 +102,12 @@ const handler = async (event) => {
       recommendations.push(fallbackGifts[recommendations.length - 1] || fallbackGifts[0]);
     }
 
+    // Ensure every recommendation has a category
+    recommendations = recommendations.map((gift) => ({
+      ...gift,
+      category: gift.category || 'other'
+    }));
+
     // Simple success response
     console.log('🎉 Returning success response');
     return {
