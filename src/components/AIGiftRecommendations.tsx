@@ -320,18 +320,6 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
                             <Badge colorScheme="blue" variant="subtle">
                               {gift.category}
                             </Badge>
-                            <Badge 
-                              colorScheme={getConfidenceColor(gift.confidence)} 
-                              variant="subtle"
-                            >
-                              {Math.round(gift.confidence * 100)}% match
-                            </Badge>
-                            <Badge 
-                              colorScheme={getAvailabilityColor(gift.availability)} 
-                              variant="subtle"
-                            >
-                              {gift.availability.replace('_', ' ')}
-                            </Badge>
                           </HStack>
                         </VStack>
 
