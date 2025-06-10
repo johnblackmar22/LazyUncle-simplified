@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRecipientStore } from '../store/recipientStore';
 import { useOccasionStore } from '../store/occasionStore';
+import { useAuthStore } from '../store/authStore';
 import { AdminService, type AdminOrder } from '../services/adminService';
 
 export interface StoredGift {
@@ -122,10 +123,16 @@ export function useGiftStorage() {
 
     // ALSO create an admin order entry for the selected gift
     try {
-      // Get user info from auth store
-      const user = JSON.parse(localStorage.getItem('lazyuncle_auth') || '{}').user;
+      // Get user info from auth store (FIXED: was using wrong localStorage key)
+      const { user, demoMode } = useAuthStore.getState();
       
       if (user) {
+        console.log('🔍 Creating admin order for user:', {
+          userId: user.id,
+          userName: user.displayName || user.email,
+          demoMode
+        });
+
         // Find real recipient and occasion data
         const recipient = recipients.find(r => r.id === recipientId);
         const recipientOccasions = occasions[recipientId] || [];
@@ -168,6 +175,8 @@ export function useGiftStorage() {
         // Use AdminService to add the order to Firebase/global admin queue
         await AdminService.addOrder(adminOrder); // Now async
         console.log('📋 Added admin order via Firebase/AdminService:', adminOrder.id);
+      } else {
+        console.warn('⚠️ No authenticated user found - cannot create admin order');
       }
     } catch (error) {
       console.error('Error creating admin order for selected gift:', error);
