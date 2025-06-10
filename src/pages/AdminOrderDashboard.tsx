@@ -31,6 +31,10 @@ import {
   CardBody,
   Flex,
   Spacer,
+  Grid,
+  Stat,
+  StatLabel,
+  StatNumber,
 } from '@chakra-ui/react';
 import { FaShoppingCart, FaCheck, FaTruck, FaEye, FaCopy, FaCheckDouble } from 'react-icons/fa';
 import { format } from 'date-fns';
@@ -217,6 +221,8 @@ const AdminOrderDashboard: React.FC = () => {
 
   const pendingCount = orders.filter(o => o.status === 'pending').length;
   const orderedCount = orders.filter(o => o.status === 'ordered').length;
+  const deliveredCount = orders.filter(o => o.status === 'delivered').length;
+  const totalRevenue = orders.reduce((total, order) => total + order.giftPrice, 0);
 
   const toggleOrderSelection = (orderId: string) => {
     setSelectedOrderIds(prev => 
@@ -257,32 +263,55 @@ const AdminOrderDashboard: React.FC = () => {
         {/* Header */}
         <Flex align="center">
           <Heading size="lg">🧙‍♂️ Admin Order Dashboard</Heading>
+          <Text color="gray.600">
+            Manage selected gifts and process orders for customers
+          </Text>
           <Spacer />
           <Button onClick={generateMockOrder} colorScheme="blue" size="sm">
             Add Mock Order (Testing)
           </Button>
         </Flex>
 
-        {/* Stats */}
-        <HStack spacing={4}>
+        {/* Stats Cards */}
+        <Grid templateColumns="repeat(auto-fit, minmax(200px, 1fr))" gap={4}>
           <Card>
             <CardBody>
-              <Text fontSize="2xl" fontWeight="bold" color="red.500">{pendingCount}</Text>
-              <Text fontSize="sm" color="gray.600">Pending Orders</Text>
+              <Stat>
+                <StatLabel>Selected Gifts Pending Order</StatLabel>
+                <StatNumber>{pendingCount}</StatNumber>
+              </Stat>
             </CardBody>
           </Card>
           <Card>
             <CardBody>
-              <Text fontSize="2xl" fontWeight="bold" color="yellow.500">{orderedCount}</Text>
-              <Text fontSize="sm" color="gray.600">Ordered on Amazon</Text>
+              <Stat>
+                <StatLabel>Orders Placed</StatLabel>
+                <StatNumber>{orderedCount}</StatNumber>
+              </Stat>
             </CardBody>
           </Card>
-        </HStack>
+          <Card>
+            <CardBody>
+              <Stat>
+                <StatLabel>Orders Delivered</StatLabel>
+                <StatNumber>{deliveredCount}</StatNumber>
+              </Stat>
+            </CardBody>
+          </Card>
+          <Card>
+            <CardBody>
+              <Stat>
+                <StatLabel>Total Revenue</StatLabel>
+                <StatNumber>${totalRevenue.toFixed(2)}</StatNumber>
+              </Stat>
+            </CardBody>
+          </Card>
+        </Grid>
 
         {pendingCount > 0 && (
           <Alert status="warning">
             <AlertIcon />
-            You have {pendingCount} pending order(s) that need to be processed on Amazon!
+            You have {pendingCount} selected gift(s) that need to be ordered on Amazon!
           </Alert>
         )}
 
@@ -335,7 +364,10 @@ const AdminOrderDashboard: React.FC = () => {
         {/* Orders Table */}
         <Card>
           <CardHeader>
-            <Heading size="md">Recent Orders</Heading>
+            <Heading size="md">Selected Gifts from Users</Heading>
+            <Text fontSize="sm" color="gray.600">
+              When users select gifts, they appear here for you to order from Amazon
+            </Text>
           </CardHeader>
           <CardBody>
             <Table variant="simple">

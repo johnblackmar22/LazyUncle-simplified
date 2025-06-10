@@ -215,10 +215,20 @@ describe('AdminOrderDashboard', () => {
       expect(pendingCards.length).toBeGreaterThan(0);
     });
 
+    it('shows stats for pending orders', () => {
+      renderWithProviders(<AdminOrderDashboard />);
+      
+      // Look specifically for the new "Selected Gifts Pending Order" text
+      expect(screen.getByText('Selected Gifts Pending Order')).toBeInTheDocument();
+      // Check there's at least one pending gift showing
+      const pendingCards = screen.getAllByText('1');
+      expect(pendingCards.length).toBeGreaterThan(0);
+    });
+
     it('shows warning alert for pending orders', () => {
       renderWithProviders(<AdminOrderDashboard />);
       
-      expect(screen.getByText(/You have 1 pending order\(s\) that need to be processed/)).toBeInTheDocument();
+      expect(screen.getByText(/You have 1 selected gift\(s\) that need to be ordered on Amazon/)).toBeInTheDocument();
     });
   });
 
@@ -581,7 +591,7 @@ describe('AdminOrderDashboard', () => {
       
       // Check for h2 headings as that's what the component actually uses
       expect(screen.getByRole('heading', { level: 2, name: /🧙‍♂️ Admin Order Dashboard/i })).toBeInTheDocument();
-      expect(screen.getByRole('heading', { name: /Recent Orders/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Selected Gifts from Users/i })).toBeInTheDocument();
     });
 
     it('provides proper table structure', () => {

@@ -24,6 +24,7 @@ import { giftRecommendationEngine, type GiftRecommendationRequest, type GiftReco
 import { useGiftStorage } from '../hooks/useGiftStorage';
 import { useAuthStore } from '../store/authStore';
 import type { Recipient, Occasion } from '../types';
+import { FaCheck, FaHeart } from 'react-icons/fa';
 
 interface AIGiftRecommendationsProps {
   recipient: Recipient;
@@ -43,9 +44,13 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [excludedIds, setExcludedIds] = useState<string[]>([]);
   
-  const { selectGift, saveForLater, getRecommendations } = useGiftStorage();
+  const { selectGift, saveForLater, getRecommendations, getSelectedGiftsForOccasion } = useGiftStorage();
   const { user } = useAuthStore();
   const toast = useToast();
+
+  // Get selected gifts for this recipient/occasion to check button state
+  const selectedGifts = getSelectedGiftsForOccasion(recipient.id, occasion.id);
+  const selectedGiftIds = selectedGifts.map(g => g.id);
 
   const generateRecommendations = async (excludeIds: string[] = []) => {
     setLoading(true);
@@ -455,32 +460,26 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
 
                       {/* Action Buttons */}
                       <VStack spacing={2} minW="120px" maxW="140px" align="stretch">
-                        <Button
-                          colorScheme="green"
-                          leftIcon={<FiShoppingCart />}
-                          size="sm"
-                          onClick={() => handleSelectGift(gift)}
-                        >
-                          Select Gift
-                        </Button>
-                        
-                        <Button
-                          colorScheme="orange"
-                          size="sm"
-                          onClick={() => handleOrderGift(gift)}
-                        >
-                          🧙‍♂️ Order Now
-                        </Button>
-                        
-                        <Tooltip label="Save for later consideration">
-                          <IconButton
-                            aria-label="Save for later"
-                            icon={<FiHeart />}
+                        <HStack spacing={2} mt={3}>
+                          <Button
+                            size="sm"
+                            colorScheme="green"
+                            variant="outline"
+                            leftIcon={<FaCheck />}
+                            onClick={() => handleSelectGift(gift)}
+                            isDisabled={selectedGiftIds.includes(gift.id)}
+                          >
+                            {selectedGiftIds.includes(gift.id) ? 'Selected' : 'Select Gift'}
+                          </Button>
+                          <Button
                             size="sm"
                             variant="outline"
+                            leftIcon={<FaHeart />}
                             onClick={() => handleSaveForLater(gift)}
-                          />
-                        </Tooltip>
+                          >
+                            Save for Later
+                          </Button>
+                        </HStack>
                       </VStack>
                     </Flex>
                   </CardBody>

@@ -122,6 +122,62 @@ export function useGiftStorage() {
       };
     });
 
+    // ALSO create an admin order entry for the selected gift
+    try {
+      // Get user info from auth store (assuming it's available globally)
+      const user = JSON.parse(localStorage.getItem('lazyuncle_auth') || '{}').user;
+      
+      if (user) {
+        // Create admin order for selected gift
+        const adminOrder = {
+          id: `selected-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          // Customer Info (who pays)
+          customerId: user.id,
+          customerName: user.displayName || user.email?.split('@')[0] || 'Unknown User',
+          customerEmail: user.email || '',
+          customerPlan: user.planId || 'free',
+          // Recipient Info (we'll need to fetch this)
+          recipientName: `Recipient ${recipientId}`, // Will be updated with real name
+          recipientAddress: 'Address to be confirmed',
+          // Order Details  
+          occasionName: `Occasion ${occasionId}`, // Will be updated with real occasion
+          occasionDate: new Date().toISOString().split('T')[0], // Default to today
+          giftName: gift.name,
+          giftPrice: gift.price,
+          giftUrl: gift.purchaseUrl,
+          giftASIN: gift.asin,
+          status: 'pending' as const,
+          orderDate: Date.now(),
+          amazonOrderId: undefined,
+          trackingNumber: undefined,
+          notes: `User selected gift: ${gift.reasoning || 'No reasoning provided'}`,
+          giftWrap: false, // Default
+          personalNote: undefined,
+          // Billing
+          billingStatus: 'pending' as const,
+          chargeAmount: gift.price,
+          // New field to track this is a selected gift (not ordered yet)
+          source: 'gift_selection'
+        };
+
+        // Save to admin orders
+        const existingOrders = localStorage.getItem('admin_pending_orders');
+        const orders = existingOrders ? JSON.parse(existingOrders) : [];
+        
+        // Remove any existing order for the same gift to prevent duplicates
+        const filteredOrders = orders.filter((order: any) => 
+          !(order.recipientId === recipientId && order.occasionId === occasionId && order.giftName === gift.name)
+        );
+        
+        filteredOrders.push(adminOrder);
+        localStorage.setItem('admin_pending_orders', JSON.stringify(filteredOrders));
+        
+        console.log('📋 Created admin order for selected gift:', adminOrder.id);
+      }
+    } catch (error) {
+      console.error('Error creating admin order for selected gift:', error);
+    }
+
     return storedGift;
   };
 
