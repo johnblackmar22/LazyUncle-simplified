@@ -215,154 +215,158 @@ const AddRecipientPage: React.FC = () => {
             <CardHeader>
               <Flex align="center" gap={2}>
                 <Icon as={FaUser} color="blue.500" />
-                <Heading size="md">Basic Information</Heading>
+                <Heading size="md">Add New Recipient</Heading>
               </Flex>
             </CardHeader>
             <CardBody>
-              <VStack spacing={6} align="start">
-                <FormControl isRequired isInvalid={isNameInvalid}>
-                  <FormLabel>Name</FormLabel>
-                  <Input 
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    onBlur={() => setTouched({ ...touched, name: true })}
-                    placeholder="Enter recipient's name"
-                  />
-                  {isNameInvalid && (
-                    <FormErrorMessage>Name is required</FormErrorMessage>
-                  )}
-                </FormControl>
-                
-                <FormControl isRequired isInvalid={isRelationshipInvalid}>
-                  <FormLabel>Relationship</FormLabel>
-                  <Select
-                    value={relationship}
-                    onChange={(e) => setRelationship(e.target.value)}
-                    onBlur={() => setTouched({ ...touched, relationship: true })}
-                    placeholder="Select relationship"
-                  >
-                    {relationshipOptions.map(option => (
-                      <option key={option} value={option}>{option}</option>
-                    ))}
-                  </Select>
-                  {relationship === 'Other' && (
-                    <Input
-                      value={customRelationship}
-                      onChange={(e) => setCustomRelationship(e.target.value)}
-                      placeholder="Enter custom relationship"
-                      mt={2}
+              <VStack spacing={4} align="start">
+                {/* Basic Info Row */}
+                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} width="100%">
+                  <FormControl isRequired isInvalid={isNameInvalid}>
+                    <FormLabel fontSize="sm">Name</FormLabel>
+                    <Input 
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      onBlur={() => setTouched({ ...touched, name: true })}
+                      placeholder="Enter recipient's name"
+                      size="sm"
                     />
-                  )}
-                  {isRelationshipInvalid && (
-                    <FormErrorMessage>Relationship is required</FormErrorMessage>
-                  )}
-                </FormControl>
-
-                <Divider />
-
-                <FormControl isRequired isInvalid={isBirthdateInvalid}>
-                  <Flex align="center" gap={2} mb={2}>
-                    <Icon as={FaBirthdayCake} color="pink.500" />
-                    <FormLabel mb={0}>Birthdate</FormLabel>
-                  </Flex>
-                  <Text fontSize="sm" color="gray.600" mb={2}>
-                    This helps us recommend age-appropriate gifts and remember important dates.
-                  </Text>
-                  <HStack>
-                    <Select
-                      placeholder="Month"
-                      value={birthMonth}
-                      onChange={(e) => setBirthMonth(e.target.value)}
-                      onBlur={() => {
-                        if (birthYear && birthDay) {
-                          setTouched({ ...touched, birthdateComplete: true });
-                        }
-                      }}
-                    >
-                      {months.map((month, index) => (
-                        <option key={index} value={String(index + 1).padStart(2, '0')}>
-                          {month}
-                        </option>
-                      ))}
-                    </Select>
-                    <Select
-                      placeholder="Day"
-                      value={birthDay}
-                      onChange={(e) => setBirthDay(e.target.value)}
-                      onBlur={() => {
-                        if (birthYear && birthMonth) {
-                          setTouched({ ...touched, birthdateComplete: true });
-                        }
-                      }}
-                    >
-                      {days.map(day => (
-                        <option key={day} value={String(day).padStart(2, '0')}>
-                          {day}
-                        </option>
-                      ))}
-                    </Select>
-                    <Select
-                      placeholder="Year"
-                      value={birthYear}
-                      onChange={(e) => setBirthYear(e.target.value)}
-                      onBlur={() => {
-                        if (birthMonth && birthDay) {
-                          setTouched({ ...touched, birthdateComplete: true });
-                        }
-                      }}
-                    >
-                      {years.map(year => (
-                        <option key={year} value={year}>
-                          {year}
-                        </option>
-                      ))}
-                    </Select>
-                  </HStack>
-                  {isBirthdateInvalid && (
-                    <FormErrorMessage>Birthdate is required</FormErrorMessage>
-                  )}
-                  {ageGroupLabel && (
-                    <Text fontSize="sm" color="blue.600" mt={2} fontWeight="medium">
-                      Age Group: {ageGroupLabel}
-                    </Text>
-                  )}
-                </FormControl>
-
-                <FormControl>
-                  <Flex align="center" gap={2} mb={2}>
-                    <Icon as={FaVenusMars} color="purple.500" />
-                    <FormLabel mb={0}>Gender</FormLabel>
-                  </Flex>
-                  <Text fontSize="sm" color="gray.600" mb={2}>
-                    Optional - helps us suggest more personalized gifts.
-                  </Text>
-                  <Select
-                    value={gender}
-                    onChange={(e) => setGender(e.target.value)}
-                    placeholder="Select gender (optional)"
-                  >
-                    {genderOptions.map(option => (
-                      <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                <Divider />
-
-                <FormControl>
-                  <Flex align="center" gap={2} mb={2}>
-                    <Icon as={FaHeart} color="red.500" />
-                    <FormLabel mb={0}>Interests</FormLabel>
-                  </Flex>
-                  <Text fontSize="sm" color="gray.600" mb={3}>
-                    What do they love? This helps us find the perfect gifts.
-                  </Text>
+                    {isNameInvalid && (
+                      <FormErrorMessage fontSize="xs">Name is required</FormErrorMessage>
+                    )}
+                  </FormControl>
                   
-                  <HStack mb={3}>
+                  <FormControl isRequired isInvalid={isRelationshipInvalid}>
+                    <FormLabel fontSize="sm">Relationship</FormLabel>
+                    <Select
+                      value={relationship}
+                      onChange={(e) => setRelationship(e.target.value)}
+                      onBlur={() => setTouched({ ...touched, relationship: true })}
+                      placeholder="Select relationship"
+                      size="sm"
+                    >
+                      {relationshipOptions.map(option => (
+                        <option key={option} value={option}>{option}</option>
+                      ))}
+                    </Select>
+                    {relationship === 'Other' && (
+                      <Input
+                        value={customRelationship}
+                        onChange={(e) => setCustomRelationship(e.target.value)}
+                        placeholder="Enter custom relationship"
+                        mt={2}
+                        size="sm"
+                      />
+                    )}
+                    {isRelationshipInvalid && (
+                      <FormErrorMessage fontSize="xs">Relationship is required</FormErrorMessage>
+                    )}
+                  </FormControl>
+                </SimpleGrid>
+
+                {/* Birthdate and Gender Row */}
+                <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={4} width="100%">
+                  <FormControl isRequired isInvalid={isBirthdateInvalid}>
+                    <Flex align="center" gap={2} mb={1}>
+                      <Icon as={FaBirthdayCake} color="pink.500" boxSize={3} />
+                      <FormLabel mb={0} fontSize="sm">Birthdate</FormLabel>
+                    </Flex>
+                    <HStack>
+                      <Select
+                        placeholder="Month"
+                        value={birthMonth}
+                        onChange={(e) => setBirthMonth(e.target.value)}
+                        onBlur={() => {
+                          if (birthYear && birthDay) {
+                            setTouched({ ...touched, birthdateComplete: true });
+                          }
+                        }}
+                        size="sm"
+                      >
+                        {months.map((month, index) => (
+                          <option key={index} value={String(index + 1).padStart(2, '0')}>
+                            {month}
+                          </option>
+                        ))}
+                      </Select>
+                      <Select
+                        placeholder="Day"
+                        value={birthDay}
+                        onChange={(e) => setBirthDay(e.target.value)}
+                        onBlur={() => {
+                          if (birthYear && birthMonth) {
+                            setTouched({ ...touched, birthdateComplete: true });
+                          }
+                        }}
+                        size="sm"
+                      >
+                        {days.map(day => (
+                          <option key={day} value={String(day).padStart(2, '0')}>
+                            {day}
+                          </option>
+                        ))}
+                      </Select>
+                      <Select
+                        placeholder="Year"
+                        value={birthYear}
+                        onChange={(e) => setBirthYear(e.target.value)}
+                        onBlur={() => {
+                          if (birthMonth && birthDay) {
+                            setTouched({ ...touched, birthdateComplete: true });
+                          }
+                        }}
+                        size="sm"
+                      >
+                        {years.map(year => (
+                          <option key={year} value={year}>
+                            {year}
+                          </option>
+                        ))}
+                      </Select>
+                    </HStack>
+                    {isBirthdateInvalid && (
+                      <FormErrorMessage fontSize="xs">Birthdate is required</FormErrorMessage>
+                    )}
+                    {ageGroupLabel && (
+                      <Text fontSize="xs" color="blue.600" mt={1}>
+                        Age Group: {ageGroupLabel}
+                      </Text>
+                    )}
+                  </FormControl>
+
+                  <FormControl>
+                    <Flex align="center" gap={2} mb={1}>
+                      <Icon as={FaVenusMars} color="purple.500" boxSize={3} />
+                      <FormLabel mb={0} fontSize="sm">Gender (Optional)</FormLabel>
+                    </Flex>
+                    <Select
+                      value={gender}
+                      onChange={(e) => setGender(e.target.value)}
+                      placeholder="Select gender"
+                      size="sm"
+                    >
+                      {genderOptions.map(option => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </SimpleGrid>
+
+                <Divider />
+
+                {/* Interests Section */}
+                <Box width="100%">
+                  <Flex align="center" gap={2} mb={2}>
+                    <Icon as={FaHeart} color="red.500" boxSize={3} />
+                    <FormLabel mb={0} fontSize="sm">Interests</FormLabel>
+                  </Flex>
+                  
+                  <HStack mb={2}>
                     <Input
                       value={interest}
                       onChange={(e) => setInterest(e.target.value)}
                       placeholder="Add an interest"
+                      size="sm"
                       onKeyPress={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
@@ -370,18 +374,18 @@ const AddRecipientPage: React.FC = () => {
                         }
                       }}
                     />
-                    <Button onClick={() => handleAddInterest()} leftIcon={<AddIcon />} colorScheme="blue">
+                    <Button onClick={() => handleAddInterest()} leftIcon={<AddIcon />} colorScheme="blue" size="sm">
                       Add
                     </Button>
                   </HStack>
 
                   {/* Interest Suggestions - Inline Style */}
                   {displayedSuggestions.length > 0 && (
-                    <Box mb={3}>
-                      <Text fontSize="xs" color="gray.600" mb={2}>
+                    <Box mb={2}>
+                      <Text fontSize="xs" color="gray.600" mb={1}>
                         Suggested ({displayedSuggestions.length}):
                       </Text>
-                      <Flex gap={2} flexWrap="wrap">
+                      <Flex gap={1} flexWrap="wrap">
                         {displayedSuggestions.map((suggestion, index) => (
                           <Badge
                             key={suggestion}
@@ -412,9 +416,9 @@ const AddRecipientPage: React.FC = () => {
                   )}
 
                   {interests.length > 0 && (
-                    <Box mb={3}>
-                      <Text fontSize="sm" fontWeight="bold" mb={2}>Added interests:</Text>
-                      <Flex gap={2} flexWrap="wrap">
+                    <Box mb={2}>
+                      <Text fontSize="xs" fontWeight="bold" mb={1}>Added interests:</Text>
+                      <Flex gap={1} flexWrap="wrap">
                         {interests.map((int, index) => (
                           <Badge
                             key={int}
@@ -423,6 +427,7 @@ const AddRecipientPage: React.FC = () => {
                             cursor="pointer"
                             onClick={() => handleRemoveInterest(int)}
                             _hover={{ opacity: 0.8 }}
+                            fontSize="xs"
                           >
                             {int} ×
                           </Badge>
@@ -433,26 +438,26 @@ const AddRecipientPage: React.FC = () => {
                       </Text>
                     </Box>
                   )}
-                </FormControl>
+                </Box>
 
                 <Divider />
                 
+                {/* Description Section */}
                 <FormControl>
-                  <FormLabel>Tell us about them (Optional)</FormLabel>
-                  <Text fontSize="sm" color="gray.600" mb={2}>
-                    Share a few sentences about this person and your relationship with them. This helps us understand their personality and recommend more thoughtful, personalized gifts.
-                  </Text>
+                  <FormLabel fontSize="sm">Tell us about them (Optional)</FormLabel>
                   <Textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="For example: 'My brother loves outdoor adventures and craft beer. He's always been the adventurous one in our family and enjoys trying new things...'"
-                    rows={4}
+                    placeholder="Share a few sentences about this person and your relationship..."
+                    rows={3}
+                    size="sm"
                   />
                 </FormControl>
 
                 <Divider />
 
-                <FormControl isRequired isInvalid={isDeliveryAddressInvalid}>
+                {/* Address Section */}
+                <FormControl isRequired isInvalid={isDeliveryAddressInvalid} width="100%">
                   <Box
                     onBlur={() => setTouched({ ...touched, deliveryAddress: true })}
                   >
@@ -463,14 +468,14 @@ const AddRecipientPage: React.FC = () => {
                     />
                   </Box>
                   {isDeliveryAddressInvalid && (
-                    <FormErrorMessage>Delivery address is required</FormErrorMessage>
+                    <FormErrorMessage fontSize="xs">Delivery address is required</FormErrorMessage>
                   )}
                 </FormControl>
               </VStack>
             </CardBody>
             <CardFooter>
               <HStack spacing={3} width="100%" justifyContent="space-between">
-                <Button variant="ghost" as={RouterLink} to="/recipients">
+                <Button variant="ghost" as={RouterLink} to="/recipients" size="sm">
                   Cancel
                 </Button>
                 <Button 
@@ -478,6 +483,7 @@ const AddRecipientPage: React.FC = () => {
                   type="submit" 
                   isLoading={loading}
                   leftIcon={<AddIcon />}
+                  size="sm"
                 >
                   Add Recipient
                 </Button>
