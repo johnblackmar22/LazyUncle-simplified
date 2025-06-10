@@ -41,17 +41,17 @@ const handler = async (event) => {
     console.log('✅ OpenAI client initialized');
 
     // Build a dynamic prompt for the AI
-    const prompt = `\nYou are an expert gift recommendation assistant. Respond only with valid JSON in the format provided below—no extra text or explanations.\n\nTHE MOST IMPORTANT RULES:\n- Do not exceed the budget for any gift. The goal is to get as close as possible to the budget for each gift. If a gift is much cheaper than the budget, do NOT recommend it unless there is no better option. At least one gift must be within $1 of the budget, if possible.\n- Read and use all recipient information, interests, and instructions. Each recommendation must feel personal and directly relevant.\n- Do NOT recommend any of the following previous gifts: ${previousGiftNames && previousGiftNames.length > 0 ? previousGiftNames.join(', ') : 'none'}\n\nRequirements:\n- Recommend exactly 3 real, popular, and currently in-stock gifts from Amazon.com for the recipient and occasion below.\n- Use the exact product name as listed on Amazon.\n- For each gift, include:\n  * name\n  * description\n  * price (USD)\n  * why this gift is a good fit for the recipient and occasion, specifically referencing the recipient's interests or instructions\n- Gifts must be age-appropriate and safe.\n- Do not suggest generic items or categories.\n- Only use information provided.\n- Do not include explanations, headers, or comments—just valid JSON.\n\nRecipient info:\n${JSON.stringify(recipient, null, 2)}\nOccasion info:\n${JSON.stringify({ ...occasion, budget: budget.total, instructions: instructions || '' }, null, 2)}\n\nJSON response format:\n{\n  \"recommendations\": [\n    {\n      \"name\": \"...\",\n      \"description\": \"...\",\n      \"price\": ...,\n      \"reasoning\": \"... (reference recipient info and instructions)\"\n    },\n    ...\n  ]\n}\n`;
+    const prompt = `\nYou are an expert gift recommendation assistant. Respond only with valid JSON in the format provided below—no extra text or explanations.\n\nTHE MOST IMPORTANT RULES:\n- Do not exceed the budget for any gift. The goal is to get as close as possible to the budget for each gift. If a gift is much cheaper than the budget, do NOT recommend it unless there is no better option. At least one gift must be within $1 of the budget, if possible.\n- Read and use all recipient information, interests, and instructions. Each recommendation must feel personal and directly relevant.\n- Do NOT recommend any of the following previous gifts: ${previousGiftNames && previousGiftNames.length > 0 ? previousGiftNames.join(', ') : 'none'}\n\nRequirements:\n- Recommend up to 2 real, popular, and currently in-stock gifts from Amazon.com for the recipient and occasion below.\n- Use the exact product name as listed on Amazon.\n- For each gift, include:\n  * name\n  * description\n  * price (USD)\n  * why this gift is a good fit for the recipient and occasion, specifically referencing the recipient's interests or instructions\n- Gifts must be age-appropriate and safe.\n- Do not suggest generic items or categories.\n- Only use information provided.\n- Do not include explanations, headers, or comments—just valid JSON.\n\nRecipient info:\n${JSON.stringify(recipient, null, 2)}\nOccasion info:\n${JSON.stringify({ ...occasion, budget: budget.total, instructions: instructions || '' }, null, 2)}\n\nJSON response format:\n{\n  "recommendations": [\n    {\n      "name": "...",\n      "description": "...",\n      "price": ...,\n      "reasoning": "... (reference recipient info and instructions)"\n    },\n    ...\n  ]\n}\n`;
 
     // OpenAI API call
-    // NOTE: Using gpt-3.5-turbo for compatibility and to avoid timeout issues (Netlify 10s limit)
+    // Switch to gpt-4o for improved quality and speed
     const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4o',
       messages: [
         { role: 'system', content: 'You are a helpful gift recommendation assistant. Respond only with valid JSON.' },
         { role: 'user', content: prompt }
       ],
-      max_tokens: 900,
+      max_tokens: 700,
       temperature: 0.7,
     });
     console.log('✅ OpenAI API call successful');
@@ -79,7 +79,7 @@ const handler = async (event) => {
       ];
     }
 
-    // Ensure at least three recommendations
+    // Ensure at least two recommendations
     const fallbackGifts = [
       {
         id: 'fallback-2',
@@ -88,19 +88,13 @@ const handler = async (event) => {
         price: 35,
         category: 'experiences',
         confidence: 0.7
-      },
-      {
-        id: 'fallback-3',
-        name: 'Personalized Mug',
-        description: 'A mug with their name or a special message',
-        price: 20,
-        category: 'personalized',
-        confidence: 0.6
       }
     ];
-    while (recommendations.length < 3) {
+    while (recommendations.length < 2) {
       recommendations.push(fallbackGifts[recommendations.length - 1] || fallbackGifts[0]);
     }
+    // Only keep a maximum of 2 recommendations
+    recommendations = recommendations.slice(0, 2);
 
     // Ensure every recommendation has a category
     recommendations = recommendations.map((gift) => ({
