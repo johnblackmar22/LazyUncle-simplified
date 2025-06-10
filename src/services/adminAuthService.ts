@@ -63,6 +63,20 @@ class AdminAuthService {
         console.log('🔧 AdminAuth: User document exists, checking role...');
         const existingData = userDoc.data();
         console.log('🔧 AdminAuth: Existing user data:', existingData);
+        
+        // Check if this is admin@lazyuncle.com but doesn't have admin role
+        if (email === 'admin@lazyuncle.com' && !existingData?.role) {
+          console.log('🔧 AdminAuth: Admin account exists but no role - updating...');
+          const adminRoleUpdate = {
+            role: 'admin',
+            permissions: ['view_orders', 'manage_orders', 'view_analytics'],
+            updatedAt: Date.now(),
+            planId: 'admin'
+          };
+          
+          await updateDoc(doc(db, COLLECTIONS.USERS, firebaseUser.uid), adminRoleUpdate);
+          console.log('✅ Updated existing admin account with role');
+        }
       }
 
       // Re-fetch user data after potential creation
