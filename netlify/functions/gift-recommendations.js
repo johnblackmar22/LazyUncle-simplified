@@ -43,49 +43,21 @@ const handler = async (event) => {
     // Build a dynamic prompt for the AI
     const prompt = `\nYou are an expert gift recommendation assistant. Respond only with valid JSON in the format provided below—no extra text or explanations.\n\nTHE MOST IMPORTANT RULES:\n- Do not exceed the budget for any gift. The goal is to get as close as possible to the budget for each gift. If a gift is much cheaper than the budget, do NOT recommend it unless there is no better option. At least one gift must be within $1 of the budget, if possible.\n- Read and use all recipient information, interests, and instructions. Each recommendation must feel personal and directly relevant.\n- Do NOT recommend any of the following previous gifts: ${previousGiftNames && previousGiftNames.length > 0 ? previousGiftNames.join(', ') : 'none'}\n\nRequirements:\n- Recommend up to 2 real, popular, and currently in-stock gifts from Amazon.com for the recipient and occasion below.\n- Use the exact product name as listed on Amazon.\n- For each gift, include:\n  * name\n  * description\n  * price (USD)\n  * why this gift is a good fit for the recipient and occasion, specifically referencing the recipient's interests or instructions\n- Gifts must be age-appropriate and safe.\n- Do not suggest generic items or categories.\n- Only use information provided.\n- Do not include explanations, headers, or comments—just valid JSON.\n\nRecipient info:\n${JSON.stringify(recipient, null, 2)}\nOccasion info:\n${JSON.stringify({ ...occasion, budget: budget.total, instructions: instructions || '' }, null, 2)}\n\nJSON response format:\n{\n  "recommendations": [\n    {\n      "name": "...",\n      "description": "...",\n      "price": ...,\n      "reasoning": "... (reference recipient info and instructions)"\n    },\n    ...\n  ]\n}\n`;
 
-    // OpenAI API call with model fallback
-    let completion;
-    let modelUsed = '';
-    
-    try {
-      // Try GPT-4o first
-      console.log('🤖 Attempting to use GPT-4o...');
-      completion = await openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [
-          { role: 'system', content: 'You are a helpful gift recommendation assistant. Respond only with valid JSON.' },
-          { role: 'user', content: prompt }
-        ],
-        max_tokens: 700,
-        temperature: 0.7,
-      });
-      modelUsed = 'gpt-4o';
-      console.log('✅ GPT-4o API call successful');
-    } catch (gpt4oError) {
-      console.log('⚠️ GPT-4o failed, trying GPT-3.5-turbo...', gpt4oError.message);
-      
-      try {
-        // Fallback to GPT-3.5-turbo
-        completion = await openai.chat.completions.create({
-          model: 'gpt-3.5-turbo',
-          messages: [
-            { role: 'system', content: 'You are a helpful gift recommendation assistant. Respond only with valid JSON.' },
-            { role: 'user', content: prompt }
-          ],
-          max_tokens: 700,
-          temperature: 0.7,
-        });
-        modelUsed = 'gpt-3.5-turbo';
-        console.log('✅ GPT-3.5-turbo API call successful');
-      } catch (gpt35Error) {
-        console.log('❌ Both models failed, using fallback response');
-        throw new Error(`OpenAI API failed: GPT-4o: ${gpt4oError.message}, GPT-3.5: ${gpt35Error.message}`);
-      }
-    }
+    // OpenAI API call using GPT-3.5-turbo (known working model)
+    console.log('🤖 Using GPT-3.5-turbo...');
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        { role: 'system', content: 'You are a helpful gift recommendation assistant. Respond only with valid JSON.' },
+        { role: 'user', content: prompt }
+      ],
+      max_tokens: 700,
+      temperature: 0.7,
+    });
+    console.log('✅ GPT-3.5-turbo API call successful');
 
     const aiResponse = completion.choices[0]?.message?.content;
     console.log('📋 AI Response length:', aiResponse?.length || 0);
-    console.log('🤖 Model used:', modelUsed);
 
     // Try to parse AI response
     let recommendations = [];
@@ -145,7 +117,7 @@ const handler = async (event) => {
         debug: {
           functionWorking: true,
           openaiConnected: true,
-          modelUsed: modelUsed,
+          modelUsed: 'gpt-3.5-turbo',
           timestamp: new Date().toISOString()
         }
       }),
