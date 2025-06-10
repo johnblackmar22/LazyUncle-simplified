@@ -2,8 +2,15 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-// Simple demo mode detection
-export const DEMO_MODE = import.meta.env.VITE_DEMO_MODE !== 'false';
+// Fixed demo mode detection - only true if explicitly set to 'true'
+const demoModeEnv = import.meta.env.VITE_DEMO_MODE;
+export const DEMO_MODE = demoModeEnv === 'true';
+
+console.log('🔧 Firebase Service - Environment Check:', {
+  VITE_DEMO_MODE: demoModeEnv,
+  DEMO_MODE,
+  hasFirebaseConfig: !!(import.meta.env.VITE_FIREBASE_PROJECT_ID)
+});
 
 // Firebase configuration - only used if not in demo mode
 const firebaseConfig = {
@@ -20,6 +27,9 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
-console.log('Firebase initialized in', DEMO_MODE ? 'demo mode' : 'production mode');
+console.log('🔥 Firebase initialized in', DEMO_MODE ? 'DEMO MODE (localStorage)' : 'PRODUCTION MODE (Firebase)', {
+  projectId: firebaseConfig.projectId,
+  authDomain: firebaseConfig.authDomain
+});
 
 export default app; 

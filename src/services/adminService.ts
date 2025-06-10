@@ -69,25 +69,41 @@ export class AdminService {
       }
 
       // Production mode: Use Firebase Firestore
-      console.log('🔧 AdminService: Using Firebase mode');
+      console.log('🔧 AdminService: Using Firebase mode - fetching from Firestore');
+      console.log('🔧 Collection:', COLLECTIONS.ADMIN_ORDERS);
+      console.log('🔧 Database instance:', !!db);
+      
       const ordersRef = collection(db, COLLECTIONS.ADMIN_ORDERS);
       const q = query(ordersRef, orderBy('orderDate', 'desc'));
-      const querySnapshot = await getDocs(q);
       
-      const orders = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        // Ensure timestamps are converted to numbers
-        orderDate: doc.data().orderDate?.toDate?.() ? doc.data().orderDate.toDate().getTime() : doc.data().orderDate,
-        createdAt: doc.data().createdAt?.toDate?.() ? doc.data().createdAt.toDate().getTime() : doc.data().createdAt,
-        updatedAt: doc.data().updatedAt?.toDate?.() ? doc.data().updatedAt.toDate().getTime() : doc.data().updatedAt,
-      })) as AdminOrder[];
+      console.log('🔧 Executing Firestore query...');
+      const querySnapshot = await getDocs(q);
+      console.log('🔧 Query completed, docs found:', querySnapshot.docs.length);
+      
+      const orders = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        console.log('🔧 Processing doc:', doc.id, data);
+        
+        return {
+          id: doc.id,
+          ...data,
+          // Ensure timestamps are converted to numbers
+          orderDate: data.orderDate?.toDate?.() ? data.orderDate.toDate().getTime() : data.orderDate,
+          createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().getTime() : data.createdAt,
+          updatedAt: data.updatedAt?.toDate?.() ? data.updatedAt.toDate().getTime() : data.updatedAt,
+        };
+      }) as AdminOrder[];
 
-      console.log(`📋 AdminService: Loaded ${orders.length} orders from Firebase`);
+      console.log(`📋 AdminService: Successfully loaded ${orders.length} orders from Firebase`);
       return orders;
     } catch (error) {
-      console.error('❌ AdminService: Error loading orders:', error);
-      // Fallback to empty array rather than throwing
+      console.error('❌ AdminService: Error loading orders from Firebase:', error);
+      console.error('❌ Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        code: (error as any)?.code || 'Unknown code',
+        stack: error instanceof Error ? error.stack : 'No stack trace'
+      });
+      // Return empty array rather than throwing to prevent dashboard crashes
       return [];
     }
   }
@@ -114,8 +130,16 @@ export class AdminService {
   // Add a new admin order (called when users select gifts)
   static async addOrder(order: AdminOrder): Promise<void> {
     try {
+      console.log('🔧 AdminService.addOrder called with:', {
+        orderId: order.id,
+        customerName: order.customerName,
+        giftName: order.giftName,
+        demoMode: DEMO_MODE
+      });
+
       // In demo mode, use localStorage
       if (DEMO_MODE) {
+        console.log('🔧 AdminService: Using demo mode - saving to localStorage');
         const orders = await this.getAllOrders();
         
         // Remove any existing order for the same gift to prevent duplicates
@@ -138,12 +162,18 @@ export class AdminService {
       }
 
       // Production mode: Save to Firebase Firestore
+      console.log('🔧 AdminService: Using Firebase mode - saving to Firestore');
+      console.log('🔧 Collection:', COLLECTIONS.ADMIN_ORDERS);
+      console.log('🔧 Database instance:', !!db);
+      
       const timestamp = Timestamp.now();
       
       // Clean the order data to remove undefined values that Firebase rejects
       const cleanOrderData = Object.fromEntries(
         Object.entries(order).filter(([key, value]) => value !== undefined)
       ) as Omit<AdminOrder, 'id'>;
+
+      console.log('🔧 Cleaned order data:', cleanOrderData);
 
       const orderWithTimestamps = {
         ...cleanOrderData,
@@ -152,16 +182,24 @@ export class AdminService {
         updatedAt: timestamp
       };
 
+      console.log('🔧 Order with timestamps:', orderWithTimestamps);
+      console.log('🔧 Adding document to Firestore...');
+
       const docRef = await addDoc(collection(db, COLLECTIONS.ADMIN_ORDERS), orderWithTimestamps);
       
-      console.log('📋 AdminService: Added order to Firebase:', {
+      console.log('📋 AdminService: Successfully added order to Firebase:', {
         firestoreId: docRef.id,
         orderId: order.id,
         customerName: order.customerName,
         giftName: order.giftName
       });
     } catch (error) {
-      console.error('❌ AdminService: Error adding order:', error);
+      console.error('❌ AdminService: Error adding order to Firebase:', error);
+      console.error('❌ Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        code: (error as any)?.code || 'Unknown code',
+        stack: error instanceof Error ? error.stack : 'No stack trace'
+      });
       throw error;
     }
   }
