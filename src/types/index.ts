@@ -26,6 +26,7 @@ export interface Recipient {
   name: string;
   relationship: string;
   birthdate?: string; // Format: 'YYYY-MM-DD'
+  gender?: 'male' | 'female' | 'other';
   interests: string[];
   description?: string;
   deliveryAddress?: Address;

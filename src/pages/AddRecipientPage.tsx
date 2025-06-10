@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import {
   Box,
@@ -25,17 +25,28 @@ import {
   Badge,
   Icon,
   IconButton,
+  SimpleGrid,
+  Collapse,
+  Alert,
+  AlertIcon,
 } from '@chakra-ui/react';
-import { AddIcon, ArrowBackIcon } from '@chakra-ui/icons';
-import { FaUser, FaHeart, FaMapMarkerAlt } from 'react-icons/fa';
+import { AddIcon, ArrowBackIcon, ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons';
+import { FaUser, FaHeart, FaMapMarkerAlt, FaBirthdayCake, FaVenusMars } from 'react-icons/fa';
 import { useRecipientStore } from '../store/recipientStore';
 import { months, days, years } from '../utils/dateUtils';
 import { showErrorToast } from '../utils/toastUtils';
+import { getInterestSuggestions, getAgeGroupLabel } from '../utils/interestSuggestions';
 import type { Address } from '../types';
 import AddressForm from '../components/AddressForm';
 
 const relationshipOptions = [
   'Nephew', 'Niece', 'Son', 'Daughter', 'Wife', 'Husband', 'Brother', 'Sister', 'Mom', 'Dad', 'Friend', 'Colleague', 'Other'
+];
+
+const genderOptions = [
+  { value: 'male', label: 'Male' },
+  { value: 'female', label: 'Female' },
+  { value: 'other', label: 'Other/Prefer not to say' }
 ];
 
 const AddRecipientPage: React.FC = () => {
@@ -50,71 +61,106 @@ const AddRecipientPage: React.FC = () => {
   const [birthMonth, setBirthMonth] = useState<string>('');
   const [birthDay, setBirthDay] = useState<string>('');
   const [birthYear, setBirthYear] = useState<string>('');
+  const [gender, setGender] = useState<string>('');
   const [description, setDescription] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState<Address | undefined>(undefined);
   
   // Interest management
   const [interest, setInterest] = useState('');
   const [interests, setInterests] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   
   // Validation
   const [touched, setTouched] = useState({
     name: false,
     relationship: false,
+    birthdate: false,
     deliveryAddress: false
   });
   
   // Background colors
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const suggestionBg = useColorModeValue('gray.50', 'gray.700');
+
+  // Calculate birthdate string and get suggestions
+  const birthdate = useMemo(() => {
+    if (birthYear && birthMonth && birthDay) {
+      return `${birthYear}-${birthMonth}-${birthDay}`;
+    }
+    return '';
+  }, [birthYear, birthMonth, birthDay]);
+
+  const interestSuggestions = useMemo(() => {
+    if (!birthdate) return [];
+    return getInterestSuggestions(birthdate, gender);
+  }, [birthdate, gender]);
+
+  const ageGroupLabel = useMemo(() => {
+    if (!birthdate) return '';
+    return getAgeGroupLabel(birthdate);
+  }, [birthdate]);
+
+  // Auto-show suggestions when birthdate is complete
+  useEffect(() => {
+    if (birthdate && interestSuggestions.length > 0) {
+      setShowSuggestions(true);
+    }
+  }, [birthdate, interestSuggestions.length]);
 
   // Helper function to get diverse colors for interests
-  const getInterestColor = (index: number) => {
-    const colors = ['purple', 'teal', 'blue', 'orange', 'pink', 'cyan', 'red', 'yellow'];
+  const getInterestColor = (index: number): string => {
+    const colors = ['purple', 'teal', 'blue', 'orange', 'pink', 'cyan', 'red', 'yellow', 'green'];
     return colors[index % colors.length];
   };
 
+  // Validation checks
   const isNameInvalid = touched.name && name.trim() === '';
   const isRelationshipInvalid = touched.relationship && relationship.trim() === '';
+  const isBirthdateInvalid = touched.birthdate && (!birthYear || !birthMonth || !birthDay);
   const isDeliveryAddressInvalid = touched.deliveryAddress && !deliveryAddress;
 
-  const handleAddInterest = () => {
-    if (interest.trim() !== '' && !interests.includes(interest.trim())) {
-      setInterests([...interests, interest.trim()]);
-      setInterest('');
+  const handleAddInterest = (interestToAdd?: string): void => {
+    const newInterest = interestToAdd || interest.trim();
+    if (newInterest !== '' && !interests.includes(newInterest)) {
+      setInterests([...interests, newInterest]);
+      if (!interestToAdd) {
+        setInterest('');
+      }
     }
   };
 
-  const handleRemoveInterest = (interestToRemove: string) => {
+  const handleRemoveInterest = (interestToRemove: string): void => {
     setInterests(interests.filter(i => i !== interestToRemove));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSuggestionClick = (suggestion: string): void => {
+    handleAddInterest(suggestion);
+  };
+
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     
     // Mark fields as touched for validation
     setTouched({
       name: true,
       relationship: true,
+      birthdate: true,
       deliveryAddress: true
     });
     
-    if (isNameInvalid || isRelationshipInvalid || isDeliveryAddressInvalid) {
+    if (isNameInvalid || isRelationshipInvalid || isBirthdateInvalid || isDeliveryAddressInvalid) {
       return;
     }
     
     try {
-      let birthdateStr = '';
-      if (birthYear && birthMonth && birthDay) {
-        birthdateStr = `${birthYear}-${birthMonth}-${birthDay}`;
-      }
-      
       const finalRelationship = relationship === 'Other' ? customRelationship : relationship;
       
       await addRecipient({
         name,
         relationship: finalRelationship,
-        birthdate: birthdateStr || undefined,
+        birthdate,
+        gender: gender as 'male' | 'female' | 'other',
         interests,
         description: description.trim() || undefined,
         deliveryAddress,
@@ -204,8 +250,11 @@ const AddRecipientPage: React.FC = () => {
 
                 <Divider />
 
-                <FormControl>
-                  <FormLabel>Birthdate (Optional)</FormLabel>
+                <FormControl isRequired isInvalid={isBirthdateInvalid}>
+                  <Flex align="center" gap={2} mb={2}>
+                    <Icon as={FaBirthdayCake} color="pink.500" />
+                    <FormLabel mb={0}>Birthdate</FormLabel>
+                  </Flex>
                   <Text fontSize="sm" color="gray.600" mb={2}>
                     This helps us recommend age-appropriate gifts and remember important dates.
                   </Text>
@@ -214,6 +263,7 @@ const AddRecipientPage: React.FC = () => {
                       placeholder="Month"
                       value={birthMonth}
                       onChange={(e) => setBirthMonth(e.target.value)}
+                      onBlur={() => setTouched({ ...touched, birthdate: true })}
                     >
                       {months.map((month, index) => (
                         <option key={index} value={String(index + 1).padStart(2, '0')}>
@@ -225,6 +275,7 @@ const AddRecipientPage: React.FC = () => {
                       placeholder="Day"
                       value={birthDay}
                       onChange={(e) => setBirthDay(e.target.value)}
+                      onBlur={() => setTouched({ ...touched, birthdate: true })}
                     >
                       {days.map(day => (
                         <option key={day} value={String(day).padStart(2, '0')}>
@@ -236,6 +287,7 @@ const AddRecipientPage: React.FC = () => {
                       placeholder="Year"
                       value={birthYear}
                       onChange={(e) => setBirthYear(e.target.value)}
+                      onBlur={() => setTouched({ ...touched, birthdate: true })}
                     >
                       {years.map(year => (
                         <option key={year} value={year}>
@@ -244,6 +296,33 @@ const AddRecipientPage: React.FC = () => {
                       ))}
                     </Select>
                   </HStack>
+                  {isBirthdateInvalid && (
+                    <FormErrorMessage>Birthdate is required</FormErrorMessage>
+                  )}
+                  {ageGroupLabel && (
+                    <Text fontSize="sm" color="blue.600" mt={2} fontWeight="medium">
+                      Age Group: {ageGroupLabel}
+                    </Text>
+                  )}
+                </FormControl>
+
+                <FormControl>
+                  <Flex align="center" gap={2} mb={2}>
+                    <Icon as={FaVenusMars} color="purple.500" />
+                    <FormLabel mb={0}>Gender</FormLabel>
+                  </Flex>
+                  <Text fontSize="sm" color="gray.600" mb={2}>
+                    Optional - helps us suggest more personalized gifts.
+                  </Text>
+                  <Select
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    placeholder="Select gender (optional)"
+                  >
+                    {genderOptions.map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </Select>
                 </FormControl>
 
                 <Divider />
@@ -269,10 +348,51 @@ const AddRecipientPage: React.FC = () => {
                         }
                       }}
                     />
-                    <Button onClick={handleAddInterest} leftIcon={<AddIcon />} colorScheme="blue">
+                    <Button onClick={() => handleAddInterest()} leftIcon={<AddIcon />} colorScheme="blue">
                       Add
                     </Button>
                   </HStack>
+
+                  {/* Interest Suggestions */}
+                  {interestSuggestions.length > 0 && (
+                    <Box mb={4}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowSuggestions(!showSuggestions)}
+                        rightIcon={showSuggestions ? <ChevronUpIcon /> : <ChevronDownIcon />}
+                        mb={2}
+                      >
+                        Suggested interests for {ageGroupLabel && `${ageGroupLabel}s`} ({interestSuggestions.length})
+                      </Button>
+                      <Collapse in={showSuggestions}>
+                        <Box bg={suggestionBg} p={3} borderRadius="md">
+                          <SimpleGrid columns={{ base: 2, md: 3, lg: 4 }} spacing={2}>
+                            {interestSuggestions.map((suggestion, index) => (
+                              <Badge
+                                key={suggestion}
+                                colorScheme={interests.includes(suggestion) ? 'green' : 'gray'}
+                                variant={interests.includes(suggestion) ? 'solid' : 'outline'}
+                                cursor="pointer"
+                                onClick={() => handleSuggestionClick(suggestion)}
+                                _hover={{ 
+                                  bg: interests.includes(suggestion) ? 'green.600' : 'gray.100',
+                                  transform: 'scale(1.05)'
+                                }}
+                                transition="all 0.2s"
+                                p={2}
+                                textAlign="center"
+                                fontSize="xs"
+                              >
+                                {suggestion}
+                                {interests.includes(suggestion) && ' ✓'}
+                              </Badge>
+                            ))}
+                          </SimpleGrid>
+                        </Box>
+                      </Collapse>
+                    </Box>
+                  )}
 
                   {interests.length > 0 && (
                     <Box mb={3}>
@@ -291,6 +411,9 @@ const AddRecipientPage: React.FC = () => {
                           </Badge>
                         ))}
                       </Flex>
+                      <Text fontSize="xs" color="gray.500" mt={1}>
+                        Click any interest to remove it
+                      </Text>
                     </Box>
                   )}
                 </FormControl>
@@ -312,7 +435,6 @@ const AddRecipientPage: React.FC = () => {
                       address={deliveryAddress}
                       onChange={setDeliveryAddress}
                       isRequired={true}
-                      helperText="We'll use this address to deliver gifts directly to your recipient."
                     />
                   </Box>
                   {isDeliveryAddressInvalid && (
