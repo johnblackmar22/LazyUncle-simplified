@@ -69,6 +69,7 @@ const AddRecipientPage: React.FC = () => {
   const [interest, setInterest] = useState('');
   const [interests, setInterests] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [displayedSuggestions, setDisplayedSuggestions] = useState<string[]>([]);
   
   // Validation
   const [touched, setTouched] = useState({
@@ -91,7 +92,7 @@ const AddRecipientPage: React.FC = () => {
     return '';
   }, [birthYear, birthMonth, birthDay]);
 
-  const interestSuggestions = useMemo(() => {
+  const allInterestSuggestions = useMemo(() => {
     if (!birthdate) return [];
     return getInterestSuggestions(birthdate, gender);
   }, [birthdate, gender]);
@@ -101,12 +102,28 @@ const AddRecipientPage: React.FC = () => {
     return getAgeGroupLabel(birthdate);
   }, [birthdate]);
 
+  // Manage displayed suggestions (show ~10 at a time)
+  useEffect(() => {
+    if (allInterestSuggestions.length > 0) {
+      // Filter out already selected interests
+      const availableSuggestions = allInterestSuggestions.filter(
+        suggestion => !interests.includes(suggestion)
+      );
+      
+      // Take up to 10 suggestions
+      const newDisplayed = availableSuggestions.slice(0, 10);
+      setDisplayedSuggestions(newDisplayed);
+    } else {
+      setDisplayedSuggestions([]);
+    }
+  }, [allInterestSuggestions, interests]);
+
   // Auto-show suggestions when birthdate is complete
   useEffect(() => {
-    if (birthdate && interestSuggestions.length > 0) {
+    if (birthdate && allInterestSuggestions.length > 0) {
       setShowSuggestions(true);
     }
-  }, [birthdate, interestSuggestions.length]);
+  }, [birthdate, allInterestSuggestions.length]);
 
   // Helper function to get diverse colors for interests
   const getInterestColor = (index: number): string => {
@@ -136,6 +153,7 @@ const AddRecipientPage: React.FC = () => {
 
   const handleSuggestionClick = (suggestion: string): void => {
     handleAddInterest(suggestion);
+    // The useEffect above will automatically update displayedSuggestions to replace the selected one
   };
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
@@ -354,7 +372,7 @@ const AddRecipientPage: React.FC = () => {
                   </HStack>
 
                   {/* Interest Suggestions */}
-                  {interestSuggestions.length > 0 && (
+                  {displayedSuggestions.length > 0 && (
                     <Box mb={4}>
                       <Button
                         variant="ghost"
@@ -363,20 +381,21 @@ const AddRecipientPage: React.FC = () => {
                         rightIcon={showSuggestions ? <ChevronUpIcon /> : <ChevronDownIcon />}
                         mb={2}
                       >
-                        Suggested interests for {ageGroupLabel && `${ageGroupLabel}s`} ({interestSuggestions.length})
+                        Suggested interests for {ageGroupLabel && `${ageGroupLabel}s`} ({displayedSuggestions.length} shown)
                       </Button>
                       <Collapse in={showSuggestions}>
                         <Box bg={suggestionBg} p={3} borderRadius="md">
                           <SimpleGrid columns={{ base: 2, md: 3, lg: 4 }} spacing={2}>
-                            {interestSuggestions.map((suggestion, index) => (
+                            {displayedSuggestions.map((suggestion, index) => (
                               <Badge
                                 key={suggestion}
-                                colorScheme={interests.includes(suggestion) ? 'green' : 'gray'}
-                                variant={interests.includes(suggestion) ? 'solid' : 'outline'}
+                                colorScheme="gray"
+                                variant="outline"
                                 cursor="pointer"
                                 onClick={() => handleSuggestionClick(suggestion)}
                                 _hover={{ 
-                                  bg: interests.includes(suggestion) ? 'green.600' : 'gray.100',
+                                  bg: 'blue.100',
+                                  borderColor: 'blue.300',
                                   transform: 'scale(1.05)'
                                 }}
                                 transition="all 0.2s"
@@ -385,10 +404,14 @@ const AddRecipientPage: React.FC = () => {
                                 fontSize="xs"
                               >
                                 {suggestion}
-                                {interests.includes(suggestion) && ' ✓'}
                               </Badge>
                             ))}
                           </SimpleGrid>
+                          {interests.length > 0 && displayedSuggestions.length < 10 && (
+                            <Text fontSize="xs" color="gray.500" mt={2} textAlign="center">
+                              More suggestions will appear as you add interests
+                            </Text>
+                          )}
                         </Box>
                       </Collapse>
                     </Box>
@@ -419,30 +442,6 @@ const AddRecipientPage: React.FC = () => {
                 </FormControl>
 
                 <Divider />
-
-                <FormControl isRequired isInvalid={isDeliveryAddressInvalid}>
-                  <Flex align="center" gap={2} mb={2}>
-                    <Icon as={FaMapMarkerAlt} color="green.500" />
-                    <FormLabel mb={0}>Delivery Address</FormLabel>
-                  </Flex>
-                  <Text fontSize="sm" color="gray.600" mb={3}>
-                    Where should gifts be delivered for this recipient?
-                  </Text>
-                  <Box
-                    onBlur={() => setTouched({ ...touched, deliveryAddress: true })}
-                  >
-                    <AddressForm
-                      address={deliveryAddress}
-                      onChange={setDeliveryAddress}
-                      isRequired={true}
-                    />
-                  </Box>
-                  {isDeliveryAddressInvalid && (
-                    <FormErrorMessage>Delivery address is required</FormErrorMessage>
-                  )}
-                </FormControl>
-                
-                <Divider />
                 
                 <FormControl>
                   <FormLabel>Tell us about them (Optional)</FormLabel>
@@ -455,6 +454,23 @@ const AddRecipientPage: React.FC = () => {
                     placeholder="For example: 'My brother loves outdoor adventures and craft beer. He's always been the adventurous one in our family and enjoys trying new things...'"
                     rows={4}
                   />
+                </FormControl>
+
+                <Divider />
+
+                <FormControl isRequired isInvalid={isDeliveryAddressInvalid}>
+                  <Box
+                    onBlur={() => setTouched({ ...touched, deliveryAddress: true })}
+                  >
+                    <AddressForm
+                      address={deliveryAddress}
+                      onChange={setDeliveryAddress}
+                      isRequired={true}
+                    />
+                  </Box>
+                  {isDeliveryAddressInvalid && (
+                    <FormErrorMessage>Delivery address is required</FormErrorMessage>
+                  )}
                 </FormControl>
               </VStack>
             </CardBody>
