@@ -16,7 +16,7 @@ const handler = async (event) => {
   try {
     console.log('📝 Parsing request body...');
     const requestData = JSON.parse(event.body || '{}');
-    const { recipient, occasion, budget, preferences, instructions } = requestData;
+    const { recipient, occasion, budget, preferences, instructions, previousGiftNames } = requestData;
     
     if (!recipient || !occasion || !budget) {
       return {
@@ -41,20 +41,20 @@ const handler = async (event) => {
     console.log('✅ OpenAI client initialized');
 
     // Build a dynamic prompt for the AI
-    const prompt = `You are a gift recommendation assistant using GPT-3.5-turbo.\n\nYour task is to recommend exactly 3 specific, popular, and in-stock gifts for the following recipient and occasion.\n\nYou must search Amazon.com (or simulate doing so) and return real product names, not generic categories. For each gift, include:\n- The exact product name as listed on Amazon\n- A short description\n- The current price (USD)\n- A direct Amazon purchase URL (if possible)\n- Estimated shipping cost (if not free)\n- Whether gift wrapping is available\n- Why this gift is a good fit for the recipient and occasion\n\nOnly suggest gifts that are easily findable and fulfillable on Amazon.com. Do not suggest generic items or categories. If the recipient is an infant, ensure all gifts are age-appropriate and safe.\n\nIMPORTANT: Recommend gifts that are as close as possible to the provided budget, without exceeding it. If possible, select gifts that together use as much of the budget as possible, without going over.\n\nPersonalize each recommendation based on the recipient's interests, relationship, and occasion. Explain your reasoning for each gift.\n\nIf multiple gifts are equally good, prefer those with gift wrapping available. Avoid items that are often out of stock or have long shipping times.\n\nTry to provide a variety of gift types, unless the recipient's preferences are very specific.\n\nStrictly respond only with valid JSON in the following format, and do not include any extra text or commentary:\n{\n  "recommendations": [\n    {\n      "name": "...",\n      "description": "...",\n      "price": ...,\n      "purchaseUrl": "...",\n      "shippingCost": ...,\n      "giftWrappingAvailable": true/false,\n      "reasoning": "..."\n    },\n    ...\n  ]\n}\n\nRecipient info:\n- Name: ${recipient.name}\n- Age: ${recipient.age || 'unknown'}\n- Interests: ${recipient.interests?.join(', ') || 'none'}\n- Relationship: ${recipient.relationship}\n- Location: ${recipient.location || 'unknown'}\nOccasion:\n- Type: ${occasion.type}\n- Date: ${occasion.date}\n- Notes: ${occasion.significance || 'regular'}\nBudget: $${budget.total}\nAdditional instructions: ${instructions || 'Find the best gifts for this recipient and occasion.'}`;
+    const prompt = `\nYou are a creative gift recommendation expert with a knack for finding unique, thoughtful, and surprisingly perfect gifts. Think outside the box and be creative while staying practical.\n\nTHE MOST IMPORTANT RULES:\n- Do not exceed the budget for any gift. The goal is to get as close as possible to the budget for each gift. If a gift is much cheaper than the budget, do NOT recommend it unless there is no better option. At least one gift must be within $1 of the budget, if possible.\n- CRITICALLY IMPORTANT: Pay close attention to the recipient's AGE. This should heavily influence your recommendations:\n  * Consider their generation, life stage, and age-appropriate interests\n  * Think about what someone of THIS SPECIFIC AGE would actually use and appreciate\n  * Factor in generational preferences (Gen Z vs Millennials vs Gen X vs Boomers)\n  * Consider their likely lifestyle, responsibilities, and priorities at this age\n- RELATIONSHIP CONTEXT IS CRUCIAL: The relationship between sender and recipient should determine the appropriateness and intimacy level of gifts:\n  * FAMILY (spouse/partner, children, parents, siblings): More personal, intimate, and meaningful gifts are appropriate\n  * CLOSE FRIENDS: Personal but respectful, fun and memorable gifts work well\n  * COLLEAGUES/PROFESSIONAL: Keep it professional, appropriate for workplace, avoid anything too personal\n  * ACQUAINTANCES/CASUAL FRIENDS: Safe, universally appreciated, not too intimate\n  * ROMANTIC PARTNERS: Can be more intimate, thoughtful, and relationship-building\n- Read and use all recipient information, interests, and instructions. Each recommendation must feel personal and directly relevant.\n- Do NOT recommend any of the following previous gifts: ${previousGiftNames && previousGiftNames.length > 0 ? previousGiftNames.join(', ') : 'none'}\n- Be CREATIVE and UNIQUE! Avoid generic gifts like basic gift cards unless they're truly the best option.\n- Think about the recipient's personality, hobbies, and lifestyle to find unexpected gems.\n\nRequirements:\n- Recommend up to 2 creative, unique, and thoughtful gifts that are real products available on Amazon.com\n- Use the exact product name as listed on Amazon\n- Think creatively about how the recipient's interests, AGE, and RELATIONSHIP could translate into unexpected gift categories\n- Consider trending, innovative, or niche products that align with their interests, age group, AND relationship context\n- For each gift, include:\n  * name (exact Amazon product name)\n  * description (what makes this gift special and creative)\n  * price (USD)\n  * why this gift is a perfect creative fit for the recipient, specifically referencing their AGE, RELATIONSHIP to sender, interests, and personality\n- Gifts must be appropriate for the relationship level and age\n- Prioritize unique, memorable, and conversation-starting gifts over obvious choices\n- Only use information provided\n- Respond with ONLY valid JSON, no extra text\n\nRecipient info:\n${JSON.stringify(recipient, null, 2)}\nOccasion info:\n${JSON.stringify({ ...occasion, budget: budget.total, instructions: instructions || '' }, null, 2)}\n\nJSON response format:\n{\n  "recommendations": [\n    {\n      "name": "...",\n      "description": "...",\n      "price": ...,\n      "reasoning": "... (explain the creative connection to their AGE, RELATIONSHIP to sender, interests and why this is unexpectedly perfect for someone their age in this relationship context)"\n    },\n    ...\n  ]\n}\n`;
 
-    // OpenAI API call
-    // NOTE: Using gpt-3.5-turbo for compatibility and to avoid timeout issues (Netlify 10s limit)
+    // OpenAI API call using GPT-3.5-turbo (known working model)
+    console.log('🤖 Using GPT-3.5-turbo...');
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [
-        { role: 'system', content: 'You are a helpful gift recommendation assistant. Respond only with valid JSON.' },
+        { role: 'system', content: 'You are a creative gift recommendation assistant who thinks outside the box. Find unique, memorable gifts that perfectly match the recipient. Respond only with valid JSON.' },
         { role: 'user', content: prompt }
       ],
-      max_tokens: 900,
-      temperature: 0.7,
+      max_tokens: 800,
+      temperature: 0.9,
     });
-    console.log('✅ OpenAI API call successful');
+    console.log('✅ GPT-3.5-turbo API call successful');
 
     const aiResponse = completion.choices[0]?.message?.content;
     console.log('📋 AI Response length:', aiResponse?.length || 0);
@@ -79,7 +79,7 @@ const handler = async (event) => {
       ];
     }
 
-    // Ensure at least three recommendations
+    // Ensure at least two recommendations
     const fallbackGifts = [
       {
         id: 'fallback-2',
@@ -88,19 +88,13 @@ const handler = async (event) => {
         price: 35,
         category: 'experiences',
         confidence: 0.7
-      },
-      {
-        id: 'fallback-3',
-        name: 'Personalized Mug',
-        description: 'A mug with their name or a special message',
-        price: 20,
-        category: 'personalized',
-        confidence: 0.6
       }
     ];
-    while (recommendations.length < 3) {
+    while (recommendations.length < 2) {
       recommendations.push(fallbackGifts[recommendations.length - 1] || fallbackGifts[0]);
     }
+    // Only keep a maximum of 2 recommendations
+    recommendations = recommendations.slice(0, 2);
 
     // Ensure every recommendation has a category
     recommendations = recommendations.map((gift) => ({
@@ -123,6 +117,7 @@ const handler = async (event) => {
         debug: {
           functionWorking: true,
           openaiConnected: true,
+          modelUsed: 'gpt-3.5-turbo',
           timestamp: new Date().toISOString()
         }
       }),
@@ -180,6 +175,7 @@ const handler = async (event) => {
           functionWorking: true,
           error: error.message,
           fallbackUsed: true,
+          modelUsed: 'fallback',
           timestamp: new Date().toISOString()
         }
       }),

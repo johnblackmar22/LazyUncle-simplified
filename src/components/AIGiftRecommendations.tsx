@@ -42,7 +42,7 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [excludedIds, setExcludedIds] = useState<string[]>([]);
   
-  const { selectGift, saveForLater } = useGiftStorage();
+  const { selectGift, saveForLater, getRecommendations } = useGiftStorage();
   const toast = useToast();
 
   const generateRecommendations = async (excludeIds: string[] = []) => {
@@ -50,12 +50,17 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
     setError(null);
 
     try {
+      // Collect previous gift names for this recipient/occasion
+      const previousRecs = getRecommendations(recipient.id, occasion.id);
+      const previousGiftNames = previousRecs.map((rec: any) => rec.name).filter(Boolean);
+
       const request: GiftRecommendationRequest = {
         recipient,
         occasion,
         budget,
         excludeCategories: ['inappropriate', 'controversial'],
-        preferredCategories: recipient.interests.length > 0 ? recipient.interests : undefined
+        preferredCategories: recipient.interests.length > 0 ? recipient.interests : undefined,
+        previousGiftNames // <-- send to backend
       };
 
       console.log('🤖 Generating recommendations for:', {
@@ -314,18 +319,6 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
                           <HStack spacing={2} wrap="wrap">
                             <Badge colorScheme="blue" variant="subtle">
                               {gift.category}
-                            </Badge>
-                            <Badge 
-                              colorScheme={getConfidenceColor(gift.confidence)} 
-                              variant="subtle"
-                            >
-                              {Math.round(gift.confidence * 100)}% match
-                            </Badge>
-                            <Badge 
-                              colorScheme={getAvailabilityColor(gift.availability)} 
-                              variant="subtle"
-                            >
-                              {gift.availability.replace('_', ' ')}
                             </Badge>
                           </HStack>
                         </VStack>

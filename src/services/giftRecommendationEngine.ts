@@ -10,6 +10,7 @@ export interface GiftRecommendationRequest {
   excludeCategories?: string[];
   preferredCategories?: string[];
   instructions?: string; // Optional user-provided instructions
+  previousGiftNames?: string[]; // Names of previously suggested gifts to avoid
 }
 
 // Add shipping and cost calculation utilities

@@ -512,14 +512,8 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
                                     Gift Wrap: ${gift.costBreakdown.giftWrapping.toFixed(2)}
                                   </Badge>
                                 )}
-                                <Badge colorScheme="gray" size="sm" variant="solid">
-                                  Total: ${gift.costBreakdown.total.toFixed(2)}
-                                </Badge>
                               </>
                             )}
-                            <Badge colorScheme="gray" size="sm" variant="subtle">
-                              {Math.round(gift.confidence * 100)}% match
-                            </Badge>
                           </HStack>
                         </VStack>
                         <VStack spacing={1} minW="120px" maxW="140px" align="stretch">
@@ -543,16 +537,6 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
                               isLoading={giftLoading}
                             >
                               Select
-                            </Button>
-                          )}
-                          {gift.purchaseUrl && (
-                            <Button
-                              size="xs"
-                              variant="outline"
-                              leftIcon={<FaExternalLinkAlt />}
-                              onClick={() => window.open(gift.purchaseUrl, '_blank')}
-                            >
-                              View
                             </Button>
                           )}
                         </VStack>

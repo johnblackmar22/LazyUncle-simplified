@@ -42,6 +42,7 @@ interface OccasionFormProps {
     personalizedNote?: boolean;
     noteText?: string;
     deliveryDate?: string;
+    userId: string;
   }) => void;
   onCancel: () => void;
 }
@@ -115,17 +116,12 @@ export const OccasionForm: React.FC<OccasionFormProps> = ({
     }
   }, [occasionDate, type]);
 
-  // Generate default note text when personalized note is enabled
-  useEffect(() => {
-    if (personalizedNote && !noteText) {
-      const userName = user?.displayName?.split(' ')[0] || 'Your Secret Santa';
-      const recipientFirstName = recipient.name.split(' ')[0];
-      const occasionName = type === 'other' ? (otherName || 'Special Day') : 
-                          type.charAt(0).toUpperCase() + type.slice(1);
-      const defaultNote = `Dear ${recipientFirstName}, Happy ${occasionName}! Love, ${userName}`;
-      setNoteText(defaultNote);
-    }
-  }, [personalizedNote, type, otherName, recipient.name, user?.displayName, noteText]);
+  // Generate default note text for placeholder
+  const userFirstName = user?.displayName?.split(' ')[0] || 'Your Secret Santa';
+  const recipientFirstName = recipient.name.split(' ')[0];
+  const occasionName = type === 'other' ? (otherName || 'Special Day') : 
+    type.charAt(0).toUpperCase() + type.slice(1);
+  const defaultNote = `Dear ${recipientFirstName}, Happy ${occasionName}! Love, ${userFirstName}`;
 
   // Validate and submit
   const handleSubmit = (e: React.FormEvent) => {
@@ -147,9 +143,10 @@ export const OccasionForm: React.FC<OccasionFormProps> = ({
       budget,
       giftWrap,
       personalizedNote,
-      noteText: personalizedNote ? noteText : undefined,
+      noteText: personalizedNote ? (noteText.trim() ? noteText : defaultNote) : undefined,
       deliveryDate, // Add delivery date
       ...(recurring !== undefined ? { recurring } : {}),
+      userId: user?.id || '', // Add userId to fix linter error
     });
   };
 
@@ -273,13 +270,17 @@ export const OccasionForm: React.FC<OccasionFormProps> = ({
 
         {personalizedNote && (
           <FormControl>
-            <FormLabel>Note Text</FormLabel>
+            <FormLabel>Personalized Note</FormLabel>
             <Textarea
               value={noteText}
               onChange={e => setNoteText(e.target.value)}
-              placeholder="Enter your personalized message..."
+              placeholder={defaultNote}
               rows={3}
+              name="noteText"
             />
+            <Text fontSize="xs" color="gray.500" mt={1}>
+              This note will be included with the gift. You can leave it blank to use the default above.
+            </Text>
           </FormControl>
         )}
 
