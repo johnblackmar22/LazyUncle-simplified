@@ -26,7 +26,10 @@ describe('HomePage', () => {
 
   it('shows the main value proposition', () => {
     renderWithProviders(<HomePage />);
-    expect(screen.getByText(/Gifting, on Autopilot/i)).toBeInTheDocument();
+    // Test for individual words since they're in separate spans
+    expect(screen.getByText('Gifting')).toBeInTheDocument();
+    expect(screen.getByText(', on')).toBeInTheDocument();
+    expect(screen.getByText('Autopilot')).toBeInTheDocument();
     expect(screen.getByText(/Never forget a birthday, anniversary, or special moment again/i)).toBeInTheDocument();
   });
 
@@ -34,9 +37,12 @@ describe('HomePage', () => {
     renderWithProviders(<HomePage />);
     const nav = screen.getByRole('navigation');
     expect(nav).toBeInTheDocument();
-    // Button should have orange background
-    const button = screen.getByRole('button', { name: /get started/i });
-    expect(button).toHaveClass('chakra-button');
+    // Get the first "Get Started" button specifically
+    const buttons = screen.getAllByRole('button');
+    const getStartedButton = buttons.find(button => 
+      button.textContent?.includes('Get Started') && !button.getAttribute('aria-label')
+    );
+    expect(getStartedButton).toHaveClass('chakra-button');
   });
 
   it('is accessible: logo SVGs have role img', () => {

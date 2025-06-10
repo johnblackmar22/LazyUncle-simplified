@@ -5,6 +5,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './services/firebase';
 import { useAuthStore } from './store/authStore';
 import { initializeDemoData } from './services/demoData';
+import { authLogger } from './utils/logger';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import theme from './theme';
@@ -26,7 +27,7 @@ function App() {
 
   useEffect(() => {
     // Initialize auth store once - this should happen immediately and synchronously
-    console.log('App.tsx - Initializing auth...');
+    authLogger.debug('Initializing auth...');
     initializeAuth();
   }, []); // Run only once on mount
 
@@ -36,21 +37,21 @@ function App() {
 
     // If we're in demo mode, don't set up Firebase listener at all
     if (demoMode) {
-      console.log('App.tsx - Skipping Firebase listener setup - in demo mode');
+      authLogger.debug('Skipping Firebase listener setup - in demo mode');
       return;
     }
 
-    console.log('App.tsx - Setting up ongoing Firebase auth listener for state changes');
+    authLogger.debug('Setting up ongoing Firebase auth listener for state changes');
     
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       const store = useAuthStore.getState();
       
-      console.log('App.tsx - Firebase auth state changed:', firebaseUser ? 'User logged in' : 'User logged out');
-      console.log('App.tsx - Current store state:', { demoMode: store.demoMode, user: !!store.user });
+      authLogger.debug('Firebase auth state changed:', firebaseUser ? 'User logged in' : 'User logged out');
+      authLogger.debug('Current store state:', { demoMode: store.demoMode, user: !!store.user });
       
       // Double-check: Skip if demo mode was enabled after initialization
       if (store.demoMode) {
-        console.log('App.tsx - Skipping Firebase auth state change - demo mode active');
+        authLogger.debug('Skipping Firebase auth state change - demo mode active');
         return;
       }
       
@@ -74,7 +75,7 @@ function App() {
             initialized: true,
             demoMode: false
           });
-          console.log('App.tsx - Firebase user updated in store');
+          authLogger.debug('Firebase user updated in store');
         }
       } else if (store.user) {
         // Only clear user if we currently have one
@@ -83,7 +84,7 @@ function App() {
           initialized: true,
           demoMode: false
         });
-        console.log('App.tsx - Firebase user cleared from store');
+        authLogger.debug('Firebase user cleared from store');
       }
     });
 
@@ -93,7 +94,7 @@ function App() {
   // Initialize demo data separately when needed
   useEffect(() => {
     if (demoMode && user) {
-      console.log('App.tsx - Initializing demo data for user:', user.id);
+      authLogger.debug('Initializing demo data for user:', user.id);
       initializeDemoData();
     }
   }, [demoMode, user]);
