@@ -2,9 +2,10 @@
 export interface User {
   id: string;
   email: string;
-  displayName?: string;
+  displayName: string;
   photoURL?: string;
   planId: string; // 'free' | 'pro' | etc.
+  role?: 'user' | 'admin' | 'super_admin';
   createdAt: number;
   updatedAt: number;
 }
@@ -84,4 +85,65 @@ export interface GiftSuggestion {
   imageUrl?: string;
   purchaseUrl?: string;
   asin?: string; // Amazon ASIN for easy ordering
+}
+
+// Admin-specific types
+export interface AdminUser extends User {
+  role: 'admin' | 'super_admin';
+  permissions: AdminPermission[];
+  lastAdminLogin?: number;
+}
+
+export type AdminPermission = 
+  | 'view_orders' 
+  | 'manage_orders' 
+  | 'view_users' 
+  | 'manage_users' 
+  | 'view_analytics' 
+  | 'system_admin';
+
+export interface AdminSession {
+  user: AdminUser;
+  loginTime: number;
+  permissions: AdminPermission[];
+}
+
+// Admin order interface for gift selection workflow
+export interface AdminOrder {
+  id: string;
+  userId: string;
+  userEmail: string;
+  userName: string;
+  userPlan?: string;
+  recipientName: string;
+  recipientRelationship: string;
+  recipientAddress?: string;
+  occasion: string;
+  occasionDate?: string;
+  giftTitle: string;
+  giftDescription: string;
+  giftPrice: number;
+  giftImageUrl: string;
+  giftUrl?: string;  // Generic product URL
+  asin?: string;
+  status: 'pending' | 'processing' | 'ordered' | 'shipped' | 'delivered' | 'cancelled';
+  priority: 'low' | 'normal' | 'high' | 'urgent';
+  notes: string;
+  createdAt: number;
+  updatedAt: number;
+  shippingAddress: {
+    name: string;
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+  };
+  trackingNumber?: string;
+  amazonOrderId?: string;
+  billingStatus?: 'pending' | 'charged' | 'refunded';
+  chargeAmount?: number;
+  source?: 'gift_selection' | 'auto_send' | 'manual';
+  giftWrap?: boolean;
+  personalNote?: string;
 }

@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useRecipientStore } from '../store/recipientStore';
 import { useOccasionStore } from '../store/occasionStore';
 import { useAuthStore } from '../store/authStore';
-import { AdminService, type AdminOrder } from '../services/adminService';
+import AdminService from '../services/adminService';
+import type { AdminOrder } from '../types';
 
 export interface StoredGift {
   id: string;
@@ -62,7 +63,7 @@ export function useGiftStorage() {
     if (isLoaded) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(storage));
     }
-  }, [storage, isLoaded]); // Add isLoaded as dependency
+  }, [storage, isLoaded]);
 
   // Helper function to format address for admin orders
   const formatAddress = (address: any): string => {
@@ -79,12 +80,11 @@ export function useGiftStorage() {
   };
 
   const selectGift = async (gift: any, recipientId: string, occasionId: string) => {
-    console.log('selectGift called with:', {
+    console.log('🎁 Gift selected:', {
       giftId: gift.id,
       giftName: gift.name,
       recipientId,
-      occasionId,
-      currentSelectedCount: storage.selectedGifts.length
+      occasionId
     });
     
     const storedGift: StoredGift = {
@@ -105,81 +105,60 @@ export function useGiftStorage() {
       }
     };
 
-    console.log('Creating stored gift:', storedGift);
+    setStorage(prev => ({
+      ...prev,
+      selectedGifts: [...prev.selectedGifts.filter(g => g.id !== gift.id), storedGift]
+    }));
 
-    setStorage(prev => {
-      const newSelectedGifts = [...prev.selectedGifts.filter(g => g.id !== gift.id), storedGift];
-      console.log('Updating selected gifts:', {
-        previousCount: prev.selectedGifts.length,
-        newCount: newSelectedGifts.length,
-        removedExisting: prev.selectedGifts.some(g => g.id === gift.id)
-      });
-      
-      return {
-        ...prev,
-        selectedGifts: newSelectedGifts
-      };
-    });
-
-    // ALSO create an admin order entry for the selected gift
+    // Create admin order for the selected gift
     try {
-      // Get user info from auth store (FIXED: was using wrong localStorage key)
-      const { user, demoMode } = useAuthStore.getState();
+      const { user } = useAuthStore.getState();
       
       if (user) {
-        console.log('🔍 Creating admin order for user:', {
-          userId: user.id,
-          userName: user.displayName || user.email,
-          demoMode
-        });
-
         // Find real recipient and occasion data
         const recipient = recipients.find(r => r.id === recipientId);
         const recipientOccasions = occasions[recipientId] || [];
         const occasion = recipientOccasions.find(o => o.id === occasionId);
 
-        // Create admin order for selected gift with real data
-        const adminOrder: AdminOrder = {
-          id: `selected-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          // Customer Info (who pays)
-          customerId: user.id,
-          customerName: user.displayName || user.email?.split('@')[0] || 'Unknown User',
-          customerEmail: user.email || '',
-          customerPlan: user.planId || 'free',
-          // Recipient Info (who receives) - use real data if available
+        // Create admin order with all required fields
+        const adminOrder: Omit<AdminOrder, 'id' | 'createdAt' | 'updatedAt'> = {
+          userId: user.id,
+          userEmail: user.email || '',
+          userName: user.displayName || user.email?.split('@')[0] || 'Unknown User',
           recipientName: recipient?.name || `Recipient ${recipientId}`,
-          recipientAddress: recipient?.deliveryAddress ? formatAddress(recipient.deliveryAddress) : 'Address to be confirmed',
-          // Order Details - use real data if available
-          occasionName: occasion?.name || `Occasion ${occasionId}`,
-          occasionDate: occasion?.date || new Date().toISOString().split('T')[0],
-          giftName: gift.name,
+          recipientRelationship: recipient?.relationship || 'Unknown',
+          occasion: occasion?.name || `Occasion ${occasionId}`,
+          giftTitle: gift.name,
+          giftDescription: gift.description || '',
           giftPrice: gift.price,
+          giftImageUrl: gift.imageUrl || '',
+          asin: gift.asin,
+          status: 'pending',
+          priority: 'normal',
+          notes: gift.reasoning || 'User selected gift',
+          shippingAddress: {
+            name: recipient?.name || 'Unknown',
+            street: recipient?.deliveryAddress?.line1 || 'Address TBD',
+            city: recipient?.deliveryAddress?.city || 'City TBD',
+            state: recipient?.deliveryAddress?.state || 'State TBD',
+            zipCode: recipient?.deliveryAddress?.postalCode || 'ZIP TBD',
+            country: recipient?.deliveryAddress?.country || 'US'
+          },
           giftUrl: gift.purchaseUrl,
-          giftASIN: gift.asin,
-          status: 'pending' as const,
-          orderDate: Date.now(),
-          amazonOrderId: undefined,
-          trackingNumber: undefined,
-          notes: `User selected gift: ${gift.reasoning || 'No reasoning provided'}${occasion?.notes ? ` | Occasion notes: ${occasion.notes}` : ''}`,
-          giftWrap: occasion?.giftWrap || false,
-          personalNote: occasion?.noteText || undefined,
-          // Billing
-          billingStatus: 'pending' as const,
-          chargeAmount: gift.price,
-          // Additional tracking fields
+          occasionDate: occasion?.date,
           source: 'gift_selection',
-          recipientId: recipientId,
-          occasionId: occasionId
+          giftWrap: occasion?.giftWrap || false,
+          personalNote: occasion?.noteText
         };
 
-        // Use AdminService to add the order to Firebase/global admin queue
-        await AdminService.addOrder(adminOrder); // Now async
-        console.log('📋 Added admin order via Firebase/AdminService:', adminOrder.id);
+        // Add to admin orders via AdminService
+        await AdminService.addOrder(adminOrder);
+        console.log('✅ Admin order created for selected gift');
       } else {
-        console.warn('⚠️ No authenticated user found - cannot create admin order');
+        console.warn('⚠️ No authenticated user - cannot create admin order');
       }
     } catch (error) {
-      console.error('Error creating admin order for selected gift:', error);
+      console.error('❌ Error creating admin order:', error);
     }
 
     return storedGift;
@@ -224,13 +203,13 @@ export function useGiftStorage() {
     setStorage(prev => ({
       ...prev,
       selectedGifts: prev.selectedGifts.map(gift => 
-        gift.id === giftId ? { ...gift, status: 'purchased' } : gift
+        gift.id === giftId ? { ...gift, status: 'purchased' as const } : gift
       )
     }));
   };
 
   const saveRecommendations = (recommendations: any[], recipientId: string, occasionId: string) => {
-    const key = `${recipientId}_${occasionId}`;
+    const key = `${recipientId}-${occasionId}`;
     setStorage(prev => ({
       ...prev,
       recentRecommendations: {
@@ -241,13 +220,13 @@ export function useGiftStorage() {
   };
 
   const getRecommendations = (recipientId: string, occasionId: string) => {
-    const key = `${recipientId}_${occasionId}`;
+    const key = `${recipientId}-${occasionId}`;
     return storage.recentRecommendations[key] || [];
   };
 
   const getSelectedGiftsForOccasion = (recipientId: string, occasionId: string) => {
-    return storage.selectedGifts.filter(
-      gift => gift.recipientId === recipientId && gift.occasionId === occasionId
+    return storage.selectedGifts.filter(gift => 
+      gift.recipientId === recipientId && gift.occasionId === occasionId
     );
   };
 
@@ -261,41 +240,19 @@ export function useGiftStorage() {
       savedGifts: [],
       recentRecommendations: {}
     });
-    localStorage.removeItem(STORAGE_KEY);
-  };
-
-  const updateGiftWithFirebaseId = (localId: string, firebaseId: string) => {
-    setStorage(prev => {
-      const updatedSelectedGifts = prev.selectedGifts.map(gift =>
-        gift.id === localId ? { ...gift, id: firebaseId } : gift
-      );
-      return {
-        ...prev,
-        selectedGifts: updatedSelectedGifts
-      };
-    });
   };
 
   return {
-    // State
-    selectedGifts: storage.selectedGifts,
-    savedGifts: storage.savedGifts,
-    isLoaded,
-    
-    // Actions
+    storage,
     selectGift,
     saveForLater,
     removeGift,
     markAsPurchased,
     saveRecommendations,
-    updateGiftWithFirebaseId,
-    
-    // Getters
     getRecommendations,
     getSelectedGiftsForOccasion,
     getSavedGiftsForRecipient,
-    
-    // Utils
-    clearStorage
+    clearStorage,
+    isLoaded
   };
 } 

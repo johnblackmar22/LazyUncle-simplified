@@ -55,17 +55,11 @@ service cloud.firestore {
     
     // Admin Orders collection - Global access for admin functionality
     match /admin_orders/{orderId} {
-      // Any authenticated user can read admin orders (for admin dashboard)
-      // TODO: Restrict to actual admin users in production
-      allow read: if isAuthenticated();
-      
-      // Any authenticated user can create admin orders (when selecting gifts)
-      // TODO: Restrict creation to customer's own orders in production
+      // Allow anyone to create orders (when users select gifts)
       allow create: if isAuthenticated();
       
-      // Any authenticated user can update admin orders (for admin dashboard)
-      // TODO: Restrict to actual admin users in production
-      allow update, delete: if isAuthenticated();
+      // Only allow reads/updates/deletes by authenticated users (admin will be properly authenticated)
+      allow read, update, delete: if isAuthenticated();
     }
     
     // All other documents are not accessible

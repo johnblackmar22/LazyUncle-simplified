@@ -25,7 +25,6 @@ import {
   Alert,
   AlertIcon,
   IconButton,
-  Tooltip,
   Card,
   CardHeader,
   CardBody,
@@ -40,10 +39,6 @@ import {
   InputLeftElement,
   Stack,
   Textarea,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
 } from '@chakra-ui/react';
 import { 
   FaShoppingCart, 
@@ -51,52 +46,59 @@ import {
   FaTruck, 
   FaEye, 
   FaCopy, 
-  FaCheckDouble, 
   FaSearch,
-  FaSortAmountDown,
-  FaSortAmountUp,
-  FaFilter,
-  FaChevronDown,
-  FaTrash,
-  FaEdit
+  FaSignOutAlt,
+  FaSync
 } from 'react-icons/fa';
 import { format } from 'date-fns';
-import { AdminService, type AdminOrder } from '../services/adminService';
-
-interface PendingOrder extends AdminOrder {}
-
-type SortField = 'orderDate' | 'giftPrice' | 'customerName' | 'recipientName' | 'occasionDate';
-type SortDirection = 'asc' | 'desc';
+import AdminService from '../services/adminService';
+import AdminAuthService from '../services/adminAuthService';
+import AdminLogin from '../components/AdminLogin';
+import type { AdminOrder, AdminSession } from '../types';
 
 const AdminOrderDashboard: React.FC = () => {
-  const [orders, setOrders] = useState<PendingOrder[]>([]);
-  const [selectedOrder, setSelectedOrder] = useState<PendingOrder | null>(null);
-  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  // Admin authentication state
+  const [adminSession, setAdminSession] = useState<AdminSession | null>(null);
+  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+  
+  // Order management state
+  const [orders, setOrders] = useState<AdminOrder[]>([]);
+  const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
   const [amazonOrderId, setAmazonOrderId] = useState('');
   const [trackingNumber, setTrackingNumber] = useState('');
   const [notes, setNotes] = useState('');
-  const [billingNotes, setBillingNotes] = useState('');
   
-  // Enhanced filtering and sorting
+  // Filtering
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [billingFilter, setBillingFilter] = useState<string>('all');
-  const [sortField, setSortField] = useState<SortField>('orderDate');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   
   const { isOpen, onOpen, onClose } = useDisclosure();
 
-  // Load pending orders from localStorage/Firebase
+  // Initialize admin authentication
   useEffect(() => {
+    const initAuth = async () => {
+      try {
+        await AdminAuthService.initializeAdminSession();
+        const session = AdminAuthService.getCurrentAdminSession();
+        setAdminSession(session);
+      } catch (error) {
+        console.error('Admin auth initialization error:', error);
+      } finally {
+        setIsLoadingAuth(false);
+      }
+    };
+
+    initAuth();
+  }, []);
+
+  // Load orders when admin is authenticated
+  useEffect(() => {
+    if (!adminSession) return;
+
     const fetchOrders = async () => {
       try {
-        const orders = await AdminService.getAllOrders(); // Now async
-        console.log('🔍 Admin Dashboard - Fetching orders:', {
-          ordersFound: orders.length,
-          firebaseMode: !import.meta.env.VITE_DEMO_MODE || import.meta.env.VITE_DEMO_MODE === 'false',
-          orders: orders.length > 0 ? orders.slice(0, 2) : 'No orders found' // Show first 2 for debugging
-        });
-        
+        const orders = await AdminService.getAllOrders();
+        console.log('🔍 Admin Dashboard - Orders loaded:', orders.length);
         setOrders(orders);
       } catch (error) {
         console.error('❌ Error fetching admin orders:', error);
@@ -105,15 +107,15 @@ const AdminOrderDashboard: React.FC = () => {
 
     fetchOrders();
     
-    // Refresh every 10 seconds to catch new orders (increased from 5s for Firebase)
-    const interval = setInterval(fetchOrders, 10000);
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchOrders, 30000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [adminSession]);
 
   const refreshOrders = async () => {
     try {
-      const orders = await AdminService.getAllOrders(); // Now async
+      const orders = await AdminService.getAllOrders();
       console.log('🔄 Refreshing orders:', orders.length);
       setOrders(orders);
     } catch (error) {
@@ -121,158 +123,83 @@ const AdminOrderDashboard: React.FC = () => {
     }
   };
 
-  const saveOrders = async (updatedOrders: PendingOrder[]) => {
+  const handleAdminLogin = (session: AdminSession) => {
+    setAdminSession(session);
+    console.log('✅ Admin logged in:', session.user.email);
+  };
+
+  const handleAdminLogout = async () => {
     try {
-      // For Firebase mode, we don't use saveOrders - the individual update methods handle it
-      if (import.meta.env.VITE_DEMO_MODE !== 'false') {
-        AdminService.saveOrders(updatedOrders);
-      }
-      setOrders(updatedOrders);
+      await AdminAuthService.logoutAdmin();
+      setAdminSession(null);
+      setOrders([]);
+      console.log('✅ Admin logged out');
     } catch (error) {
-      console.error('❌ Error saving admin orders:', error);
+      console.error('❌ Admin logout error:', error);
     }
   };
 
-  // Enhanced filtering logic
+  // Filter orders
   const filteredOrders = orders.filter(order => {
-    // Search term filter
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
       const matchesSearch = 
-        order.customerName.toLowerCase().includes(searchLower) ||
+        order.userName.toLowerCase().includes(searchLower) ||
         order.recipientName.toLowerCase().includes(searchLower) ||
-        order.giftName.toLowerCase().includes(searchLower) ||
-        order.occasionName.toLowerCase().includes(searchLower) ||
-        order.giftASIN?.toLowerCase().includes(searchLower) ||
-        order.customerEmail.toLowerCase().includes(searchLower);
+        order.giftTitle.toLowerCase().includes(searchLower) ||
+        order.occasion.toLowerCase().includes(searchLower) ||
+        order.asin?.toLowerCase().includes(searchLower) ||
+        order.userEmail.toLowerCase().includes(searchLower);
       
       if (!matchesSearch) return false;
     }
     
-    // Status filter
     if (statusFilter !== 'all' && order.status !== statusFilter) return false;
-    
-    // Billing filter
-    if (billingFilter !== 'all' && order.billingStatus !== billingFilter) return false;
     
     return true;
   });
 
-  // Enhanced sorting logic
-  const sortedOrders = [...filteredOrders].sort((a, b) => {
-    let aValue: any;
-    let bValue: any;
-    
-    switch (sortField) {
-      case 'orderDate':
-        aValue = a.orderDate;
-        bValue = b.orderDate;
-        break;
-      case 'giftPrice':
-        aValue = a.giftPrice;
-        bValue = b.giftPrice;
-        break;
-      case 'customerName':
-        aValue = a.customerName.toLowerCase();
-        bValue = b.customerName.toLowerCase();
-        break;
-      case 'recipientName':
-        aValue = a.recipientName.toLowerCase();
-        bValue = b.recipientName.toLowerCase();
-        break;
-      case 'occasionDate':
-        aValue = new Date(a.occasionDate).getTime();
-        bValue = new Date(b.occasionDate).getTime();
-        break;
-      default:
-        return 0;
-    }
-    
-    if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-    if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-    return 0;
-  });
-
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
-  };
-
-  const markAsOrdered = (orderId: string) => {
+  const markAsOrdered = async (orderId: string) => {
     if (!amazonOrderId.trim()) return;
     
-    const updatedOrders = orders.map(order => 
-      order.id === orderId 
-        ? { 
-            ...order, 
-            status: 'ordered' as const,
-            amazonOrderId: amazonOrderId.trim(),
-            notes: notes.trim()
-          }
-        : order
-    );
-    
-    saveOrders(updatedOrders);
-    
-    // Send confirmation email to user (mock)
-    console.log('📧 Sending order confirmation email to:', selectedOrder?.customerEmail);
-    
-    onClose();
-    setAmazonOrderId('');
-    setNotes('');
+    try {
+      await AdminService.updateOrder(orderId, {
+        status: 'ordered',
+        amazonOrderId: amazonOrderId.trim(),
+        notes: notes.trim()
+      });
+      
+      await refreshOrders();
+      onClose();
+      setAmazonOrderId('');
+      setNotes('');
+    } catch (error) {
+      console.error('❌ Error marking order as ordered:', error);
+    }
   };
 
-  const markAsShipped = (orderId: string) => {
+  const markAsShipped = async (orderId: string) => {
     if (!trackingNumber.trim()) return;
     
-    const updatedOrders = orders.map(order => 
-      order.id === orderId 
-        ? { 
-            ...order, 
-            status: 'shipped' as const,
-            trackingNumber: trackingNumber.trim()
-          }
-        : order
-    );
-    
-    saveOrders(updatedOrders);
-    
-    // Send shipping notification email to user (mock)
-    console.log('📧 Sending shipping notification email to:', selectedOrder?.customerEmail);
-    
-    onClose();
-    setTrackingNumber('');
-  };
-
-  const markAsBilled = (orderId: string) => {
-    const updatedOrders = orders.map(order => 
-      order.id === orderId 
-        ? { 
-            ...order, 
-            billingStatus: 'charged' as const,
-            notes: (order.notes || '') + `\nBilled: ${billingNotes || 'Charged successfully'}`
-          }
-        : order
-    );
-    
-    saveOrders(updatedOrders);
-    
-    console.log('💳 Billing marked as charged for order:', orderId);
-    
-    onClose();
-    setBillingNotes('');
+    try {
+      await AdminService.updateOrder(orderId, {
+        status: 'shipped',
+        trackingNumber: trackingNumber.trim()
+      });
+      
+      await refreshOrders();
+      onClose();
+      setTrackingNumber('');
+    } catch (error) {
+      console.error('❌ Error marking order as shipped:', error);
+    }
   };
 
   const deleteOrder = async (orderId: string) => {
-    if (window.confirm('Are you sure you want to delete this order? This action cannot be undone.')) {
+    if (window.confirm('Are you sure you want to delete this order?')) {
       try {
-        await AdminService.deleteOrder(orderId); // Now async
-        await refreshOrders(); // Reload from AdminService
-        console.log('🗑️ Deleted order via AdminService:', orderId);
+        await AdminService.deleteOrder(orderId);
+        await refreshOrders();
       } catch (error) {
         console.error('❌ Error deleting order:', error);
       }
@@ -286,6 +213,7 @@ const AdminOrderDashboard: React.FC = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'red';
+      case 'processing': return 'orange';
       case 'ordered': return 'yellow';
       case 'shipped': return 'blue';
       case 'delivered': return 'green';
@@ -293,711 +221,284 @@ const AdminOrderDashboard: React.FC = () => {
     }
   };
 
-  const openOrderModal = (order: PendingOrder) => {
+  const openOrderModal = (order: AdminOrder) => {
     setSelectedOrder(order);
     onOpen();
   };
 
-  const generateMockOrder = () => {
-    // Helper function to create a mock order for testing
-    const mockOrder: PendingOrder = {
-      id: `order-${Date.now()}`,
-      // Customer Info
-      customerId: 'demo-customer-1',
-      customerName: 'Jane Smith',
-      customerEmail: 'jane.smith@example.com',
-      customerPlan: 'Premium',
-      // Recipient Info
-      recipientName: 'John Doe',
-      recipientAddress: '123 Main St, Anytown, USA 12345',
-      // Order Details
-      occasionName: 'Birthday',
-      occasionDate: '2025-06-15',
-      giftName: 'Wireless Bluetooth Headphones',
-      giftPrice: 79.99,
-      giftUrl: 'https://amazon.com/dp/B08EXAMPLE',
-      giftASIN: 'B08EXAMPLE123',
-      status: 'pending',
-      orderDate: Date.now(),
-      giftWrap: true,
-      personalNote: 'Happy Birthday! Hope you love these!',
-      // Billing
-      billingStatus: 'pending',
-      chargeAmount: 79.99,
-      source: 'manual'
-    };
-    
-    const updatedOrders = [...orders, mockOrder];
-    saveOrders(updatedOrders);
-  };
-
-  const pendingCount = sortedOrders.filter(o => o.status === 'pending').length;
-  const orderedCount = sortedOrders.filter(o => o.status === 'ordered').length;
-  const deliveredCount = sortedOrders.filter(o => o.status === 'delivered').length;
-  const totalRevenue = sortedOrders.reduce((total, order) => total + order.giftPrice, 0);
-
-  const toggleOrderSelection = (orderId: string) => {
-    setSelectedOrderIds(prev => 
-      prev.includes(orderId) 
-        ? prev.filter(id => id !== orderId)
-        : [...prev, orderId]
+  // Loading state
+  if (isLoadingAuth) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minH="100vh">
+        <Text>Loading admin authentication...</Text>
+      </Box>
     );
-  };
+  }
 
-  const toggleSelectAll = () => {
-    const pendingOrderIds = sortedOrders.filter(o => o.status === 'pending').map(o => o.id);
-    setSelectedOrderIds(prev => 
-      prev.length === pendingOrderIds.length ? [] : pendingOrderIds
-    );
-  };
+  // Show login if not authenticated
+  if (!adminSession) {
+    return <AdminLogin onLoginSuccess={handleAdminLogin} />;
+  }
 
-  const markSelectedAsBilled = () => {
-    const updatedOrders = orders.map(order => 
-      selectedOrderIds.includes(order.id)
-        ? { 
-            ...order, 
-            billingStatus: 'charged' as const,
-            notes: (order.notes || '') + `\nBulk billing: ${billingNotes || 'Processed in bulk'}`
-          }
-        : order
-    );
-    
-    saveOrders(updatedOrders);
-    setSelectedOrderIds([]);
-    setBillingNotes('');
-    
-    console.log('💳 Bulk billing processed for orders:', selectedOrderIds);
-  };
-
-  const clearAllFilters = () => {
-    setSearchTerm('');
-    setStatusFilter('all');
-    setBillingFilter('all');
-    setSortField('orderDate');
-    setSortDirection('desc');
+  // Calculate stats
+  const stats = {
+    total: orders.length,
+    pending: orders.filter(o => o.status === 'pending').length,
+    processing: orders.filter(o => o.status === 'processing').length,
+    ordered: orders.filter(o => o.status === 'ordered').length,
+    shipped: orders.filter(o => o.status === 'shipped').length,
+    delivered: orders.filter(o => o.status === 'delivered').length,
+    totalRevenue: orders.reduce((sum, order) => sum + order.giftPrice, 0),
+    uniqueCustomers: new Set(orders.map(o => o.userId)).size
   };
 
   return (
-    <Container maxW="container.xl" py={8}>
-      <VStack spacing={6} align="stretch">
-        {/* Header */}
-        <Flex align="center">
-          <VStack align="start" spacing={1}>
-            <Heading size="lg">🧙‍♂️ Global Admin Order Dashboard</Heading>
-            <Text color="gray.600" fontSize="sm">
-              View and manage selected gifts from ALL users across the platform
-            </Text>
-            <Badge colorScheme="purple" size="sm">
-              Admin View: {new Set(orders.map(o => o.customerId)).size} Customers • {orders.length} Total Orders
-            </Badge>
-          </VStack>
-          <Spacer />
-          <HStack spacing={3}>
-            <Button onClick={generateMockOrder} colorScheme="blue" size="sm" variant="outline">
-              Add Mock Order
-            </Button>
-            <Button onClick={refreshOrders} colorScheme="green" size="sm" variant="outline">
-              Refresh Orders
-            </Button>
-          </HStack>
-        </Flex>
+    <Container maxW="full" p={4}>
+      {/* Header */}
+      <Flex justify="space-between" align="center" mb={6}>
+        <VStack align="start" spacing={1}>
+          <Heading size="lg" color="purple.600">
+            🎁 Admin Order Dashboard
+          </Heading>
+          <Text color="gray.600">
+            Welcome back, {adminSession.user.displayName}
+          </Text>
+          <Badge colorScheme="purple" size="sm">
+            {stats.uniqueCustomers} Customers • {stats.total} Orders
+          </Badge>
+        </VStack>
+        
+        <HStack spacing={3}>
+          <Button
+            leftIcon={<FaSync />}
+            onClick={refreshOrders}
+            size="sm"
+            variant="outline"
+          >
+            Refresh
+          </Button>
+          <Button
+            leftIcon={<FaSignOutAlt />}
+            onClick={handleAdminLogout}
+            size="sm"
+            colorScheme="red"
+            variant="outline"
+          >
+            Logout
+          </Button>
+        </HStack>
+      </Flex>
 
-        {/* Stats Cards */}
-        <Grid templateColumns="repeat(auto-fit, minmax(200px, 1fr))" gap={4}>
-          <Card>
-            <CardBody>
-              <Stat>
-                <StatLabel>Selected Gifts Pending Order</StatLabel>
-                <StatNumber color="red.500">{pendingCount}</StatNumber>
-              </Stat>
-            </CardBody>
-          </Card>
-          <Card>
-            <CardBody>
-              <Stat>
-                <StatLabel>Orders Placed</StatLabel>
-                <StatNumber color="yellow.500">{orderedCount}</StatNumber>
-              </Stat>
-            </CardBody>
-          </Card>
-          <Card>
-            <CardBody>
-              <Stat>
-                <StatLabel>Orders Delivered</StatLabel>
-                <StatNumber color="green.500">{deliveredCount}</StatNumber>
-              </Stat>
-            </CardBody>
-          </Card>
-          <Card>
-            <CardBody>
-              <Stat>
-                <StatLabel>Total Revenue</StatLabel>
-                <StatNumber color="blue.500">${totalRevenue.toFixed(2)}</StatNumber>
-              </Stat>
-            </CardBody>
-          </Card>
-          <Card>
-            <CardBody>
-              <Stat>
-                <StatLabel>Showing Results</StatLabel>
-                <StatNumber>{sortedOrders.length} of {orders.length}</StatNumber>
-              </Stat>
-            </CardBody>
-          </Card>
-        </Grid>
-
-        {pendingCount > 0 && (
-          <Alert status="warning">
-            <AlertIcon />
-            You have {pendingCount} selected gift(s) that need to be ordered on Amazon!
-          </Alert>
-        )}
-
-        {/* Enhanced Filters and Search */}
+      {/* Stats Cards */}
+      <Grid templateColumns="repeat(auto-fit, minmax(200px, 1fr))" gap={4} mb={6}>
         <Card>
           <CardBody>
-            <VStack spacing={4} align="stretch">
-              <HStack justify="space-between">
-                <Text fontWeight="bold">🔍 Search & Filter</Text>
-                <Button size="sm" variant="ghost" onClick={clearAllFilters}>
-                  Clear All Filters
-                </Button>
-              </HStack>
-              
-              <Stack direction={{ base: 'column', md: 'row' }} spacing={4}>
-                <InputGroup maxW="300px">
-                  <InputLeftElement>
-                    <FaSearch color="gray" />
-                  </InputLeftElement>
-                  <Input
-                    placeholder="Search customers, recipients, gifts..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </InputGroup>
-                
-                <Select 
-                  maxW="200px" 
-                  value={statusFilter} 
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  <option value="all">All Statuses</option>
-                  <option value="pending">Pending</option>
-                  <option value="ordered">Ordered</option>
-                  <option value="shipped">Shipped</option>
-                  <option value="delivered">Delivered</option>
-                </Select>
-                
-                <Select 
-                  maxW="200px" 
-                  value={billingFilter} 
-                  onChange={(e) => setBillingFilter(e.target.value)}
-                >
-                  <option value="all">All Billing</option>
-                  <option value="pending">Billing Pending</option>
-                  <option value="charged">Charged</option>
-                  <option value="refunded">Refunded</option>
-                </Select>
-                
-                <Menu>
-                  <MenuButton as={Button} rightIcon={<FaChevronDown />} variant="outline" maxW="200px">
-                    Sort: {sortField} {sortDirection === 'asc' ? '↑' : '↓'}
-                  </MenuButton>
-                  <MenuList>
-                    {(['orderDate', 'giftPrice', 'customerName', 'recipientName', 'occasionDate'] as SortField[]).map(field => (
-                      <MenuItem key={field} onClick={() => handleSort(field)}>
-                        {field === 'orderDate' && 'Order Date'}
-                        {field === 'giftPrice' && 'Gift Price'}
-                        {field === 'customerName' && 'Customer Name'}
-                        {field === 'recipientName' && 'Recipient Name'}
-                        {field === 'occasionDate' && 'Occasion Date'}
-                        {sortField === field && (sortDirection === 'asc' ? ' ↑' : ' ↓')}
-                      </MenuItem>
-                    ))}
-                  </MenuList>
-                </Menu>
-              </Stack>
-              
-              {(searchTerm || statusFilter !== 'all' || billingFilter !== 'all') && (
-                <Text fontSize="sm" color="gray.600">
-                  Showing {sortedOrders.length} of {orders.length} orders
-                  {searchTerm && ` matching "${searchTerm}"`}
-                  {statusFilter !== 'all' && ` with status "${statusFilter}"`}
-                  {billingFilter !== 'all' && ` with billing "${billingFilter}"`}
-                </Text>
-              )}
-            </VStack>
+            <Stat>
+              <StatLabel>Total Orders</StatLabel>
+              <StatNumber>{stats.total}</StatNumber>
+            </Stat>
           </CardBody>
         </Card>
-
-        {/* Bulk Actions */}
-        {sortedOrders.filter(o => o.status === 'pending').length > 1 && (
-          <Card>
-            <CardBody>
-              <VStack spacing={3} align="stretch">
-                <HStack justify="space-between">
-                  <Text fontWeight="bold">🔧 Bulk Actions</Text>
-                  <Text fontSize="sm" color="gray.600">
-                    {selectedOrderIds.length} of {sortedOrders.filter(o => o.status === 'pending').length} pending orders selected
-                  </Text>
-                </HStack>
-                
-                <HStack spacing={3}>
-                  <Button
-                    size="sm"
-                    onClick={toggleSelectAll}
-                    variant="outline"
-                  >
-                    {selectedOrderIds.length === sortedOrders.filter(o => o.status === 'pending').length ? 'Deselect All' : 'Select All Pending'}
-                  </Button>
-                  
-                  {selectedOrderIds.length > 0 && (
-                    <>
-                      <Input
-                        placeholder="Bulk billing notes (optional)"
-                        value={billingNotes}
-                        onChange={(e) => setBillingNotes(e.target.value)}
-                        size="sm"
-                        maxW="300px"
-                      />
-                      <Button
-                        colorScheme="green"
-                        leftIcon={<FaCheckDouble />}
-                        size="sm"
-                        onClick={markSelectedAsBilled}
-                      >
-                        Mark {selectedOrderIds.length} as Charged
-                      </Button>
-                    </>
-                  )}
-                </HStack>
-              </VStack>
-            </CardBody>
-          </Card>
-        )}
-
-        {/* Orders Table */}
         <Card>
-          <CardHeader>
-            <HStack justify="space-between">
-              <VStack align="start" spacing={1}>
-                <Heading size="md">Selected Gifts from Users</Heading>
-                <Text fontSize="sm" color="gray.600">
-                  When users select gifts, they appear here for you to order from Amazon
-                </Text>
-              </VStack>
-              {sortedOrders.length > 0 && (
-                <Text fontSize="sm" color="gray.500">
-                  Sorted by {sortField} ({sortDirection === 'asc' ? 'ascending' : 'descending'})
-                </Text>
-              )}
-            </HStack>
-          </CardHeader>
           <CardBody>
-            {sortedOrders.length > 0 ? (
-              <Box overflowX="auto">
-                <Table variant="simple">
-                  <Thead>
-                    <Tr>
-                      <Th>
-                        <input
-                          type="checkbox"
-                          checked={selectedOrderIds.length === sortedOrders.filter(o => o.status === 'pending').length && sortedOrders.filter(o => o.status === 'pending').length > 0}
-                          onChange={toggleSelectAll}
-                          style={{ marginRight: '8px' }}
-                        />
-                        Select
-                      </Th>
-                      <Th cursor="pointer" onClick={() => handleSort('orderDate')}>
-                        Order Date {sortField === 'orderDate' && (sortDirection === 'asc' ? '↑' : '↓')}
-                      </Th>
-                      <Th cursor="pointer" onClick={() => handleSort('customerName')}>
-                        Customer → Recipient {sortField === 'customerName' && (sortDirection === 'asc' ? '↑' : '↓')}
-                      </Th>
-                      <Th>Gift & ASIN</Th>
-                      <Th cursor="pointer" onClick={() => handleSort('giftPrice')}>
-                        Price {sortField === 'giftPrice' && (sortDirection === 'asc' ? '↑' : '↓')}
-                      </Th>
-                      <Th cursor="pointer" onClick={() => handleSort('occasionDate')}>
-                        Occasion {sortField === 'occasionDate' && (sortDirection === 'asc' ? '↑' : '↓')}
-                      </Th>
-                      <Th>Status</Th>
-                      <Th>Billing</Th>
-                      <Th>Actions</Th>
-                    </Tr>
-                  </Thead>
-                  <Tbody>
-                    {sortedOrders.map((order) => (
-                      <Tr key={order.id}>
-                        <Td>
-                          {order.status === 'pending' && (
-                            <input
-                              type="checkbox"
-                              checked={selectedOrderIds.includes(order.id)}
-                              onChange={() => toggleOrderSelection(order.id)}
-                            />
-                          )}
-                        </Td>
-                        <Td>{format(new Date(order.orderDate), 'MMM dd, yyyy')}</Td>
-                        <Td>
-                          <VStack align="start" spacing={1}>
-                            <HStack>
-                              <Badge colorScheme="blue" size="sm">{order.customerPlan}</Badge>
-                              <Text fontWeight="bold" fontSize="sm">{order.customerName}</Text>
-                            </HStack>
-                            <Text fontSize="xs" color="gray.600">{order.customerEmail}</Text>
-                            <Text fontSize="sm">→ {order.recipientName}</Text>
-                          </VStack>
-                        </Td>
-                        <Td>
-                          <VStack align="start" spacing={1}>
-                            <Text fontWeight="medium" fontSize="sm">{order.giftName}</Text>
-                            {order.giftASIN && (
-                              <HStack spacing={2}>
-                                <Badge colorScheme="orange" size="sm">ASIN: {order.giftASIN}</Badge>
-                                <Button
-                                  as="a"
-                                  href={`https://amazon.com/dp/${order.giftASIN}`}
-                                  target="_blank"
-                                  size="xs"
-                                  colorScheme="orange"
-                                  variant="link"
-                                >
-                                  View on Amazon
-                                </Button>
-                              </HStack>
-                            )}
-                            {order.giftUrl && !order.giftASIN && (
-                              <Button
-                                as="a"
-                                href={order.giftUrl}
-                                target="_blank"
-                                size="xs"
-                                colorScheme="blue"
-                                variant="link"
-                              >
-                                View Product
-                              </Button>
-                            )}
-                            {order.source && (
-                              <Badge size="xs" colorScheme="gray">
-                                {order.source === 'gift_selection' && 'User Selected'}
-                                {order.source === 'auto_send' && 'Auto Send'}
-                                {order.source === 'manual' && 'Manual'}
-                              </Badge>
-                            )}
-                          </VStack>
-                        </Td>
-                        <Td>${order.giftPrice.toFixed(2)}</Td>
-                        <Td>
-                          <Text>{order.occasionName}</Text>
-                          <Text fontSize="sm" color="gray.600">
-                            {format(new Date(order.occasionDate), 'MMM dd, yyyy')}
-                          </Text>
-                        </Td>
-                        <Td>
-                          <Badge colorScheme={getStatusColor(order.status)}>
-                            {order.status.toUpperCase()}
-                          </Badge>
-                        </Td>
-                        <Td>
-                          <VStack align="start" spacing={1}>
-                            <Badge 
-                              colorScheme={order.billingStatus === 'charged' ? 'green' : order.billingStatus === 'refunded' ? 'red' : 'yellow'}
-                              size="sm"
-                            >
-                              {order.billingStatus.toUpperCase()}
-                            </Badge>
-                            {order.chargeAmount && (
-                              <Text fontSize="xs">${order.chargeAmount.toFixed(2)}</Text>
-                            )}
-                          </VStack>
-                        </Td>
-                        <Td>
+            <Stat>
+              <StatLabel>Pending</StatLabel>
+              <StatNumber color="red.500">{stats.pending}</StatNumber>
+            </Stat>
+          </CardBody>
+        </Card>
+        <Card>
+          <CardBody>
+            <Stat>
+              <StatLabel>Ordered</StatLabel>
+              <StatNumber color="yellow.500">{stats.ordered}</StatNumber>
+            </Stat>
+          </CardBody>
+        </Card>
+        <Card>
+          <CardBody>
+            <Stat>
+              <StatLabel>Shipped</StatLabel>
+              <StatNumber color="blue.500">{stats.shipped}</StatNumber>
+            </Stat>
+          </CardBody>
+        </Card>
+        <Card>
+          <CardBody>
+            <Stat>
+              <StatLabel>Total Revenue</StatLabel>
+              <StatNumber>${stats.totalRevenue.toFixed(2)}</StatNumber>
+            </Stat>
+          </CardBody>
+        </Card>
+      </Grid>
+
+      {/* Filters */}
+      <HStack spacing={4} mb={6}>
+        <InputGroup maxW="300px">
+          <InputLeftElement pointerEvents="none">
+            <FaSearch color="gray.300" />
+          </InputLeftElement>
+          <Input
+            placeholder="Search orders..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </InputGroup>
+        
+        <Select
+          placeholder="All Statuses"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          maxW="200px"
+        >
+          <option value="pending">Pending</option>
+          <option value="processing">Processing</option>
+          <option value="ordered">Ordered</option>
+          <option value="shipped">Shipped</option>
+          <option value="delivered">Delivered</option>
+        </Select>
+      </HStack>
+
+      {/* Orders Table */}
+      <Card>
+        <CardHeader>
+          <Heading size="md">Orders ({filteredOrders.length})</Heading>
+        </CardHeader>
+        <CardBody>
+          {filteredOrders.length === 0 ? (
+            <Alert status="info">
+              <AlertIcon />
+              No orders found. Users need to select gifts to create orders.
+            </Alert>
+          ) : (
+            <Table variant="simple">
+              <Thead>
+                <Tr>
+                  <Th>Date</Th>
+                  <Th>Customer → Recipient</Th>
+                  <Th>Gift & ASIN</Th>
+                  <Th>Price</Th>
+                  <Th>Occasion</Th>
+                  <Th>Status</Th>
+                  <Th>Actions</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {filteredOrders.map((order) => (
+                  <Tr key={order.id}>
+                    <Td>{format(new Date(order.createdAt), 'MMM dd, yyyy')}</Td>
+                    <Td>
+                      <VStack align="start" spacing={1}>
+                        <Text fontWeight="bold" fontSize="sm">{order.userName}</Text>
+                        <Text fontSize="xs" color="gray.600">{order.userEmail}</Text>
+                        <Text fontSize="sm">→ {order.recipientName}</Text>
+                      </VStack>
+                    </Td>
+                    <Td>
+                      <VStack align="start" spacing={1}>
+                        <Text fontWeight="medium" fontSize="sm">{order.giftTitle}</Text>
+                        {order.asin && (
                           <HStack spacing={2}>
-                            <Tooltip label="View Details">
-                              <IconButton
-                                aria-label="View details"
-                                icon={<FaEye />}
-                                size="sm"
-                                onClick={() => openOrderModal(order)}
-                              />
-                            </Tooltip>
-                            {order.status === 'pending' && (
-                              <Tooltip label="Mark as Ordered">
-                                <IconButton
-                                  aria-label="Mark as ordered"
-                                  icon={<FaShoppingCart />}
-                                  size="sm"
-                                  colorScheme="green"
-                                  onClick={() => openOrderModal(order)}
-                                />
-                              </Tooltip>
-                            )}
-                            {order.status === 'ordered' && (
-                              <Tooltip label="Add Tracking">
-                                <IconButton
-                                  aria-label="Add tracking"
-                                  icon={<FaTruck />}
-                                  size="sm"
-                                  colorScheme="blue"
-                                  onClick={() => openOrderModal(order)}
-                                />
-                              </Tooltip>
-                            )}
-                            <Tooltip label="Delete Order">
-                              <IconButton
-                                aria-label="Delete order"
-                                icon={<FaTrash />}
-                                size="sm"
-                                colorScheme="red"
-                                variant="ghost"
-                                onClick={() => deleteOrder(order.id)}
-                              />
-                            </Tooltip>
+                            <Badge colorScheme="orange" size="sm">ASIN: {order.asin}</Badge>
+                            <Button
+                              as="a"
+                              href={`https://amazon.com/dp/${order.asin}`}
+                              target="_blank"
+                              size="xs"
+                              colorScheme="orange"
+                            >
+                              View on Amazon
+                            </Button>
                           </HStack>
-                        </Td>
-                      </Tr>
-                    ))}
-                  </Tbody>
-                </Table>
-              </Box>
-            ) : (
-              <Box textAlign="center" py={8}>
-                <Text color="gray.500" mb={4}>
-                  {orders.length === 0 
-                    ? "No orders yet. Selected gifts will appear here automatically!"
-                    : "No orders match your current filters. Try adjusting your search criteria."
-                  }
-                </Text>
-                {orders.length === 0 && (
-                  <Button onClick={generateMockOrder} colorScheme="blue" size="sm">
-                    Add Mock Order for Testing
-                  </Button>
-                )}
-              </Box>
-            )}
-          </CardBody>
-        </Card>
-
-        {/* Debug Information - Remove in production */}
-        <Card bg="gray.50" borderColor="gray.200">
-          <CardHeader>
-            <Heading size="sm">🔧 Debug Information</Heading>
-          </CardHeader>
-          <CardBody>
-            <VStack spacing={3} align="stretch">
-              <HStack justify="space-between">
-                <Text fontSize="sm">Orders in state:</Text>
-                <Badge colorScheme="blue">{orders.length}</Badge>
-              </HStack>
-              
-              <HStack justify="space-between">
-                <Text fontSize="sm">Filtered/Sorted orders:</Text>
-                <Badge colorScheme="green">{sortedOrders.length}</Badge>
-              </HStack>
-              
-              <HStack justify="space-between">
-                <Text fontSize="sm">localStorage key:</Text>
-                <Text fontSize="xs" fontFamily="mono">global_admin_orders</Text>
-              </HStack>
-              
-              <Button
-                size="sm"
-                onClick={async () => {
-                  try {
-                    const orders = await AdminService.getAllOrders();
-                    const stats = {
-                      total: orders.length,
-                      pending: orders.filter(o => o.status === 'pending').length,
-                      ordered: orders.filter(o => o.status === 'ordered').length,
-                      shipped: orders.filter(o => o.status === 'shipped').length,
-                      delivered: orders.filter(o => o.status === 'delivered').length,
-                      totalRevenue: orders.reduce((sum, order) => sum + order.giftPrice, 0),
-                      uniqueCustomers: new Set(orders.map(o => o.customerId)).size
-                    };
-                    console.log('🔍 AdminService Orders:', orders);
-                    console.log('📊 AdminService Stats:', stats);
-                    console.log('🔍 Current filters:', { searchTerm, statusFilter, billingFilter, sortField, sortDirection });
-                    console.log('📊 Filtered orders:', sortedOrders);
-                  } catch (error) {
-                    console.error('❌ Error accessing AdminService:', error);
-                  }
-                }}
-                variant="outline"
-              >
-                Check Admin Console
-              </Button>
-              
-              <Button
-                size="sm"
-                onClick={() => {
-                  console.log('🔄 Reloading orders via AdminService...');
-                  refreshOrders();
-                }}
-                colorScheme="green"
-                variant="outline"
-              >
-                Reload Orders
-              </Button>
-              
-              <Button
-                size="sm"
-                onClick={async () => {
-                  if (window.confirm('Are you sure you want to clear ALL admin orders? This will remove orders from ALL users!')) {
-                    try {
-                      await AdminService.clearAllOrders();
-                      setOrders([]);
-                      console.log('🗑️ Cleared all admin orders via AdminService');
-                    } catch (error) {
-                      console.error('❌ Error clearing orders:', error);
-                    }
-                  }
-                }}
-                colorScheme="red"
-                variant="outline"
-              >
-                Clear ALL Orders
-              </Button>
-            </VStack>
-          </CardBody>
-        </Card>
-      </VStack>
+                        )}
+                      </VStack>
+                    </Td>
+                    <Td>${order.giftPrice.toFixed(2)}</Td>
+                    <Td>{order.occasion}</Td>
+                    <Td>
+                      <Badge colorScheme={getStatusColor(order.status)}>
+                        {order.status}
+                      </Badge>
+                    </Td>
+                    <Td>
+                      <HStack spacing={2}>
+                        <IconButton
+                          aria-label="View details"
+                          icon={<FaEye />}
+                          size="sm"
+                          onClick={() => openOrderModal(order)}
+                        />
+                        <Button
+                          size="xs"
+                          colorScheme="red"
+                          onClick={() => deleteOrder(order.id)}
+                        >
+                          Delete
+                        </Button>
+                      </HStack>
+                    </Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          )}
+        </CardBody>
+      </Card>
 
       {/* Order Details Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} size="lg">
+      <Modal isOpen={isOpen} onClose={onClose} size="xl">
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>
-            Order Details - {selectedOrder?.recipientName}
-          </ModalHeader>
+          <ModalHeader>Order Details</ModalHeader>
           <ModalBody>
             {selectedOrder && (
-              <VStack spacing={4} align="stretch">
-                {/* Customer Information */}
-                <Box borderWidth={1} borderColor="blue.200" borderRadius="md" p={3} bg="blue.50">
-                  <Text fontWeight="bold" color="blue.800">💳 Customer (Billing)</Text>
-                  <VStack align="start" spacing={1} mt={2}>
-                    <HStack>
-                      <Badge colorScheme="blue">{selectedOrder.customerPlan}</Badge>
-                      <Text fontWeight="medium">{selectedOrder.customerName}</Text>
-                    </HStack>
-                    <Text fontSize="sm" color="gray.600">{selectedOrder.customerEmail}</Text>
-                    <HStack>
-                      <Text fontSize="sm">Charge Amount:</Text>
-                      <Badge colorScheme="green">${selectedOrder.chargeAmount?.toFixed(2)}</Badge>
-                      <Badge 
-                        colorScheme={selectedOrder.billingStatus === 'charged' ? 'green' : selectedOrder.billingStatus === 'refunded' ? 'red' : 'yellow'}
-                      >
-                        {selectedOrder.billingStatus.toUpperCase()}
-                      </Badge>
-                    </HStack>
-                  </VStack>
+              <Stack spacing={4}>
+                {/* Customer Info */}
+                <Box>
+                  <Text fontWeight="bold">Customer:</Text>
+                  <Text>{selectedOrder.userName} ({selectedOrder.userEmail})</Text>
                 </Box>
 
-                {/* Gift & ASIN Information */}
+                {/* Gift Info */}
                 <Box>
-                  <Text fontWeight="bold">🎁 Gift Details:</Text>
-                  <VStack align="start" spacing={2} mt={2}>
-                    <Text fontSize="lg">{selectedOrder.giftName} - ${selectedOrder.giftPrice}</Text>
-                    
-                    {selectedOrder.giftASIN && (
-                      <HStack spacing={3}>
-                        <Badge colorScheme="orange" p={2}>
-                          ASIN: {selectedOrder.giftASIN}
-                        </Badge>
-                        <Button
-                          as="a"
-                          href={`https://amazon.com/dp/${selectedOrder.giftASIN}`}
-                          target="_blank"
-                          size="sm"
-                          colorScheme="orange"
-                          leftIcon={<FaEye />}
-                        >
-                          Open on Amazon
-                        </Button>
-                        <IconButton
-                          aria-label="Copy ASIN"
-                          icon={<FaCopy />}
-                          size="sm"
-                          onClick={() => copyToClipboard(selectedOrder.giftASIN || '')}
-                        />
-                      </HStack>
-                    )}
-                    
-                    {selectedOrder.giftUrl && !selectedOrder.giftASIN && (
+                  <Text fontWeight="bold">Gift:</Text>
+                  <Text>{selectedOrder.giftTitle} - ${selectedOrder.giftPrice}</Text>
+                  {selectedOrder.asin && (
+                    <HStack spacing={3} mt={2}>
+                      <Badge colorScheme="orange">ASIN: {selectedOrder.asin}</Badge>
                       <Button
                         as="a"
-                        href={selectedOrder.giftUrl}
+                        href={`https://amazon.com/dp/${selectedOrder.asin}`}
                         target="_blank"
                         size="sm"
-                        colorScheme="blue"
-                        leftIcon={<FaEye />}
+                        colorScheme="orange"
                       >
-                        View Product
+                        View on Amazon
                       </Button>
-                    )}
-
-                    {selectedOrder.source && (
-                      <Badge colorScheme="purple" size="sm">
-                        Source: {selectedOrder.source === 'gift_selection' && 'User Selected'}
-                        {selectedOrder.source === 'auto_send' && 'Auto Send'}
-                        {selectedOrder.source === 'manual' && 'Manual'}
-                      </Badge>
-                    )}
-                  </VStack>
+                      <IconButton
+                        aria-label="Copy ASIN"
+                        icon={<FaCopy />}
+                        size="sm"
+                        onClick={() => copyToClipboard(selectedOrder.asin || '')}
+                      />
+                    </HStack>
+                  )}
                 </Box>
 
-                {/* Recipient Information */}
+                {/* Recipient Info */}
                 <Box>
-                  <Text fontWeight="bold">📦 Delivery Address (Recipient):</Text>
-                  <VStack align="start" spacing={2} mt={2}>
-                    <Text fontWeight="medium">→ {selectedOrder.recipientName}</Text>
-                    <Text>{selectedOrder.recipientAddress}</Text>
-                    <IconButton
-                      aria-label="Copy address"
-                      icon={<FaCopy />}
-                      size="sm"
-                      onClick={() => copyToClipboard(selectedOrder.recipientAddress)}
-                    />
-                  </VStack>
+                  <Text fontWeight="bold">Recipient:</Text>
+                  <Text>{selectedOrder.recipientName}</Text>
+                  <Text>{selectedOrder.occasion}</Text>
                 </Box>
 
-                {selectedOrder.giftWrap && (
-                  <Alert status="info" size="sm">
-                    <AlertIcon />
-                    Gift wrap requested
-                  </Alert>
-                )}
-
-                {selectedOrder.personalNote && (
-                  <Box>
-                    <Text fontWeight="bold">Personal Note:</Text>
-                    <Text fontStyle="italic">"{selectedOrder.personalNote}"</Text>
-                    <IconButton
-                      aria-label="Copy note"
-                      icon={<FaCopy />}
-                      size="sm"
-                      mt={2}
-                      onClick={() => copyToClipboard(selectedOrder.personalNote || '')}
-                    />
-                  </Box>
-                )}
-
-                {selectedOrder.notes && (
-                  <Box>
-                    <Text fontWeight="bold">Order Notes:</Text>
-                    <Text fontSize="sm" color="gray.600">{selectedOrder.notes}</Text>
-                  </Box>
-                )}
-
+                {/* Admin Actions */}
                 {selectedOrder.status === 'pending' && (
                   <VStack spacing={3} align="stretch">
-                    <Text fontWeight="bold" color="red.500">
-                      🛒 Ready to order on Amazon:
-                    </Text>
+                    <Text fontWeight="bold">Mark as Ordered:</Text>
                     <Input
-                      placeholder="Amazon Order ID (after ordering)"
+                      placeholder="Amazon Order ID"
                       value={amazonOrderId}
                       onChange={(e) => setAmazonOrderId(e.target.value)}
                     />
@@ -1005,100 +506,41 @@ const AdminOrderDashboard: React.FC = () => {
                       placeholder="Notes (optional)"
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
-                      size="sm"
-                      rows={3}
                     />
+                    <Button
+                      leftIcon={<FaShoppingCart />}
+                      colorScheme="yellow"
+                      onClick={() => markAsOrdered(selectedOrder.id)}
+                      disabled={!amazonOrderId.trim()}
+                    >
+                      Mark as Ordered
+                    </Button>
                   </VStack>
                 )}
 
                 {selectedOrder.status === 'ordered' && (
                   <VStack spacing={3} align="stretch">
-                    <Text fontWeight="bold" color="yellow.500">
-                      📦 Order placed! Add tracking info:
-                    </Text>
-                    <Text fontSize="sm">Amazon Order ID: {selectedOrder.amazonOrderId}</Text>
+                    <Text fontWeight="bold">Mark as Shipped:</Text>
                     <Input
                       placeholder="Tracking Number"
                       value={trackingNumber}
                       onChange={(e) => setTrackingNumber(e.target.value)}
                     />
+                    <Button
+                      leftIcon={<FaTruck />}
+                      colorScheme="blue"
+                      onClick={() => markAsShipped(selectedOrder.id)}
+                      disabled={!trackingNumber.trim()}
+                    >
+                      Mark as Shipped
+                    </Button>
                   </VStack>
                 )}
-
-                {selectedOrder.status === 'shipped' && (
-                  <Box>
-                    <Text fontWeight="bold" color="blue.500">🚚 Shipped!</Text>
-                    <Text>Tracking: {selectedOrder.trackingNumber}</Text>
-                  </Box>
-                )}
-
-                {/* Billing Management */}
-                {selectedOrder.billingStatus === 'pending' && (
-                  <Box borderWidth={1} borderColor="yellow.200" borderRadius="md" p={3} bg="yellow.50">
-                    <Text fontWeight="bold" color="yellow.800">💳 Billing Required</Text>
-                    <VStack spacing={3} align="stretch" mt={2}>
-                      <Text fontSize="sm">
-                        Charge <strong>{selectedOrder.customerName}</strong> ${selectedOrder.chargeAmount?.toFixed(2)} 
-                        for {selectedOrder.giftName}
-                      </Text>
-                      <Input
-                        placeholder="Billing notes (optional)"
-                        value={billingNotes}
-                        onChange={(e) => setBillingNotes(e.target.value)}
-                        size="sm"
-                      />
-                    </VStack>
-                  </Box>
-                )}
-
-                {selectedOrder.billingStatus === 'charged' && (
-                  <Alert status="success" size="sm">
-                    <AlertIcon />
-                    Customer has been charged ${selectedOrder.chargeAmount?.toFixed(2)}
-                  </Alert>
-                )}
-              </VStack>
+              </Stack>
             )}
           </ModalBody>
           <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onClose}>
-              Close
-            </Button>
-            
-            {/* Billing Button */}
-            {selectedOrder?.billingStatus === 'pending' && (
-              <Button
-                colorScheme="green"
-                onClick={() => markAsBilled(selectedOrder.id)}
-                mr={3}
-                leftIcon={<span>💳</span>}
-              >
-                Mark as Charged
-              </Button>
-            )}
-            
-            {/* Order Status Buttons */}
-            {selectedOrder?.status === 'pending' && (
-              <Button
-                colorScheme="orange"
-                onClick={() => markAsOrdered(selectedOrder.id)}
-                isDisabled={!amazonOrderId.trim()}
-                leftIcon={<FaCheck />}
-                mr={3}
-              >
-                Mark as Ordered
-              </Button>
-            )}
-            {selectedOrder?.status === 'ordered' && (
-              <Button
-                colorScheme="blue"
-                onClick={() => markAsShipped(selectedOrder.id)}
-                isDisabled={!trackingNumber.trim()}
-                leftIcon={<FaTruck />}
-              >
-                Mark as Shipped
-              </Button>
-            )}
+            <Button onClick={onClose}>Close</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
