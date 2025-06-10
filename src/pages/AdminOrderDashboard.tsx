@@ -32,7 +32,7 @@ import {
   Flex,
   Spacer,
 } from '@chakra-ui/react';
-import { FaShoppingCart, FaCheck, FaTruck, FaEye, FaCopy } from 'react-icons/fa';
+import { FaShoppingCart, FaCheck, FaTruck, FaEye, FaCopy, FaCheckDouble } from 'react-icons/fa';
 import { format } from 'date-fns';
 
 interface PendingOrder {
@@ -67,6 +67,7 @@ interface PendingOrder {
 const AdminOrderDashboard: React.FC = () => {
   const [orders, setOrders] = useState<PendingOrder[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<PendingOrder | null>(null);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [amazonOrderId, setAmazonOrderId] = useState('');
   const [trackingNumber, setTrackingNumber] = useState('');
   const [notes, setNotes] = useState('');
@@ -212,6 +213,39 @@ const AdminOrderDashboard: React.FC = () => {
   const pendingCount = orders.filter(o => o.status === 'pending').length;
   const orderedCount = orders.filter(o => o.status === 'ordered').length;
 
+  const toggleOrderSelection = (orderId: string) => {
+    setSelectedOrderIds(prev => 
+      prev.includes(orderId) 
+        ? prev.filter(id => id !== orderId)
+        : [...prev, orderId]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    const pendingOrderIds = orders.filter(o => o.status === 'pending').map(o => o.id);
+    setSelectedOrderIds(prev => 
+      prev.length === pendingOrderIds.length ? [] : pendingOrderIds
+    );
+  };
+
+  const markSelectedAsBilled = () => {
+    const updatedOrders = orders.map(order => 
+      selectedOrderIds.includes(order.id)
+        ? { 
+            ...order, 
+            billingStatus: 'charged' as const,
+            notes: (order.notes || '') + `\nBulk billing: ${billingNotes || 'Processed in bulk'}`
+          }
+        : order
+    );
+    
+    saveOrders(updatedOrders);
+    setSelectedOrderIds([]);
+    setBillingNotes('');
+    
+    console.log('💳 Bulk billing processed for orders:', selectedOrderIds);
+  };
+
   return (
     <Container maxW="container.xl" py={8}>
       <VStack spacing={6} align="stretch">
@@ -247,6 +281,52 @@ const AdminOrderDashboard: React.FC = () => {
           </Alert>
         )}
 
+        {/* Bulk Actions */}
+        {orders.filter(o => o.status === 'pending').length > 1 && (
+          <Card>
+            <CardBody>
+              <VStack spacing={3} align="stretch">
+                <HStack justify="space-between">
+                  <Text fontWeight="bold">🔧 Bulk Actions</Text>
+                  <Text fontSize="sm" color="gray.600">
+                    {selectedOrderIds.length} of {orders.filter(o => o.status === 'pending').length} orders selected
+                  </Text>
+                </HStack>
+                
+                <HStack spacing={3}>
+                  <Button
+                    size="sm"
+                    onClick={toggleSelectAll}
+                    variant="outline"
+                  >
+                    {selectedOrderIds.length === orders.filter(o => o.status === 'pending').length ? 'Deselect All' : 'Select All Pending'}
+                  </Button>
+                  
+                  {selectedOrderIds.length > 0 && (
+                    <>
+                      <Input
+                        placeholder="Bulk billing notes (optional)"
+                        value={billingNotes}
+                        onChange={(e) => setBillingNotes(e.target.value)}
+                        size="sm"
+                        maxW="300px"
+                      />
+                      <Button
+                        colorScheme="green"
+                        leftIcon={<FaCheckDouble />}
+                        size="sm"
+                        onClick={markSelectedAsBilled}
+                      >
+                        Mark {selectedOrderIds.length} as Charged
+                      </Button>
+                    </>
+                  )}
+                </HStack>
+              </VStack>
+            </CardBody>
+          </Card>
+        )}
+
         {/* Orders Table */}
         <Card>
           <CardHeader>
@@ -256,6 +336,15 @@ const AdminOrderDashboard: React.FC = () => {
             <Table variant="simple">
               <Thead>
                 <Tr>
+                  <Th>
+                    <input
+                      type="checkbox"
+                      checked={selectedOrderIds.length === orders.filter(o => o.status === 'pending').length && orders.filter(o => o.status === 'pending').length > 0}
+                      onChange={toggleSelectAll}
+                      style={{ marginRight: '8px' }}
+                    />
+                    Select
+                  </Th>
                   <Th>Order Date</Th>
                   <Th>Customer → Recipient</Th>
                   <Th>Gift & ASIN</Th>
@@ -269,6 +358,15 @@ const AdminOrderDashboard: React.FC = () => {
               <Tbody>
                 {orders.map((order) => (
                   <Tr key={order.id}>
+                    <Td>
+                      {order.status === 'pending' && (
+                        <input
+                          type="checkbox"
+                          checked={selectedOrderIds.includes(order.id)}
+                          onChange={() => toggleOrderSelection(order.id)}
+                        />
+                      )}
+                    </Td>
                     <Td>{format(new Date(order.orderDate), 'MMM dd, yyyy')}</Td>
                     <Td>
                       <VStack align="start" spacing={1}>
