@@ -181,10 +181,10 @@ export const OccasionForm: React.FC<OccasionFormProps> = ({
         {/* Occasion Date */}
         <FormControl isRequired>
           <FormLabel>
-            <HStack>
+            <Flex align="center" gap={2}>
               <FaCalendarAlt />
               <Text>Occasion Date</Text>
-            </HStack>
+            </Flex>
           </FormLabel>
           <Input
             type="date"
@@ -212,11 +212,11 @@ export const OccasionForm: React.FC<OccasionFormProps> = ({
         {/* Gift Delivery Date */}
         <FormControl isRequired>
           <FormLabel>
-            <HStack>
+            <Flex align="center" gap={2}>
               <FaTruck />
               <Text>Gift Delivery Date</Text>
               <Badge colorScheme="green" variant="subtle">Auto-calculated</Badge>
-            </HStack>
+            </Flex>
           </FormLabel>
           <Input
             type="date"
