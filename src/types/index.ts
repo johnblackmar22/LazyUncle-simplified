@@ -67,6 +67,7 @@ export interface Gift {
   status: 'idea' | 'selected' | 'ordered' | 'shipped' | 'delivered';
   imageUrl?: string;
   purchaseUrl?: string;
+  asin?: string; // Amazon ASIN for easy ordering
   notes?: string;
   recurring?: boolean;
   createdAt: number;
@@ -82,4 +83,5 @@ export interface GiftSuggestion {
   category: string;
   imageUrl?: string;
   purchaseUrl?: string;
+  asin?: string; // Amazon ASIN for easy ordering
 }

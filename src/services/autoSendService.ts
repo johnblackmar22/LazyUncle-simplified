@@ -143,6 +143,7 @@ class AutoSendService {
         date: new Date(occasion.date).getTime(),
         imageUrl: bestRecommendation.imageUrl,
         purchaseUrl: bestRecommendation.purchaseUrl,
+        asin: bestRecommendation.asin,
         notes: `Auto-selected: ${bestRecommendation.reasoning}`,
         createdAt: Date.now(),
         updatedAt: Date.now()
@@ -303,8 +304,8 @@ class AutoSendService {
         throw new Error('Customer not found');
       }
 
-      // Extract ASIN from Amazon URL if available
-      const asin = this.extractASINFromUrl(pending.recommendedGift.purchaseUrl);
+      // Use ASIN from AI recommendation (preferred) or extract from URL as fallback
+      const asin = pending.recommendedGift.asin || this.extractASINFromUrl(pending.recommendedGift.purchaseUrl);
 
       // Create admin order with enhanced customer and ASIN info
       const adminOrder = {

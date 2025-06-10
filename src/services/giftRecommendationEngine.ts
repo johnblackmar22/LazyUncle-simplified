@@ -32,6 +32,7 @@ export interface GiftRecommendation {
   tags: string[];
   imageUrl?: string;
   purchaseUrl?: string;
+  asin?: string; // Amazon ASIN for easy ordering
   availability: 'in_stock' | 'limited' | 'out_of_stock';
   estimatedDelivery: string;
   // Add cost breakdown to recommendations
