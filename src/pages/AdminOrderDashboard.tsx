@@ -88,18 +88,37 @@ const AdminOrderDashboard: React.FC = () => {
 
   // Load pending orders from localStorage/Firebase
   useEffect(() => {
-    loadPendingOrders();
+    const fetchOrders = () => {
+      try {
+        const orders = AdminService.getAllOrders();
+        console.log('🔍 Admin Dashboard - Fetching orders:', {
+          ordersFound: orders.length,
+          globalStorageKey: 'global_admin_orders',
+          rawStorageData: localStorage.getItem('global_admin_orders'),
+          orders: orders.length > 0 ? orders.slice(0, 2) : 'No orders found' // Show first 2 for debugging
+        });
+        
+        setOrders(orders);
+      } catch (error) {
+        console.error('❌ Error fetching admin orders:', error);
+      }
+    };
+
+    fetchOrders();
+    
+    // Refresh every 5 seconds to catch new orders
+    const interval = setInterval(fetchOrders, 5000);
+    
+    return () => clearInterval(interval);
   }, []);
 
-  const loadPendingOrders = () => {
-    // Load from AdminService to see ALL users' selected gifts
+  const refreshOrders = () => {
     try {
       const orders = AdminService.getAllOrders();
-      console.log('📋 Loaded global admin orders via AdminService:', orders);
+      console.log('🔄 Refreshing orders:', orders.length);
       setOrders(orders);
     } catch (error) {
-      console.error('❌ Error loading admin orders:', error);
-      setOrders([]);
+      console.error('❌ Error refreshing admin orders:', error);
     }
   };
 
@@ -250,7 +269,7 @@ const AdminOrderDashboard: React.FC = () => {
     if (window.confirm('Are you sure you want to delete this order? This action cannot be undone.')) {
       try {
         AdminService.deleteOrder(orderId);
-        loadPendingOrders(); // Reload from AdminService
+        refreshOrders(); // Reload from AdminService
         console.log('🗑️ Deleted order via AdminService:', orderId);
       } catch (error) {
         console.error('❌ Error deleting order:', error);
@@ -375,7 +394,7 @@ const AdminOrderDashboard: React.FC = () => {
             <Button onClick={generateMockOrder} colorScheme="blue" size="sm" variant="outline">
               Add Mock Order
             </Button>
-            <Button onClick={loadPendingOrders} colorScheme="green" size="sm" variant="outline">
+            <Button onClick={refreshOrders} colorScheme="green" size="sm" variant="outline">
               Refresh Orders
             </Button>
           </HStack>
@@ -804,7 +823,7 @@ const AdminOrderDashboard: React.FC = () => {
                 size="sm"
                 onClick={() => {
                   console.log('🔄 Reloading orders via AdminService...');
-                  loadPendingOrders();
+                  refreshOrders();
                 }}
                 colorScheme="green"
                 variant="outline"

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Gift Selection</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .section { border: 1px solid #ccc; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        button { padding: 10px 15px; margin: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        .code { background-color: #f8f9fa; padding: 10px; font-family: monospace; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>🎁 Test Gift Selection to Admin Orders</h1>
+    
+    <div class="section info">
+        <h3>Purpose</h3>
+        <p>This test simulates what happens when a user selects a gift in the app. It should create an admin order in localStorage that appears in the admin dashboard.</p>
+    </div>
+    
+    <div class="section">
+        <h3>1. Setup Mock Data</h3>
+        <button onclick="setupMockData()">Setup Mock User & Data</button>
+        <div id="setup-status"></div>
+    </div>
+    
+    <div class="section">
+        <h3>2. Check Current Orders</h3>
+        <button onclick="checkCurrentOrders()">Check Current Admin Orders</button>
+        <div id="current-orders"></div>
+    </div>
+    
+    <div class="section">
+        <h3>3. Simulate Gift Selection</h3>
+        <button onclick="simulateGiftSelection()">Select a Test Gift</button>
+        <div id="selection-result"></div>
+    </div>
+    
+    <div class="section">
+        <h3>4. Verify Admin Orders</h3>
+        <button onclick="verifyAdminOrders()">Check Admin Orders After Selection</button>
+        <div id="verification-result"></div>
+    </div>
+    
+    <div class="section">
+        <h3>5. Admin Dashboard Statistics</h3>
+        <button onclick="showAdminStats()">Show Admin Statistics</button>
+        <div id="admin-stats"></div>
+    </div>
+
+    <script>
+        function setupMockData() {
+            try {
+                // Mock authenticated user
+                const mockAuth = {
+                    user: {
+                        id: 'test-user-' + Date.now(),
+                        email: 'testuser@example.com',
+                        displayName: 'Test User',
+                        planId: 'premium'
+                    }
+                };
+                
+                localStorage.setItem('lazyuncle_auth', JSON.stringify(mockAuth));
+                
+                document.getElementById('setup-status').innerHTML = `
+                    <div class="success">
+                        <p>✅ Mock user data set up:</p>
+                        <div class="code">${JSON.stringify(mockAuth, null, 2)}</div>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('setup-status').innerHTML = `<p style="color: red;">❌ Error: ${error.message}</p>`;
+            }
+        }
+        
+        function checkCurrentOrders() {
+            try {
+                const globalOrders = localStorage.getItem('global_admin_orders');
+                const parsedOrders = globalOrders ? JSON.parse(globalOrders) : [];
+                
+                document.getElementById('current-orders').innerHTML = `
+                    <div class="info">
+                        <p><strong>Current Global Admin Orders:</strong> ${parsedOrders.length}</p>
+                        ${parsedOrders.length > 0 ? 
+                            `<div class="code">${JSON.stringify(parsedOrders.slice(0, 2), null, 2)}</div>` : 
+                            '<p>No orders found in global admin storage.</p>'
+                        }
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('current-orders').innerHTML = `<p style="color: red;">❌ Error: ${error.message}</p>`;
+            }
+        }
+        
+        function simulateGiftSelection() {
+            try {
+                // Get mock user data
+                const authData = JSON.parse(localStorage.getItem('lazyuncle_auth') || '{}');
+                if (!authData.user) {
+                    throw new Error('Please setup mock data first');
+                }
+                
+                // Mock gift data
+                const mockGift = {
+                    id: 'gift-' + Date.now(),
+                    name: 'Test Sweater',
+                    description: 'A cozy test sweater',
+                    price: 49.99,
+                    category: 'clothing',
+                    asin: 'B08TESTITEM',
+                    purchaseUrl: 'https://amazon.com/dp/B08TESTITEM',
+                    reasoning: 'Perfect for testing the gift selection system'
+                };
+                
+                // Create admin order (simulating what useGiftStorage.selectGift does)
+                const adminOrder = {
+                    id: `selected-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                    customerId: authData.user.id,
+                    customerName: authData.user.displayName,
+                    customerEmail: authData.user.email,
+                    customerPlan: authData.user.planId,
+                    recipientName: 'Test Recipient',
+                    recipientAddress: '123 Test St, Test City, CA 12345, USA',
+                    occasionName: 'Test Birthday',
+                    occasionDate: '2025-12-25',
+                    giftName: mockGift.name,
+                    giftPrice: mockGift.price,
+                    giftUrl: mockGift.purchaseUrl,
+                    giftASIN: mockGift.asin,
+                    status: 'pending',
+                    orderDate: Date.now(),
+                    notes: `User selected gift: ${mockGift.reasoning}`,
+                    giftWrap: true,
+                    personalNote: 'Happy Birthday!',
+                    billingStatus: 'pending',
+                    chargeAmount: mockGift.price,
+                    source: 'gift_selection',
+                    recipientId: 'test-recipient-1',
+                    occasionId: 'test-occasion-1'
+                };
+                
+                // Add to global admin orders
+                const currentOrders = JSON.parse(localStorage.getItem('global_admin_orders') || '[]');
+                const updatedOrders = [...currentOrders, adminOrder];
+                localStorage.setItem('global_admin_orders', JSON.stringify(updatedOrders));
+                
+                document.getElementById('selection-result').innerHTML = `
+                    <div class="success">
+                        <p>✅ Gift selected and admin order created!</p>
+                        <p><strong>Order ID:</strong> ${adminOrder.id}</p>
+                        <p><strong>Customer:</strong> ${adminOrder.customerName}</p>
+                        <p><strong>Gift:</strong> ${adminOrder.giftName} ($${adminOrder.giftPrice})</p>
+                        <p><strong>Recipient:</strong> ${adminOrder.recipientName}</p>
+                        <div class="code">${JSON.stringify(adminOrder, null, 2)}</div>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('selection-result').innerHTML = `<p style="color: red;">❌ Error: ${error.message}</p>`;
+            }
+        }
+        
+        function verifyAdminOrders() {
+            try {
+                const globalOrders = JSON.parse(localStorage.getItem('global_admin_orders') || '[]');
+                
+                document.getElementById('verification-result').innerHTML = `
+                    <div class="info">
+                        <p><strong>Total Admin Orders:</strong> ${globalOrders.length}</p>
+                        <p><strong>Pending Orders:</strong> ${globalOrders.filter(o => o.status === 'pending').length}</p>
+                        <p><strong>Recent Orders:</strong></p>
+                        <div class="code">${JSON.stringify(globalOrders.slice(-2), null, 2)}</div>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('verification-result').innerHTML = `<p style="color: red;">❌ Error: ${error.message}</p>`;
+            }
+        }
+        
+        function showAdminStats() {
+            try {
+                const globalOrders = JSON.parse(localStorage.getItem('global_admin_orders') || '[]');
+                
+                const stats = {
+                    total: globalOrders.length,
+                    pending: globalOrders.filter(o => o.status === 'pending').length,
+                    ordered: globalOrders.filter(o => o.status === 'ordered').length,
+                    shipped: globalOrders.filter(o => o.status === 'shipped').length,
+                    delivered: globalOrders.filter(o => o.status === 'delivered').length,
+                    totalRevenue: globalOrders.reduce((sum, order) => sum + order.giftPrice, 0),
+                    uniqueCustomers: new Set(globalOrders.map(o => o.customerId)).size
+                };
+                
+                document.getElementById('admin-stats').innerHTML = `
+                    <div class="info">
+                        <h4>📊 Admin Dashboard Statistics:</h4>
+                        <p><strong>Total Orders:</strong> ${stats.total}</p>
+                        <p><strong>Unique Customers:</strong> ${stats.uniqueCustomers}</p>
+                        <p><strong>Pending:</strong> ${stats.pending}</p>
+                        <p><strong>Ordered:</strong> ${stats.ordered}</p>
+                        <p><strong>Shipped:</strong> ${stats.shipped}</p>
+                        <p><strong>Delivered:</strong> ${stats.delivered}</p>
+                        <p><strong>Total Revenue:</strong> $${stats.totalRevenue.toFixed(2)}</p>
+                        
+                        <div class="code">${JSON.stringify(stats, null, 2)}</div>
+                        
+                        <p><strong>🎯 These numbers should match what you see in the admin dashboard!</strong></p>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('admin-stats').innerHTML = `<p style="color: red;">❌ Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html> 
