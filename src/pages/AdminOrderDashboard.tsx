@@ -37,14 +37,21 @@ import { format } from 'date-fns';
 
 interface PendingOrder {
   id: string;
+  // Customer Info (who pays)
+  customerId: string;
+  customerName: string;
+  customerEmail: string;
+  customerPlan: string;
+  // Recipient Info (who receives)
   recipientName: string;
   recipientAddress: string;
+  // Order Details
   occasionName: string;
   occasionDate: string;
   giftName: string;
   giftPrice: number;
   giftUrl?: string;
-  userEmail: string;
+  giftASIN?: string; // Amazon ASIN for easy ordering
   status: 'pending' | 'ordered' | 'shipped' | 'delivered';
   orderDate: number;
   amazonOrderId?: string;
@@ -52,6 +59,9 @@ interface PendingOrder {
   notes?: string;
   giftWrap: boolean;
   personalNote?: string;
+  // Billing
+  billingStatus: 'pending' | 'charged' | 'refunded';
+  chargeAmount?: number;
 }
 
 const AdminOrderDashboard: React.FC = () => {
@@ -60,6 +70,7 @@ const AdminOrderDashboard: React.FC = () => {
   const [amazonOrderId, setAmazonOrderId] = useState('');
   const [trackingNumber, setTrackingNumber] = useState('');
   const [notes, setNotes] = useState('');
+  const [billingNotes, setBillingNotes] = useState('');
   
   const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -99,7 +110,7 @@ const AdminOrderDashboard: React.FC = () => {
     saveOrders(updatedOrders);
     
     // Send confirmation email to user (mock)
-    console.log('📧 Sending order confirmation email to:', selectedOrder?.userEmail);
+    console.log('📧 Sending order confirmation email to:', selectedOrder?.customerEmail);
     
     onClose();
     setAmazonOrderId('');
@@ -122,10 +133,29 @@ const AdminOrderDashboard: React.FC = () => {
     saveOrders(updatedOrders);
     
     // Send shipping notification email to user (mock)
-    console.log('📧 Sending shipping notification email to:', selectedOrder?.userEmail);
+    console.log('📧 Sending shipping notification email to:', selectedOrder?.customerEmail);
     
     onClose();
     setTrackingNumber('');
+  };
+
+  const markAsBilled = (orderId: string) => {
+    const updatedOrders = orders.map(order => 
+      order.id === orderId 
+        ? { 
+            ...order, 
+            billingStatus: 'charged' as const,
+            notes: (order.notes || '') + `\nBilled: ${billingNotes || 'Charged successfully'}`
+          }
+        : order
+    );
+    
+    saveOrders(updatedOrders);
+    
+    console.log('💳 Billing marked as charged for order:', orderId);
+    
+    onClose();
+    setBillingNotes('');
   };
 
   const copyToClipboard = (text: string) => {
@@ -151,18 +181,28 @@ const AdminOrderDashboard: React.FC = () => {
     // Helper function to create a mock order for testing
     const mockOrder: PendingOrder = {
       id: `order-${Date.now()}`,
+      // Customer Info
+      customerId: 'demo-customer-1',
+      customerName: 'Jane Smith',
+      customerEmail: 'jane.smith@example.com',
+      customerPlan: 'Premium',
+      // Recipient Info
       recipientName: 'John Doe',
       recipientAddress: '123 Main St, Anytown, USA 12345',
+      // Order Details
       occasionName: 'Birthday',
       occasionDate: '2025-06-15',
       giftName: 'Wireless Bluetooth Headphones',
       giftPrice: 79.99,
       giftUrl: 'https://amazon.com/dp/B08EXAMPLE',
-      userEmail: 'user@example.com',
+      giftASIN: 'B08EXAMPLE123',
       status: 'pending',
       orderDate: Date.now(),
       giftWrap: true,
       personalNote: 'Happy Birthday! Hope you love these!',
+      // Billing
+      billingStatus: 'pending',
+      chargeAmount: 79.99,
     };
     
     const updatedOrders = [...orders, mockOrder];
@@ -217,11 +257,12 @@ const AdminOrderDashboard: React.FC = () => {
               <Thead>
                 <Tr>
                   <Th>Order Date</Th>
-                  <Th>Recipient</Th>
-                  <Th>Gift</Th>
+                  <Th>Customer → Recipient</Th>
+                  <Th>Gift & ASIN</Th>
                   <Th>Price</Th>
                   <Th>Occasion</Th>
                   <Th>Status</Th>
+                  <Th>Billing</Th>
                   <Th>Actions</Th>
                 </Tr>
               </Thead>
@@ -230,23 +271,46 @@ const AdminOrderDashboard: React.FC = () => {
                   <Tr key={order.id}>
                     <Td>{format(new Date(order.orderDate), 'MMM dd, yyyy')}</Td>
                     <Td>
-                      <Text fontWeight="medium">{order.recipientName}</Text>
-                      <Text fontSize="sm" color="gray.600">{order.userEmail}</Text>
+                      <VStack align="start" spacing={1}>
+                        <HStack>
+                          <Badge colorScheme="blue" size="sm">{order.customerPlan}</Badge>
+                          <Text fontWeight="bold" fontSize="sm">{order.customerName}</Text>
+                        </HStack>
+                        <Text fontSize="xs" color="gray.600">{order.customerEmail}</Text>
+                        <Text fontSize="sm">→ {order.recipientName}</Text>
+                      </VStack>
                     </Td>
                     <Td>
-                      <Text fontWeight="medium">{order.giftName}</Text>
-                      {order.giftUrl && (
-                        <Button
-                          as="a"
-                          href={order.giftUrl}
-                          target="_blank"
-                          size="xs"
-                          colorScheme="blue"
-                          variant="link"
-                        >
-                          View on Amazon
-                        </Button>
-                      )}
+                      <VStack align="start" spacing={1}>
+                        <Text fontWeight="medium" fontSize="sm">{order.giftName}</Text>
+                        {order.giftASIN && (
+                          <HStack spacing={2}>
+                            <Badge colorScheme="orange" size="sm">ASIN: {order.giftASIN}</Badge>
+                            <Button
+                              as="a"
+                              href={`https://amazon.com/dp/${order.giftASIN}`}
+                              target="_blank"
+                              size="xs"
+                              colorScheme="orange"
+                              variant="link"
+                            >
+                              View on Amazon
+                            </Button>
+                          </HStack>
+                        )}
+                        {order.giftUrl && !order.giftASIN && (
+                          <Button
+                            as="a"
+                            href={order.giftUrl}
+                            target="_blank"
+                            size="xs"
+                            colorScheme="blue"
+                            variant="link"
+                          >
+                            View Product
+                          </Button>
+                        )}
+                      </VStack>
                     </Td>
                     <Td>${order.giftPrice.toFixed(2)}</Td>
                     <Td>
@@ -259,6 +323,19 @@ const AdminOrderDashboard: React.FC = () => {
                       <Badge colorScheme={getStatusColor(order.status)}>
                         {order.status.toUpperCase()}
                       </Badge>
+                    </Td>
+                    <Td>
+                      <VStack align="start" spacing={1}>
+                        <Badge 
+                          colorScheme={order.billingStatus === 'charged' ? 'green' : order.billingStatus === 'refunded' ? 'red' : 'yellow'}
+                          size="sm"
+                        >
+                          {order.billingStatus.toUpperCase()}
+                        </Badge>
+                        {order.chargeAmount && (
+                          <Text fontSize="xs">${order.chargeAmount.toFixed(2)}</Text>
+                        )}
+                      </VStack>
                     </Td>
                     <Td>
                       <HStack spacing={2}>
@@ -318,34 +395,85 @@ const AdminOrderDashboard: React.FC = () => {
           <ModalBody>
             {selectedOrder && (
               <VStack spacing={4} align="stretch">
-                <Box>
-                  <Text fontWeight="bold">Gift:</Text>
-                  <Text>{selectedOrder.giftName} - ${selectedOrder.giftPrice}</Text>
-                  {selectedOrder.giftUrl && (
-                    <Button
-                      as="a"
-                      href={selectedOrder.giftUrl}
-                      target="_blank"
-                      size="sm"
-                      colorScheme="blue"
-                      leftIcon={<FaEye />}
-                      mt={2}
-                    >
-                      View on Amazon
-                    </Button>
-                  )}
+                {/* Customer Information */}
+                <Box borderWidth={1} borderColor="blue.200" borderRadius="md" p={3} bg="blue.50">
+                  <Text fontWeight="bold" color="blue.800">💳 Customer (Billing)</Text>
+                  <VStack align="start" spacing={1} mt={2}>
+                    <HStack>
+                      <Badge colorScheme="blue">{selectedOrder.customerPlan}</Badge>
+                      <Text fontWeight="medium">{selectedOrder.customerName}</Text>
+                    </HStack>
+                    <Text fontSize="sm" color="gray.600">{selectedOrder.customerEmail}</Text>
+                    <HStack>
+                      <Text fontSize="sm">Charge Amount:</Text>
+                      <Badge colorScheme="green">${selectedOrder.chargeAmount?.toFixed(2)}</Badge>
+                      <Badge 
+                        colorScheme={selectedOrder.billingStatus === 'charged' ? 'green' : selectedOrder.billingStatus === 'refunded' ? 'red' : 'yellow'}
+                      >
+                        {selectedOrder.billingStatus.toUpperCase()}
+                      </Badge>
+                    </HStack>
+                  </VStack>
                 </Box>
 
+                {/* Gift & ASIN Information */}
                 <Box>
-                  <Text fontWeight="bold">Delivery Address:</Text>
-                  <Text>{selectedOrder.recipientAddress}</Text>
-                  <IconButton
-                    aria-label="Copy address"
-                    icon={<FaCopy />}
-                    size="sm"
-                    mt={2}
-                    onClick={() => copyToClipboard(selectedOrder.recipientAddress)}
-                  />
+                  <Text fontWeight="bold">🎁 Gift Details:</Text>
+                  <VStack align="start" spacing={2} mt={2}>
+                    <Text fontSize="lg">{selectedOrder.giftName} - ${selectedOrder.giftPrice}</Text>
+                    
+                    {selectedOrder.giftASIN && (
+                      <HStack spacing={3}>
+                        <Badge colorScheme="orange" p={2}>
+                          ASIN: {selectedOrder.giftASIN}
+                        </Badge>
+                        <Button
+                          as="a"
+                          href={`https://amazon.com/dp/${selectedOrder.giftASIN}`}
+                          target="_blank"
+                          size="sm"
+                          colorScheme="orange"
+                          leftIcon={<FaEye />}
+                        >
+                          Open on Amazon
+                        </Button>
+                        <IconButton
+                          aria-label="Copy ASIN"
+                          icon={<FaCopy />}
+                          size="sm"
+                          onClick={() => copyToClipboard(selectedOrder.giftASIN || '')}
+                        />
+                      </HStack>
+                    )}
+                    
+                    {selectedOrder.giftUrl && !selectedOrder.giftASIN && (
+                      <Button
+                        as="a"
+                        href={selectedOrder.giftUrl}
+                        target="_blank"
+                        size="sm"
+                        colorScheme="blue"
+                        leftIcon={<FaEye />}
+                      >
+                        View Product
+                      </Button>
+                    )}
+                  </VStack>
+                </Box>
+
+                {/* Recipient Information */}
+                <Box>
+                  <Text fontWeight="bold">📦 Delivery Address (Recipient):</Text>
+                  <VStack align="start" spacing={2} mt={2}>
+                    <Text fontWeight="medium">→ {selectedOrder.recipientName}</Text>
+                    <Text>{selectedOrder.recipientAddress}</Text>
+                    <IconButton
+                      aria-label="Copy address"
+                      icon={<FaCopy />}
+                      size="sm"
+                      onClick={() => copyToClipboard(selectedOrder.recipientAddress)}
+                    />
+                  </VStack>
                 </Box>
 
                 {selectedOrder.giftWrap && (
@@ -407,6 +535,32 @@ const AdminOrderDashboard: React.FC = () => {
                     <Text>Tracking: {selectedOrder.trackingNumber}</Text>
                   </Box>
                 )}
+
+                {/* Billing Management */}
+                {selectedOrder.billingStatus === 'pending' && (
+                  <Box borderWidth={1} borderColor="yellow.200" borderRadius="md" p={3} bg="yellow.50">
+                    <Text fontWeight="bold" color="yellow.800">💳 Billing Required</Text>
+                    <VStack spacing={3} align="stretch" mt={2}>
+                      <Text fontSize="sm">
+                        Charge <strong>{selectedOrder.customerName}</strong> ${selectedOrder.chargeAmount?.toFixed(2)} 
+                        for {selectedOrder.giftName}
+                      </Text>
+                      <Input
+                        placeholder="Billing notes (optional)"
+                        value={billingNotes}
+                        onChange={(e) => setBillingNotes(e.target.value)}
+                        size="sm"
+                      />
+                    </VStack>
+                  </Box>
+                )}
+
+                {selectedOrder.billingStatus === 'charged' && (
+                  <Alert status="success" size="sm">
+                    <AlertIcon />
+                    Customer has been charged ${selectedOrder.chargeAmount?.toFixed(2)}
+                  </Alert>
+                )}
               </VStack>
             )}
           </ModalBody>
@@ -414,12 +568,27 @@ const AdminOrderDashboard: React.FC = () => {
             <Button variant="ghost" mr={3} onClick={onClose}>
               Close
             </Button>
-            {selectedOrder?.status === 'pending' && (
+            
+            {/* Billing Button */}
+            {selectedOrder?.billingStatus === 'pending' && (
               <Button
                 colorScheme="green"
+                onClick={() => markAsBilled(selectedOrder.id)}
+                mr={3}
+                leftIcon={<span>💳</span>}
+              >
+                Mark as Charged
+              </Button>
+            )}
+            
+            {/* Order Status Buttons */}
+            {selectedOrder?.status === 'pending' && (
+              <Button
+                colorScheme="orange"
                 onClick={() => markAsOrdered(selectedOrder.id)}
                 isDisabled={!amazonOrderId.trim()}
                 leftIcon={<FaCheck />}
+                mr={3}
               >
                 Mark as Ordered
               </Button>

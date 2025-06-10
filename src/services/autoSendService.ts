@@ -297,17 +297,33 @@ class AutoSendService {
         throw new Error('Occasion not found');
       }
 
-      // Create admin order
+      // Get customer info from auth store
+      const user = useAuthStore.getState().user;
+      if (!user) {
+        throw new Error('Customer not found');
+      }
+
+      // Extract ASIN from Amazon URL if available
+      const asin = this.extractASINFromUrl(pending.recommendedGift.purchaseUrl);
+
+      // Create admin order with enhanced customer and ASIN info
       const adminOrder = {
         id: `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        // Customer Info (who pays)
+        customerId: user.id,
+        customerName: user.displayName || user.email.split('@')[0],
+        customerEmail: user.email,
+        customerPlan: user.planId || 'free',
+        // Recipient Info (who receives)
         recipientName: recipient.name,
         recipientAddress: this.formatAddress(recipient.deliveryAddress),
+        // Order Details
         occasionName: occasion.name,
         occasionDate: occasion.date,
         giftName: pending.recommendedGift.name,
         giftPrice: pending.recommendedGift.price,
         giftUrl: pending.recommendedGift.purchaseUrl,
-        userEmail: this.getUserEmail(), // Would get from auth store
+        giftASIN: asin,
         status: 'pending' as const,
         orderDate: Date.now(),
         amazonOrderId: undefined,
@@ -315,6 +331,9 @@ class AutoSendService {
         notes: `Auto-approved: ${pending.recommendedGift.notes}`,
         giftWrap: occasion.giftWrap || false,
         personalNote: occasion.noteText,
+        // Billing
+        billingStatus: 'pending' as const,
+        chargeAmount: pending.recommendedGift.price,
       };
 
       // Save to admin orders
@@ -332,6 +351,32 @@ class AutoSendService {
       console.error('❌ Error creating admin order:', error);
       throw error;
     }
+  }
+
+  /**
+   * Extract ASIN from Amazon URL
+   */
+  private extractASINFromUrl(url?: string): string | undefined {
+    if (!url) return undefined;
+    
+    // Common Amazon URL patterns:
+    // https://amazon.com/dp/B08EXAMPLE
+    // https://amazon.com/gp/product/B08EXAMPLE
+    // https://www.amazon.com/product-name/dp/B08EXAMPLE/
+    const asinPatterns = [
+      /\/dp\/([A-Z0-9]{10})/i,
+      /\/gp\/product\/([A-Z0-9]{10})/i,
+      /\/([A-Z0-9]{10})(?:\/|\?|$)/i
+    ];
+
+    for (const pattern of asinPatterns) {
+      const match = url.match(pattern);
+      if (match && match[1]) {
+        return match[1];
+      }
+    }
+
+    return undefined;
   }
 
   /**
@@ -375,11 +420,6 @@ class AutoSendService {
   private formatAddress(address: any): string {
     if (!address) return 'No address provided';
     return `${address.line1}${address.line2 ? ', ' + address.line2 : ''}, ${address.city}, ${address.state} ${address.postalCode}`;
-  }
-
-  private getUserEmail(): string {
-    const user = useAuthStore.getState().user;
-    return user?.email || 'user@example.com';
   }
 
   private calculateEstimatedDelivery(occasionId: string): string {
