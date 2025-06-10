@@ -88,13 +88,12 @@ const AdminOrderDashboard: React.FC = () => {
 
   // Load pending orders from localStorage/Firebase
   useEffect(() => {
-    const fetchOrders = () => {
+    const fetchOrders = async () => {
       try {
-        const orders = AdminService.getAllOrders();
+        const orders = await AdminService.getAllOrders(); // Now async
         console.log('🔍 Admin Dashboard - Fetching orders:', {
           ordersFound: orders.length,
-          globalStorageKey: 'global_admin_orders',
-          rawStorageData: localStorage.getItem('global_admin_orders'),
+          firebaseMode: !import.meta.env.VITE_DEMO_MODE || import.meta.env.VITE_DEMO_MODE === 'false',
           orders: orders.length > 0 ? orders.slice(0, 2) : 'No orders found' // Show first 2 for debugging
         });
         
@@ -106,15 +105,15 @@ const AdminOrderDashboard: React.FC = () => {
 
     fetchOrders();
     
-    // Refresh every 5 seconds to catch new orders
-    const interval = setInterval(fetchOrders, 5000);
+    // Refresh every 10 seconds to catch new orders (increased from 5s for Firebase)
+    const interval = setInterval(fetchOrders, 10000);
     
     return () => clearInterval(interval);
   }, []);
 
-  const refreshOrders = () => {
+  const refreshOrders = async () => {
     try {
-      const orders = AdminService.getAllOrders();
+      const orders = await AdminService.getAllOrders(); // Now async
       console.log('🔄 Refreshing orders:', orders.length);
       setOrders(orders);
     } catch (error) {
@@ -122,9 +121,12 @@ const AdminOrderDashboard: React.FC = () => {
     }
   };
 
-  const saveOrders = (updatedOrders: PendingOrder[]) => {
+  const saveOrders = async (updatedOrders: PendingOrder[]) => {
     try {
-      AdminService.saveOrders(updatedOrders);
+      // For Firebase mode, we don't use saveOrders - the individual update methods handle it
+      if (import.meta.env.VITE_DEMO_MODE !== 'false') {
+        AdminService.saveOrders(updatedOrders);
+      }
       setOrders(updatedOrders);
     } catch (error) {
       console.error('❌ Error saving admin orders:', error);
@@ -265,11 +267,11 @@ const AdminOrderDashboard: React.FC = () => {
     setBillingNotes('');
   };
 
-  const deleteOrder = (orderId: string) => {
+  const deleteOrder = async (orderId: string) => {
     if (window.confirm('Are you sure you want to delete this order? This action cannot be undone.')) {
       try {
-        AdminService.deleteOrder(orderId);
-        refreshOrders(); // Reload from AdminService
+        await AdminService.deleteOrder(orderId); // Now async
+        await refreshOrders(); // Reload from AdminService
         console.log('🗑️ Deleted order via AdminService:', orderId);
       } catch (error) {
         console.error('❌ Error deleting order:', error);
@@ -386,7 +388,7 @@ const AdminOrderDashboard: React.FC = () => {
               View and manage selected gifts from ALL users across the platform
             </Text>
             <Badge colorScheme="purple" size="sm">
-              Admin View: {AdminService.getOrderStats().uniqueCustomers} Customers • {orders.length} Total Orders
+              Admin View: {new Set(orders.map(o => o.customerId)).size} Customers • {orders.length} Total Orders
             </Badge>
           </VStack>
           <Spacer />
@@ -802,10 +804,18 @@ const AdminOrderDashboard: React.FC = () => {
               
               <Button
                 size="sm"
-                onClick={() => {
+                onClick={async () => {
                   try {
-                    const orders = AdminService.getAllOrders();
-                    const stats = AdminService.getOrderStats();
+                    const orders = await AdminService.getAllOrders();
+                    const stats = {
+                      total: orders.length,
+                      pending: orders.filter(o => o.status === 'pending').length,
+                      ordered: orders.filter(o => o.status === 'ordered').length,
+                      shipped: orders.filter(o => o.status === 'shipped').length,
+                      delivered: orders.filter(o => o.status === 'delivered').length,
+                      totalRevenue: orders.reduce((sum, order) => sum + order.giftPrice, 0),
+                      uniqueCustomers: new Set(orders.map(o => o.customerId)).size
+                    };
                     console.log('🔍 AdminService Orders:', orders);
                     console.log('📊 AdminService Stats:', stats);
                     console.log('🔍 Current filters:', { searchTerm, statusFilter, billingFilter, sortField, sortDirection });
@@ -833,12 +843,12 @@ const AdminOrderDashboard: React.FC = () => {
               
               <Button
                 size="sm"
-                onClick={() => {
+                onClick={async () => {
                   if (window.confirm('Are you sure you want to clear ALL admin orders? This will remove orders from ALL users!')) {
                     try {
-                      AdminService.clearAllOrders();
+                      await AdminService.clearAllOrders();
                       setOrders([]);
-                      console.log('🗑️ Cleared all global admin orders via AdminService');
+                      console.log('🗑️ Cleared all admin orders via AdminService');
                     } catch (error) {
                       console.error('❌ Error clearing orders:', error);
                     }

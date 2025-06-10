@@ -77,7 +77,7 @@ export function useGiftStorage() {
     return parts.join(', ');
   };
 
-  const selectGift = (gift: any, recipientId: string, occasionId: string) => {
+  const selectGift = async (gift: any, recipientId: string, occasionId: string) => {
     console.log('selectGift called with:', {
       giftId: gift.id,
       giftName: gift.name,
@@ -165,11 +165,12 @@ export function useGiftStorage() {
           occasionId: occasionId
         };
 
-        // Use AdminService to add the order to global admin queue
-        AdminService.addOrder(adminOrder);
+        // Use AdminService to add the order to Firebase/global admin queue
+        await AdminService.addOrder(adminOrder); // Now async
+        console.log('📋 Added admin order via Firebase/AdminService:', adminOrder.id);
       }
     } catch (error) {
-      console.error('Error creating global admin order for selected gift:', error);
+      console.error('Error creating admin order for selected gift:', error);
     }
 
     return storedGift;

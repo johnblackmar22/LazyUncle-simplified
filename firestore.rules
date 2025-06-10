@@ -42,6 +42,32 @@ service cloud.firestore {
                       request.resource.data.userId == request.auth.uid;
     }
     
+    // Occasions collection
+    match /occasions/{occasionId} {
+      // Users can only access their own occasions
+      allow read, write: if isAuthenticated() && 
+                           resource.data.userId == request.auth.uid;
+      
+      // For new documents, ensure userId is set properly
+      allow create: if isAuthenticated() && 
+                      request.resource.data.userId == request.auth.uid;
+    }
+    
+    // Admin Orders collection - Global access for admin functionality
+    match /admin_orders/{orderId} {
+      // Any authenticated user can read admin orders (for admin dashboard)
+      // TODO: Restrict to actual admin users in production
+      allow read: if isAuthenticated();
+      
+      // Any authenticated user can create admin orders (when selecting gifts)
+      // TODO: Restrict creation to customer's own orders in production
+      allow create: if isAuthenticated();
+      
+      // Any authenticated user can update admin orders (for admin dashboard)
+      // TODO: Restrict to actual admin users in production
+      allow update, delete: if isAuthenticated();
+    }
+    
     // All other documents are not accessible
     match /{document=**} {
       allow read, write: if false;
