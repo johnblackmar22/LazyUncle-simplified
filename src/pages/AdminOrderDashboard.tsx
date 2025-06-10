@@ -84,8 +84,13 @@ const AdminOrderDashboard: React.FC = () => {
     // In demo mode, load from localStorage
     // In production, this would be a Firebase query for orders with admin access
     const stored = localStorage.getItem('admin_pending_orders');
+    console.log('🔍 Loading orders from localStorage:', stored);
     if (stored) {
-      setOrders(JSON.parse(stored));
+      const parsedOrders = JSON.parse(stored);
+      console.log('📋 Parsed orders:', parsedOrders);
+      setOrders(parsedOrders);
+    } else {
+      console.log('⚠️ No orders found in localStorage');
     }
   };
 
@@ -479,6 +484,71 @@ const AdminOrderDashboard: React.FC = () => {
                 <Text color="gray.500">No orders yet. Try adding a mock order to test!</Text>
               </Box>
             )}
+          </CardBody>
+        </Card>
+
+        {/* Debug Information - Remove in production */}
+        <Card bg="gray.50" borderColor="gray.200">
+          <CardHeader>
+            <Heading size="sm">🔧 Debug Information</Heading>
+          </CardHeader>
+          <CardBody>
+            <VStack spacing={3} align="stretch">
+              <HStack justify="space-between">
+                <Text fontSize="sm">Orders in state:</Text>
+                <Badge colorScheme="blue">{orders.length}</Badge>
+              </HStack>
+              
+              <HStack justify="space-between">
+                <Text fontSize="sm">localStorage key:</Text>
+                <Text fontSize="xs" fontFamily="mono">admin_pending_orders</Text>
+              </HStack>
+              
+              <Button
+                size="sm"
+                onClick={() => {
+                  const stored = localStorage.getItem('admin_pending_orders');
+                  console.log('🔍 Raw localStorage:', stored);
+                  console.log('📋 Current orders state:', orders);
+                  if (stored) {
+                    try {
+                      const parsed = JSON.parse(stored);
+                      console.log('✅ Successfully parsed:', parsed);
+                    } catch (e) {
+                      console.error('❌ Parse error:', e);
+                    }
+                  }
+                }}
+                variant="outline"
+              >
+                Check Console Logs
+              </Button>
+              
+              <Button
+                size="sm"
+                onClick={() => {
+                  console.log('🔄 Reloading orders...');
+                  loadPendingOrders();
+                }}
+                colorScheme="green"
+                variant="outline"
+              >
+                Reload Orders
+              </Button>
+              
+              <Button
+                size="sm"
+                onClick={() => {
+                  localStorage.removeItem('admin_pending_orders');
+                  setOrders([]);
+                  console.log('🗑️ Cleared localStorage and orders');
+                }}
+                colorScheme="red"
+                variant="outline"
+              >
+                Clear All Orders
+              </Button>
+            </VStack>
           </CardBody>
         </Card>
       </VStack>
