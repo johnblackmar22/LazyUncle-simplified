@@ -76,6 +76,7 @@ const AddRecipientPage: React.FC = () => {
     name: false,
     relationship: false,
     birthdate: false,
+    birthdateComplete: false,
     deliveryAddress: false
   });
   
@@ -134,7 +135,7 @@ const AddRecipientPage: React.FC = () => {
   // Validation checks
   const isNameInvalid = touched.name && name.trim() === '';
   const isRelationshipInvalid = touched.relationship && relationship.trim() === '';
-  const isBirthdateInvalid = touched.birthdate && (!birthYear || !birthMonth || !birthDay);
+  const isBirthdateInvalid = (touched.birthdate || touched.birthdateComplete) && (!birthYear || !birthMonth || !birthDay);
   const isDeliveryAddressInvalid = touched.deliveryAddress && !deliveryAddress;
 
   const handleAddInterest = (interestToAdd?: string): void => {
@@ -164,6 +165,7 @@ const AddRecipientPage: React.FC = () => {
       name: true,
       relationship: true,
       birthdate: true,
+      birthdateComplete: true,
       deliveryAddress: true
     });
     
@@ -281,7 +283,11 @@ const AddRecipientPage: React.FC = () => {
                       placeholder="Month"
                       value={birthMonth}
                       onChange={(e) => setBirthMonth(e.target.value)}
-                      onBlur={() => setTouched({ ...touched, birthdate: true })}
+                      onBlur={() => {
+                        if (birthYear && birthDay) {
+                          setTouched({ ...touched, birthdateComplete: true });
+                        }
+                      }}
                     >
                       {months.map((month, index) => (
                         <option key={index} value={String(index + 1).padStart(2, '0')}>
@@ -293,7 +299,11 @@ const AddRecipientPage: React.FC = () => {
                       placeholder="Day"
                       value={birthDay}
                       onChange={(e) => setBirthDay(e.target.value)}
-                      onBlur={() => setTouched({ ...touched, birthdate: true })}
+                      onBlur={() => {
+                        if (birthYear && birthMonth) {
+                          setTouched({ ...touched, birthdateComplete: true });
+                        }
+                      }}
                     >
                       {days.map(day => (
                         <option key={day} value={String(day).padStart(2, '0')}>
@@ -305,7 +315,11 @@ const AddRecipientPage: React.FC = () => {
                       placeholder="Year"
                       value={birthYear}
                       onChange={(e) => setBirthYear(e.target.value)}
-                      onBlur={() => setTouched({ ...touched, birthdate: true })}
+                      onBlur={() => {
+                        if (birthMonth && birthDay) {
+                          setTouched({ ...touched, birthdateComplete: true });
+                        }
+                      }}
                     >
                       {years.map(year => (
                         <option key={year} value={year}>
@@ -384,31 +398,45 @@ const AddRecipientPage: React.FC = () => {
                         Suggested interests for {ageGroupLabel && `${ageGroupLabel}s`} ({displayedSuggestions.length} shown)
                       </Button>
                       <Collapse in={showSuggestions}>
-                        <Box bg={suggestionBg} p={3} borderRadius="md">
-                          <SimpleGrid columns={{ base: 2, md: 3, lg: 4 }} spacing={2}>
+                        <Box bg={suggestionBg} p={4} borderRadius="md" border="1px" borderColor={borderColor}>
+                          <Text fontSize="sm" color="gray.600" mb={3} textAlign="center">
+                            Click any suggestion to add it to your interests
+                          </Text>
+                          <SimpleGrid columns={{ base: 2, md: 3, lg: 4 }} spacing={3}>
                             {displayedSuggestions.map((suggestion, index) => (
                               <Badge
                                 key={suggestion}
-                                colorScheme="gray"
-                                variant="outline"
+                                colorScheme={getInterestColor(index)}
+                                variant="subtle"
                                 cursor="pointer"
                                 onClick={() => handleSuggestionClick(suggestion)}
                                 _hover={{ 
-                                  bg: 'blue.100',
-                                  borderColor: 'blue.300',
-                                  transform: 'scale(1.05)'
+                                  transform: 'scale(1.05)',
+                                  shadow: 'md',
+                                  variant: 'solid'
                                 }}
-                                transition="all 0.2s"
-                                p={2}
+                                _active={{
+                                  transform: 'scale(0.95)'
+                                }}
+                                transition="all 0.2s ease"
+                                p={3}
                                 textAlign="center"
-                                fontSize="xs"
+                                fontSize="sm"
+                                fontWeight="medium"
+                                borderRadius="lg"
+                                minH="40px"
+                                display="flex"
+                                alignItems="center"
+                                justifyContent="center"
+                                wordBreak="break-word"
+                                lineHeight="1.2"
                               >
                                 {suggestion}
                               </Badge>
                             ))}
                           </SimpleGrid>
                           {interests.length > 0 && displayedSuggestions.length < 10 && (
-                            <Text fontSize="xs" color="gray.500" mt={2} textAlign="center">
+                            <Text fontSize="xs" color="gray.500" mt={3} textAlign="center" fontStyle="italic">
                               More suggestions will appear as you add interests
                             </Text>
                           )}
