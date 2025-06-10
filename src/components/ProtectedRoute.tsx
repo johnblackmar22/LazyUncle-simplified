@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { authLogger } from '../utils/logger';
 
 const ProtectedRoute = () => {
   const { user, demoMode, initialized } = useAuthStore();
@@ -8,7 +9,7 @@ const ProtectedRoute = () => {
   
   // Log authentication state for debugging
   useEffect(() => {
-    console.log('ProtectedRoute - Auth State:', { 
+    authLogger.debug('Auth State:', { 
       user: !!user, 
       demoMode, 
       initialized,
@@ -18,7 +19,7 @@ const ProtectedRoute = () => {
   
   // Don't redirect during initialization - wait for auth to be determined
   if (!initialized) {
-    console.log('ProtectedRoute - Waiting for auth initialization...');
+    authLogger.debug('Waiting for auth initialization...');
     return null; // Show nothing while waiting for initialization
   }
   
@@ -27,13 +28,13 @@ const ProtectedRoute = () => {
   const isAuthenticated = !!user || demoMode;
   
   if (!isAuthenticated) {
-    console.log('ProtectedRoute - No authentication found, redirecting to login');
+    authLogger.debug('No authentication found, redirecting to login');
     // Store the attempted location for potential redirect after login
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
   
   // User is authenticated, allow access to protected routes
-  console.log('ProtectedRoute - Authentication verified, allowing access');
+  authLogger.debug('Authentication verified, allowing access');
   return <Outlet />;
 };
 

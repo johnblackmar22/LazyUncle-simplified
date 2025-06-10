@@ -26,6 +26,7 @@ export interface Recipient {
   name: string;
   relationship: string;
   birthdate?: string; // Format: 'YYYY-MM-DD'
+  gender?: 'male' | 'female' | 'other';
   interests: string[];
   description?: string;
   deliveryAddress?: Address;
@@ -41,7 +42,7 @@ export interface Occasion {
   name: string; // e.g., 'Birthday', 'Anniversary', 'Graduation', etc.
   date: string; // Format: 'YYYY-MM-DD' - when the occasion actually happens
   deliveryDate?: string; // Format: 'YYYY-MM-DD' - when to deliver the gift
-  type: 'birthday' | 'anniversary' | 'custom' | 'christmas';
+  type: 'birthday' | 'custom' | 'christmas';
   notes?: string;
   budget?: number;
   recurring?: boolean; // Annual repeat
