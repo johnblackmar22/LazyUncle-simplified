@@ -8,6 +8,7 @@ import { initializeDemoData } from './services/demoData';
 import { authLogger } from './utils/logger';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
+import { AdminRoute } from './components/AdminRoute';
 import theme from './theme';
 
 // Pages
@@ -136,7 +137,13 @@ function App() {
             <Route path="/recipients/:id/edit" element={<EditRecipientPage />} />
             <Route path="/recipients/:id/debug" element={<DebugRecipientPage />} />
             <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/admin/orders" element={<AdminOrderDashboard />} />
+            
+            {/* Admin-only routes */}
+            <Route path="/admin/orders" element={
+              <AdminRoute>
+                <AdminOrderDashboard />
+              </AdminRoute>
+            } />
           </Route>
         </Route>
       </Routes>

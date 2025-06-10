@@ -1,27 +1,9 @@
-// Admin Authentication Service - Dedicated admin login and role management
-import { signInWithEmailAndPassword, type User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { auth, db, DEMO_MODE } from './firebase';
+// Admin Authentication Service - Firebase-based admin authentication
+import { signInWithEmailAndPassword, signOut, type User as FirebaseUser } from 'firebase/auth';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { auth, db } from './firebase';
 import { COLLECTIONS } from '../utils/constants';
 import type { AdminUser, AdminPermission, AdminSession } from '../types';
-
-// Admin credentials for demo/testing
-const DEMO_ADMIN_CREDENTIALS = {
-  email: 'admin@lazyuncle.com',
-  password: 'admin123',
-  user: {
-    id: 'admin-user',
-    email: 'admin@lazyuncle.com',
-    displayName: 'Admin User',
-    photoURL: '',
-    planId: 'admin',
-    role: 'admin' as const,
-    permissions: ['view_orders', 'manage_orders', 'view_analytics'] as AdminPermission[],
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-    lastAdminLogin: Date.now()
-  } as AdminUser
-};
 
 class AdminAuthService {
   private static currentAdminSession: AdminSession | null = null;
@@ -47,26 +29,10 @@ class AdminAuthService {
 
   // Admin login
   static async loginAsAdmin(email: string, password: string): Promise<AdminSession> {
-    console.log('🔐 Admin login attempt:', { email, demoMode: DEMO_MODE });
+    console.log('🔐 Admin login attempt:', { email });
 
     try {
-      // Demo mode admin login
-      if (DEMO_MODE) {
-        if (email === DEMO_ADMIN_CREDENTIALS.email && password === DEMO_ADMIN_CREDENTIALS.password) {
-          const session: AdminSession = {
-            user: DEMO_ADMIN_CREDENTIALS.user,
-            loginTime: Date.now(),
-            permissions: DEMO_ADMIN_CREDENTIALS.user.permissions
-          };
-          this.currentAdminSession = session;
-          console.log('✅ Demo admin login successful');
-          return session;
-        } else {
-          throw new Error('Invalid admin credentials for demo mode');
-        }
-      }
-
-      // Production Firebase admin login
+      // Firebase admin login
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
       
@@ -74,20 +40,39 @@ class AdminAuthService {
       const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, firebaseUser.uid));
       
       if (!userDoc.exists()) {
-        throw new Error('User document not found');
+        // If user document doesn't exist, create it with admin role for admin@lazyuncle.com
+        if (email === 'admin@lazyuncle.com') {
+          const adminUserData = {
+            email: firebaseUser.email || '',
+            displayName: 'Admin User',
+            role: 'admin',
+            permissions: ['view_orders', 'manage_orders', 'view_analytics'],
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            planId: 'admin'
+          };
+          
+          await updateDoc(doc(db, COLLECTIONS.USERS, firebaseUser.uid), adminUserData);
+          console.log('✅ Created admin user document');
+        } else {
+          throw new Error('User account not found');
+        }
       }
 
-      const userData = userDoc.data();
+      // Re-fetch user data after potential creation
+      const finalUserDoc = await getDoc(doc(db, COLLECTIONS.USERS, firebaseUser.uid));
+      const userData = finalUserDoc.data();
       
       // Verify admin role
-      if (!userData.role || !['admin', 'super_admin'].includes(userData.role)) {
+      if (!userData?.role || !['admin', 'super_admin'].includes(userData.role)) {
+        await signOut(auth); // Sign out non-admin user
         throw new Error('Access denied: Admin role required');
       }
 
       const adminUser: AdminUser = {
         id: firebaseUser.uid,
         email: firebaseUser.email || '',
-        displayName: firebaseUser.displayName || userData.displayName || '',
+        displayName: firebaseUser.displayName || userData.displayName || 'Admin User',
         photoURL: firebaseUser.photoURL || '',
         planId: userData.planId || 'admin',
         role: userData.role,
@@ -104,6 +89,13 @@ class AdminAuthService {
       };
 
       this.currentAdminSession = session;
+      
+      // Update last admin login time
+      await updateDoc(doc(db, COLLECTIONS.USERS, firebaseUser.uid), {
+        lastAdminLogin: Date.now(),
+        updatedAt: Date.now()
+      });
+
       console.log('✅ Firebase admin login successful:', adminUser.role);
       return session;
 
@@ -118,10 +110,7 @@ class AdminAuthService {
     console.log('🔐 Admin logout');
     
     try {
-      if (!DEMO_MODE) {
-        await auth.signOut();
-      }
-      
+      await signOut(auth);
       this.currentAdminSession = null;
       console.log('✅ Admin logout successful');
     } catch (error) {
@@ -149,26 +138,59 @@ class AdminAuthService {
     }
   }
 
-  // Initialize admin session from stored auth (for page refresh)
+  // Initialize admin session from current Firebase auth state
   static async initializeAdminSession(): Promise<void> {
     console.log('🔐 Initializing admin session...');
     
-    if (DEMO_MODE) {
-      // Check for stored demo admin session
-      const stored = localStorage.getItem('admin_session');
-      if (stored) {
-        try {
-          this.currentAdminSession = JSON.parse(stored);
-          console.log('✅ Demo admin session restored');
-        } catch (error) {
-          console.warn('Failed to restore demo admin session:', error);
-        }
+    try {
+      const currentUser = auth.currentUser;
+      
+      if (!currentUser) {
+        console.log('No current Firebase user - no admin session');
+        return;
       }
-      return;
-    }
 
-    // For Firebase mode, admin state will be managed through Firebase auth state
-    // This would be called when Firebase auth state changes
+      // Check if current user is admin
+      const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, currentUser.uid));
+      
+      if (!userDoc.exists()) {
+        console.log('User document not found - no admin session');
+        return;
+      }
+
+      const userData = userDoc.data();
+      
+      if (!userData?.role || !['admin', 'super_admin'].includes(userData.role)) {
+        console.log('Current user is not admin - no admin session');
+        return;
+      }
+
+      // Create admin session
+      const adminUser: AdminUser = {
+        id: currentUser.uid,
+        email: currentUser.email || '',
+        displayName: currentUser.displayName || userData.displayName || 'Admin User',
+        photoURL: currentUser.photoURL || '',
+        planId: userData.planId || 'admin',
+        role: userData.role,
+        permissions: userData.permissions || this.getDefaultPermissions(userData.role),
+        createdAt: userData.createdAt || Date.now(),
+        updatedAt: Date.now(),
+        lastAdminLogin: userData.lastAdminLogin
+      };
+
+      const session: AdminSession = {
+        user: adminUser,
+        loginTime: Date.now(),
+        permissions: adminUser.permissions
+      };
+
+      this.currentAdminSession = session;
+      console.log('✅ Admin session restored for:', adminUser.email);
+
+    } catch (error) {
+      console.error('❌ Error initializing admin session:', error);
+    }
   }
 }
 

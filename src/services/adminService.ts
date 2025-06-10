@@ -11,41 +11,10 @@ import {
   where,
   Timestamp 
 } from 'firebase/firestore';
-import { db, DEMO_MODE } from './firebase';
+import { db } from './firebase';
 import { COLLECTIONS } from '../utils/constants';
 import AdminAuthService from './adminAuthService';
 import type { AdminOrder } from '../types';
-
-// Demo data for testing
-const DEMO_ORDERS: AdminOrder[] = [
-  {
-    id: 'demo-order-1',
-    userId: 'demo-user-1',
-    userEmail: 'test@example.com',
-    userName: 'Test User',
-    recipientName: 'Mom',
-    recipientRelationship: 'Mother',
-    occasion: 'Birthday',
-    giftTitle: 'Premium Coffee Set',
-    giftDescription: 'High-quality coffee beans and accessories',
-    giftPrice: 45.99,
-    giftImageUrl: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=400',
-    asin: 'B08XYZ123',
-    status: 'pending',
-    priority: 'normal',
-    notes: '',
-    createdAt: Date.now() - 86400000, // Yesterday
-    updatedAt: Date.now() - 86400000,
-    shippingAddress: {
-      name: 'Test User',
-      street: '123 Main St',
-      city: 'Anytown',
-      state: 'CA',
-      zipCode: '12345',
-      country: 'US'
-    }
-  }
-];
 
 class AdminService {
   // Get all orders (admin only)
@@ -56,11 +25,6 @@ class AdminService {
       // Require admin access
       AdminAuthService.requireAdmin();
       
-      if (DEMO_MODE) {
-        console.log('✅ Demo mode: returning sample orders');
-        return [...DEMO_ORDERS];
-      }
-
       // Fetch from Firebase
       const ordersRef = collection(db, COLLECTIONS.ADMIN_ORDERS);
       const q = query(ordersRef, orderBy('createdAt', 'desc'));
@@ -93,22 +57,9 @@ class AdminService {
     try {
       const orderData = {
         ...order,
-        createdAt: DEMO_MODE ? Date.now() : Timestamp.now(),
-        updatedAt: DEMO_MODE ? Date.now() : Timestamp.now()
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now()
       };
-
-      if (DEMO_MODE) {
-        // Add to demo data
-        const newOrder: AdminOrder = {
-          id: `demo-${Date.now()}`,
-          ...order,
-          createdAt: Date.now(),
-          updatedAt: Date.now()
-        };
-        DEMO_ORDERS.unshift(newOrder);
-        console.log('✅ Demo order added');
-        return newOrder.id;
-      }
 
       // Add to Firebase
       const ordersRef = collection(db, COLLECTIONS.ADMIN_ORDERS);
@@ -133,18 +84,8 @@ class AdminService {
 
       const updateData = {
         ...updates,
-        updatedAt: DEMO_MODE ? Date.now() : Timestamp.now()
+        updatedAt: Timestamp.now()
       };
-
-      if (DEMO_MODE) {
-        // Update demo data
-        const index = DEMO_ORDERS.findIndex(order => order.id === orderId);
-        if (index !== -1) {
-          DEMO_ORDERS[index] = { ...DEMO_ORDERS[index], ...updateData, updatedAt: Date.now() };
-          console.log('✅ Demo order updated');
-        }
-        return;
-      }
 
       // Update in Firebase
       const orderRef = doc(db, COLLECTIONS.ADMIN_ORDERS, orderId);
@@ -166,16 +107,6 @@ class AdminService {
       // Require admin access
       AdminAuthService.requireAdmin();
 
-      if (DEMO_MODE) {
-        // Remove from demo data
-        const index = DEMO_ORDERS.findIndex(order => order.id === orderId);
-        if (index !== -1) {
-          DEMO_ORDERS.splice(index, 1);
-          console.log('✅ Demo order deleted');
-        }
-        return;
-      }
-
       // Delete from Firebase
       const orderRef = doc(db, COLLECTIONS.ADMIN_ORDERS, orderId);
       await deleteDoc(orderRef);
@@ -195,10 +126,6 @@ class AdminService {
     try {
       // Require admin access
       AdminAuthService.requireAdmin();
-
-      if (DEMO_MODE) {
-        return DEMO_ORDERS.filter(order => order.status === status);
-      }
 
       const ordersRef = collection(db, COLLECTIONS.ADMIN_ORDERS);
       const q = query(

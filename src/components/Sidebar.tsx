@@ -16,22 +16,32 @@ import {
   MdSettings,
   MdAdminPanelSettings
 } from 'react-icons/md';
+import { useAdminRole } from '../hooks/useAdminRole';
 
 export const Sidebar: React.FC = () => {
   const location = useLocation();
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const { isAdmin } = useAdminRole();
 
   const isActive = (path: string) => {
     return location.pathname === path;
   };
 
-  const navItems = [
+  // Base navigation items for all users
+  const baseNavItems = [
     { path: '/dashboard', label: 'Dashboard', icon: MdDashboard },
     { path: '/recipients', label: 'Recipients', icon: MdPeople },
-    { path: '/admin/orders', label: '🧙‍♂️ Admin Orders', icon: MdAdminPanelSettings },
     { path: '/settings', label: 'Settings', icon: MdSettings },
   ];
+
+  // Admin-only navigation items
+  const adminNavItems = [
+    { path: '/admin/orders', label: '🧙‍♂️ Admin Orders', icon: MdAdminPanelSettings },
+  ];
+
+  // Combine nav items based on user role
+  const navItems = isAdmin ? [...baseNavItems.slice(0, 2), ...adminNavItems, baseNavItems[2]] : baseNavItems;
 
   return (
     <Box 
