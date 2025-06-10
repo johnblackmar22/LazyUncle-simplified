@@ -1,6 +1,6 @@
 // Admin Authentication Service - Firebase-based admin authentication
 import { signInWithEmailAndPassword, signOut, type User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { COLLECTIONS } from '../utils/constants';
 import type { AdminUser, AdminPermission, AdminSession } from '../types';
@@ -40,6 +40,7 @@ class AdminAuthService {
       const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, firebaseUser.uid));
       
       if (!userDoc.exists()) {
+        console.log('🔧 AdminAuth: User document does not exist, creating for admin account');
         // If user document doesn't exist, create it with admin role for admin@lazyuncle.com
         if (email === 'admin@lazyuncle.com') {
           const adminUserData = {
@@ -52,11 +53,16 @@ class AdminAuthService {
             planId: 'admin'
           };
           
-          await updateDoc(doc(db, COLLECTIONS.USERS, firebaseUser.uid), adminUserData);
+          console.log('🔧 AdminAuth: Creating admin user document with data:', adminUserData);
+          await setDoc(doc(db, COLLECTIONS.USERS, firebaseUser.uid), adminUserData);
           console.log('✅ Created admin user document');
         } else {
           throw new Error('User account not found');
         }
+      } else {
+        console.log('🔧 AdminAuth: User document exists, checking role...');
+        const existingData = userDoc.data();
+        console.log('🔧 AdminAuth: Existing user data:', existingData);
       }
 
       // Re-fetch user data after potential creation

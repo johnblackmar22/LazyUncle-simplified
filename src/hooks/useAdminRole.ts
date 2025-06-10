@@ -15,10 +15,13 @@ export function useAdminRole() {
       setIsLoading(true);
       
       if (!user) {
+        console.log('🔍 useAdminRole: No user found');
         setIsAdmin(false);
         setIsLoading(false);
         return;
       }
+
+      console.log('🔍 useAdminRole: Checking role for user:', user.email, user.id);
 
       try {
         // Check if user has admin role in Firebase
@@ -26,13 +29,17 @@ export function useAdminRole() {
         
         if (userDoc.exists()) {
           const userData = userDoc.data();
+          console.log('🔍 useAdminRole: User document data:', userData);
+          
           const hasAdminRole = userData?.role && ['admin', 'super_admin'].includes(userData.role);
+          console.log('🔍 useAdminRole: Has admin role?', hasAdminRole, 'Role:', userData?.role);
           setIsAdmin(hasAdminRole);
         } else {
+          console.log('🔍 useAdminRole: User document does not exist');
           setIsAdmin(false);
         }
       } catch (error) {
-        console.error('Error checking admin role:', error);
+        console.error('❌ useAdminRole: Error checking admin role:', error);
         setIsAdmin(false);
       }
       
