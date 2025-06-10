@@ -29,7 +29,7 @@ import { useAuthStore } from '../store/authStore';
 import { getNextBirthday, getNextChristmas, getCurrentDateISO } from '../utils/dateUtils';
 import { subDays, format, addDays } from 'date-fns';
 
-type OccasionType = 'birthday' | 'anniversary' | 'christmas' | 'other';
+type OccasionType = 'birthday' | 'christmas' | 'other';
 
 interface OccasionFormProps {
   recipient: Recipient;
@@ -111,7 +111,7 @@ export const OccasionForm: React.FC<OccasionFormProps> = ({
 
   // Update delivery date when occasion date changes
   useEffect(() => {
-    if (occasionDate && (type === 'other' || type === 'anniversary')) {
+    if (occasionDate && type === 'other') {
       setDeliveryDate(calculateDeliveryDate(occasionDate));
     }
   }, [occasionDate, type]);
@@ -162,7 +162,6 @@ export const OccasionForm: React.FC<OccasionFormProps> = ({
           >
             <option value="birthday">Birthday</option>
             <option value="christmas">Christmas</option>
-            <option value="anniversary">Anniversary</option>
             <option value="other">Other</option>
           </Select>
         </FormControl>
@@ -192,7 +191,7 @@ export const OccasionForm: React.FC<OccasionFormProps> = ({
             value={occasionDate}
             onChange={e => {
               setOccasionDate(e.target.value);
-              if (type === 'other' || type === 'anniversary') {
+              if (type === 'other') {
                 setDeliveryDate(calculateDeliveryDate(e.target.value));
               }
             }}

@@ -26,11 +26,10 @@ import {
   Icon,
   IconButton,
   SimpleGrid,
-  Collapse,
   Alert,
   AlertIcon,
 } from '@chakra-ui/react';
-import { AddIcon, ArrowBackIcon, ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons';
+import { AddIcon, ArrowBackIcon } from '@chakra-ui/icons';
 import { FaUser, FaHeart, FaMapMarkerAlt, FaBirthdayCake, FaVenusMars } from 'react-icons/fa';
 import { useRecipientStore } from '../store/recipientStore';
 import { months, days, years } from '../utils/dateUtils';
@@ -68,7 +67,6 @@ const AddRecipientPage: React.FC = () => {
   // Interest management
   const [interest, setInterest] = useState('');
   const [interests, setInterests] = useState<string[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const [displayedSuggestions, setDisplayedSuggestions] = useState<string[]>([]);
   
   // Validation
@@ -83,7 +81,6 @@ const AddRecipientPage: React.FC = () => {
   // Background colors
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
-  const suggestionBg = useColorModeValue('gray.50', 'gray.700');
 
   // Calculate birthdate string and get suggestions
   const birthdate = useMemo(() => {
@@ -118,13 +115,6 @@ const AddRecipientPage: React.FC = () => {
       setDisplayedSuggestions([]);
     }
   }, [allInterestSuggestions, interests]);
-
-  // Auto-show suggestions when birthdate is complete
-  useEffect(() => {
-    if (birthdate && allInterestSuggestions.length > 0) {
-      setShowSuggestions(true);
-    }
-  }, [birthdate, allInterestSuggestions.length]);
 
   // Helper function to get diverse colors for interests
   const getInterestColor = (index: number): string => {
@@ -385,63 +375,39 @@ const AddRecipientPage: React.FC = () => {
                     </Button>
                   </HStack>
 
-                  {/* Interest Suggestions */}
+                  {/* Interest Suggestions - Inline Style */}
                   {displayedSuggestions.length > 0 && (
-                    <Box mb={4}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowSuggestions(!showSuggestions)}
-                        rightIcon={showSuggestions ? <ChevronUpIcon /> : <ChevronDownIcon />}
-                        mb={2}
-                      >
-                        Suggested interests for {ageGroupLabel && `${ageGroupLabel}s`} ({displayedSuggestions.length} shown)
-                      </Button>
-                      <Collapse in={showSuggestions}>
-                        <Box bg={suggestionBg} p={4} borderRadius="md" border="1px" borderColor={borderColor}>
-                          <Text fontSize="sm" color="gray.600" mb={3} textAlign="center">
-                            Click any suggestion to add it to your interests
-                          </Text>
-                          <SimpleGrid columns={{ base: 2, md: 3, lg: 4 }} spacing={3}>
-                            {displayedSuggestions.map((suggestion, index) => (
-                              <Badge
-                                key={suggestion}
-                                colorScheme={getInterestColor(index)}
-                                variant="subtle"
-                                cursor="pointer"
-                                onClick={() => handleSuggestionClick(suggestion)}
-                                _hover={{ 
-                                  transform: 'scale(1.05)',
-                                  shadow: 'md',
-                                  variant: 'solid'
-                                }}
-                                _active={{
-                                  transform: 'scale(0.95)'
-                                }}
-                                transition="all 0.2s ease"
-                                p={3}
-                                textAlign="center"
-                                fontSize="sm"
-                                fontWeight="medium"
-                                borderRadius="lg"
-                                minH="40px"
-                                display="flex"
-                                alignItems="center"
-                                justifyContent="center"
-                                wordBreak="break-word"
-                                lineHeight="1.2"
-                              >
-                                {suggestion}
-                              </Badge>
-                            ))}
-                          </SimpleGrid>
-                          {interests.length > 0 && displayedSuggestions.length < 10 && (
-                            <Text fontSize="xs" color="gray.500" mt={3} textAlign="center" fontStyle="italic">
-                              More suggestions will appear as you add interests
-                            </Text>
-                          )}
-                        </Box>
-                      </Collapse>
+                    <Box mb={3}>
+                      <Text fontSize="xs" color="gray.600" mb={2}>
+                        Suggested ({displayedSuggestions.length}):
+                      </Text>
+                      <Flex gap={2} flexWrap="wrap">
+                        {displayedSuggestions.map((suggestion, index) => (
+                          <Badge
+                            key={suggestion}
+                            colorScheme={getInterestColor(index)}
+                            variant="outline"
+                            cursor="pointer"
+                            onClick={() => handleSuggestionClick(suggestion)}
+                            _hover={{ 
+                              variant: 'solid',
+                              transform: 'scale(1.05)'
+                            }}
+                            _active={{
+                              transform: 'scale(0.95)'
+                            }}
+                            transition="all 0.15s ease"
+                            fontSize="xs"
+                          >
+                            {suggestion}
+                          </Badge>
+                        ))}
+                      </Flex>
+                      {interests.length > 0 && displayedSuggestions.length < 10 && (
+                        <Text fontSize="xs" color="gray.500" mt={1} fontStyle="italic">
+                          More suggestions will appear as you add interests
+                        </Text>
+                      )}
                     </Box>
                   )}
 
