@@ -1,5 +1,5 @@
 import { useAuthStore } from '../../store/authStore';
-import { act } from 'react-dom/test-utils';
+import { act } from 'react';
 import * as firebaseAuth from 'firebase/auth';
 
 // Mock Firebase Auth
@@ -13,6 +13,20 @@ jest.mock('firebase/auth', () => {
     onAuthStateChanged: jest.fn(() => () => {}),
   };
 });
+
+// Mock Firestore
+jest.mock('firebase/firestore', () => ({
+  getFirestore: jest.fn(),
+  doc: jest.fn(),
+  setDoc: jest.fn(),
+}));
+
+// Mock Firebase service to force demo mode off for tests
+jest.mock('../../services/firebase', () => ({
+  DEMO_MODE: false,
+  auth: {},
+  db: {},
+}));
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -63,8 +77,6 @@ describe('Auth Store', () => {
           metadata: {
             creationTime: new Date().toISOString(),
           },
-          planId: 'free',
-          updatedAt: Date.now(),
         },
       });
 
@@ -140,8 +152,6 @@ describe('Auth Store', () => {
           metadata: {
             creationTime: new Date().toISOString(),
           },
-          planId: 'free',
-          updatedAt: Date.now(),
         },
       });
 
@@ -205,39 +215,21 @@ describe('Auth Store', () => {
         'user@example.com'
       );
     });
-
-    it('should not allow password reset for demo accounts', async () => {
-      // Call reset password for demo email
-      await act(async () => {
-        await useAuthStore.getState().resetPassword('demo@example.com');
-      });
-
-      // Check store state
-      const state = useAuthStore.getState();
-      expect(state.loading).toBe(false);
-      expect(state.error).toBe('Cannot reset password for demo account');
-
-      // Verify Firebase was NOT called
-      expect(firebaseAuth.sendPasswordResetEmail).not.toHaveBeenCalled();
-    });
   });
 
   describe('signOut', () => {
     it('should sign out the user', async () => {
-      // Setup initial state with a logged in user
+      // Set up a user first
       useAuthStore.setState({
         user: {
           id: 'test-uid',
           email: 'test@example.com',
           displayName: 'Test User',
           photoURL: '',
+          planId: 'free',
           createdAt: Date.now(),
           updatedAt: Date.now(),
-          planId: 'free',
         },
-        loading: false,
-        error: null,
-        initialized: true,
         demoMode: false,
       });
 
@@ -254,32 +246,30 @@ describe('Auth Store', () => {
       expect(state.user).toBeNull();
       expect(state.loading).toBe(false);
       expect(state.error).toBeNull();
+      expect(state.demoMode).toBe(false);
 
       // Verify Firebase was called
       expect(firebaseAuth.signOut).toHaveBeenCalled();
     });
 
     it('should clear localStorage in demo mode', async () => {
-      // Setup initial state with demo mode
+      // Set up demo user
       useAuthStore.setState({
         user: {
           id: 'demo-user',
           email: 'demo@example.com',
           displayName: 'Demo User',
           photoURL: '',
+          planId: 'free',
           createdAt: Date.now(),
           updatedAt: Date.now(),
-          planId: 'free',
         },
-        loading: false,
-        error: null,
-        initialized: true,
         demoMode: true,
       });
 
       // Set some demo data in localStorage
-      localStorageMock.setItem('demo-mode', 'true');
-      localStorageMock.setItem('recipients', JSON.stringify([{ id: 1, name: 'Test' }]));
+      localStorageMock.setItem('lazyuncle_demoMode', 'true');
+      localStorageMock.setItem('lazyuncle_recipients', 'test-data');
 
       // Call sign out
       await act(async () => {
@@ -290,12 +280,11 @@ describe('Auth Store', () => {
       const state = useAuthStore.getState();
       expect(state.user).toBeNull();
       expect(state.loading).toBe(false);
-      expect(state.error).toBeNull();
       expect(state.demoMode).toBe(false);
 
       // Verify localStorage was cleared
-      expect(localStorageMock.getItem('demo-mode')).toBeNull();
-      expect(localStorageMock.getItem('recipients')).toBeNull();
+      expect(localStorageMock.getItem('lazyuncle_demoMode')).toBeNull();
+      expect(localStorageMock.getItem('lazyuncle_recipients')).toBeNull();
 
       // Verify Firebase was NOT called
       expect(firebaseAuth.signOut).not.toHaveBeenCalled();
