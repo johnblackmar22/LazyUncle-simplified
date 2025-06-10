@@ -21,6 +21,7 @@ import DebugRecipientPage from './pages/DebugRecipientPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import SettingsPage from './pages/SettingsPage';
+import AdminOrderDashboard from './pages/AdminOrderDashboard';
 
 function App() {
   const { initialized, user, demoMode, initializeAuth } = useAuthStore();
@@ -135,6 +136,7 @@ function App() {
             <Route path="/recipients/:id/edit" element={<EditRecipientPage />} />
             <Route path="/recipients/:id/debug" element={<DebugRecipientPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/admin/orders" element={<AdminOrderDashboard />} />
           </Route>
         </Route>
       </Routes>

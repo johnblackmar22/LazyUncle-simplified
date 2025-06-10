@@ -13,7 +13,8 @@ import {
   MdDashboard, 
   MdPeople, 
   MdCardGiftcard,
-  MdSettings
+  MdSettings,
+  MdAdminPanelSettings
 } from 'react-icons/md';
 
 export const Sidebar: React.FC = () => {
@@ -28,6 +29,7 @@ export const Sidebar: React.FC = () => {
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: MdDashboard },
     { path: '/recipients', label: 'Recipients', icon: MdPeople },
+    { path: '/admin/orders', label: '🧙‍♂️ Admin Orders', icon: MdAdminPanelSettings },
     { path: '/settings', label: 'Settings', icon: MdSettings },
   ];
 
