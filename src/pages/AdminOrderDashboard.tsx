@@ -35,8 +35,31 @@ import {
   Stat,
   StatLabel,
   StatNumber,
+  Select,
+  InputGroup,
+  InputLeftElement,
+  Stack,
+  Textarea,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
 } from '@chakra-ui/react';
-import { FaShoppingCart, FaCheck, FaTruck, FaEye, FaCopy, FaCheckDouble } from 'react-icons/fa';
+import { 
+  FaShoppingCart, 
+  FaCheck, 
+  FaTruck, 
+  FaEye, 
+  FaCopy, 
+  FaCheckDouble, 
+  FaSearch,
+  FaSortAmountDown,
+  FaSortAmountUp,
+  FaFilter,
+  FaChevronDown,
+  FaTrash,
+  FaEdit
+} from 'react-icons/fa';
 import { format } from 'date-fns';
 
 interface PendingOrder {
@@ -66,7 +89,14 @@ interface PendingOrder {
   // Billing
   billingStatus: 'pending' | 'charged' | 'refunded';
   chargeAmount?: number;
+  // Additional tracking fields
+  source?: 'gift_selection' | 'auto_send' | 'manual';
+  recipientId?: string;
+  occasionId?: string;
 }
+
+type SortField = 'orderDate' | 'giftPrice' | 'customerName' | 'recipientName' | 'occasionDate';
+type SortDirection = 'asc' | 'desc';
 
 const AdminOrderDashboard: React.FC = () => {
   const [orders, setOrders] = useState<PendingOrder[]>([]);
@@ -76,6 +106,13 @@ const AdminOrderDashboard: React.FC = () => {
   const [trackingNumber, setTrackingNumber] = useState('');
   const [notes, setNotes] = useState('');
   const [billingNotes, setBillingNotes] = useState('');
+  
+  // Enhanced filtering and sorting
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [billingFilter, setBillingFilter] = useState<string>('all');
+  const [sortField, setSortField] = useState<SortField>('orderDate');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   
   const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -101,6 +138,75 @@ const AdminOrderDashboard: React.FC = () => {
   const saveOrders = (updatedOrders: PendingOrder[]) => {
     localStorage.setItem('admin_pending_orders', JSON.stringify(updatedOrders));
     setOrders(updatedOrders);
+  };
+
+  // Enhanced filtering logic
+  const filteredOrders = orders.filter(order => {
+    // Search term filter
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch = 
+        order.customerName.toLowerCase().includes(searchLower) ||
+        order.recipientName.toLowerCase().includes(searchLower) ||
+        order.giftName.toLowerCase().includes(searchLower) ||
+        order.occasionName.toLowerCase().includes(searchLower) ||
+        order.giftASIN?.toLowerCase().includes(searchLower) ||
+        order.customerEmail.toLowerCase().includes(searchLower);
+      
+      if (!matchesSearch) return false;
+    }
+    
+    // Status filter
+    if (statusFilter !== 'all' && order.status !== statusFilter) return false;
+    
+    // Billing filter
+    if (billingFilter !== 'all' && order.billingStatus !== billingFilter) return false;
+    
+    return true;
+  });
+
+  // Enhanced sorting logic
+  const sortedOrders = [...filteredOrders].sort((a, b) => {
+    let aValue: any;
+    let bValue: any;
+    
+    switch (sortField) {
+      case 'orderDate':
+        aValue = a.orderDate;
+        bValue = b.orderDate;
+        break;
+      case 'giftPrice':
+        aValue = a.giftPrice;
+        bValue = b.giftPrice;
+        break;
+      case 'customerName':
+        aValue = a.customerName.toLowerCase();
+        bValue = b.customerName.toLowerCase();
+        break;
+      case 'recipientName':
+        aValue = a.recipientName.toLowerCase();
+        bValue = b.recipientName.toLowerCase();
+        break;
+      case 'occasionDate':
+        aValue = new Date(a.occasionDate).getTime();
+        bValue = new Date(b.occasionDate).getTime();
+        break;
+      default:
+        return 0;
+    }
+    
+    if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
   };
 
   const markAsOrdered = (orderId: string) => {
@@ -168,6 +274,14 @@ const AdminOrderDashboard: React.FC = () => {
     setBillingNotes('');
   };
 
+  const deleteOrder = (orderId: string) => {
+    if (window.confirm('Are you sure you want to delete this order? This action cannot be undone.')) {
+      const updatedOrders = orders.filter(order => order.id !== orderId);
+      saveOrders(updatedOrders);
+      console.log('🗑️ Deleted order:', orderId);
+    }
+  };
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
   };
@@ -213,16 +327,17 @@ const AdminOrderDashboard: React.FC = () => {
       // Billing
       billingStatus: 'pending',
       chargeAmount: 79.99,
+      source: 'manual'
     };
     
     const updatedOrders = [...orders, mockOrder];
     saveOrders(updatedOrders);
   };
 
-  const pendingCount = orders.filter(o => o.status === 'pending').length;
-  const orderedCount = orders.filter(o => o.status === 'ordered').length;
-  const deliveredCount = orders.filter(o => o.status === 'delivered').length;
-  const totalRevenue = orders.reduce((total, order) => total + order.giftPrice, 0);
+  const pendingCount = sortedOrders.filter(o => o.status === 'pending').length;
+  const orderedCount = sortedOrders.filter(o => o.status === 'ordered').length;
+  const deliveredCount = sortedOrders.filter(o => o.status === 'delivered').length;
+  const totalRevenue = sortedOrders.reduce((total, order) => total + order.giftPrice, 0);
 
   const toggleOrderSelection = (orderId: string) => {
     setSelectedOrderIds(prev => 
@@ -233,7 +348,7 @@ const AdminOrderDashboard: React.FC = () => {
   };
 
   const toggleSelectAll = () => {
-    const pendingOrderIds = orders.filter(o => o.status === 'pending').map(o => o.id);
+    const pendingOrderIds = sortedOrders.filter(o => o.status === 'pending').map(o => o.id);
     setSelectedOrderIds(prev => 
       prev.length === pendingOrderIds.length ? [] : pendingOrderIds
     );
@@ -257,19 +372,34 @@ const AdminOrderDashboard: React.FC = () => {
     console.log('💳 Bulk billing processed for orders:', selectedOrderIds);
   };
 
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('all');
+    setBillingFilter('all');
+    setSortField('orderDate');
+    setSortDirection('desc');
+  };
+
   return (
     <Container maxW="container.xl" py={8}>
       <VStack spacing={6} align="stretch">
         {/* Header */}
         <Flex align="center">
-          <Heading size="lg">🧙‍♂️ Admin Order Dashboard</Heading>
-          <Text color="gray.600">
-            Manage selected gifts and process orders for customers
-          </Text>
+          <VStack align="start" spacing={1}>
+            <Heading size="lg">🧙‍♂️ Admin Order Dashboard</Heading>
+            <Text color="gray.600" fontSize="sm">
+              Manage selected gifts and process orders for customers
+            </Text>
+          </VStack>
           <Spacer />
-          <Button onClick={generateMockOrder} colorScheme="blue" size="sm">
-            Add Mock Order (Testing)
-          </Button>
+          <HStack spacing={3}>
+            <Button onClick={generateMockOrder} colorScheme="blue" size="sm" variant="outline">
+              Add Mock Order
+            </Button>
+            <Button onClick={loadPendingOrders} colorScheme="green" size="sm" variant="outline">
+              Refresh Orders
+            </Button>
+          </HStack>
         </Flex>
 
         {/* Stats Cards */}
@@ -278,7 +408,7 @@ const AdminOrderDashboard: React.FC = () => {
             <CardBody>
               <Stat>
                 <StatLabel>Selected Gifts Pending Order</StatLabel>
-                <StatNumber>{pendingCount}</StatNumber>
+                <StatNumber color="red.500">{pendingCount}</StatNumber>
               </Stat>
             </CardBody>
           </Card>
@@ -286,7 +416,7 @@ const AdminOrderDashboard: React.FC = () => {
             <CardBody>
               <Stat>
                 <StatLabel>Orders Placed</StatLabel>
-                <StatNumber>{orderedCount}</StatNumber>
+                <StatNumber color="yellow.500">{orderedCount}</StatNumber>
               </Stat>
             </CardBody>
           </Card>
@@ -294,7 +424,7 @@ const AdminOrderDashboard: React.FC = () => {
             <CardBody>
               <Stat>
                 <StatLabel>Orders Delivered</StatLabel>
-                <StatNumber>{deliveredCount}</StatNumber>
+                <StatNumber color="green.500">{deliveredCount}</StatNumber>
               </Stat>
             </CardBody>
           </Card>
@@ -302,7 +432,15 @@ const AdminOrderDashboard: React.FC = () => {
             <CardBody>
               <Stat>
                 <StatLabel>Total Revenue</StatLabel>
-                <StatNumber>${totalRevenue.toFixed(2)}</StatNumber>
+                <StatNumber color="blue.500">${totalRevenue.toFixed(2)}</StatNumber>
+              </Stat>
+            </CardBody>
+          </Card>
+          <Card>
+            <CardBody>
+              <Stat>
+                <StatLabel>Showing Results</StatLabel>
+                <StatNumber>{sortedOrders.length} of {orders.length}</StatNumber>
               </Stat>
             </CardBody>
           </Card>
@@ -315,15 +453,92 @@ const AdminOrderDashboard: React.FC = () => {
           </Alert>
         )}
 
+        {/* Enhanced Filters and Search */}
+        <Card>
+          <CardBody>
+            <VStack spacing={4} align="stretch">
+              <HStack justify="space-between">
+                <Text fontWeight="bold">🔍 Search & Filter</Text>
+                <Button size="sm" variant="ghost" onClick={clearAllFilters}>
+                  Clear All Filters
+                </Button>
+              </HStack>
+              
+              <Stack direction={{ base: 'column', md: 'row' }} spacing={4}>
+                <InputGroup maxW="300px">
+                  <InputLeftElement>
+                    <FaSearch color="gray" />
+                  </InputLeftElement>
+                  <Input
+                    placeholder="Search customers, recipients, gifts..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </InputGroup>
+                
+                <Select 
+                  maxW="200px" 
+                  value={statusFilter} 
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="ordered">Ordered</option>
+                  <option value="shipped">Shipped</option>
+                  <option value="delivered">Delivered</option>
+                </Select>
+                
+                <Select 
+                  maxW="200px" 
+                  value={billingFilter} 
+                  onChange={(e) => setBillingFilter(e.target.value)}
+                >
+                  <option value="all">All Billing</option>
+                  <option value="pending">Billing Pending</option>
+                  <option value="charged">Charged</option>
+                  <option value="refunded">Refunded</option>
+                </Select>
+                
+                <Menu>
+                  <MenuButton as={Button} rightIcon={<FaChevronDown />} variant="outline" maxW="200px">
+                    Sort: {sortField} {sortDirection === 'asc' ? '↑' : '↓'}
+                  </MenuButton>
+                  <MenuList>
+                    {(['orderDate', 'giftPrice', 'customerName', 'recipientName', 'occasionDate'] as SortField[]).map(field => (
+                      <MenuItem key={field} onClick={() => handleSort(field)}>
+                        {field === 'orderDate' && 'Order Date'}
+                        {field === 'giftPrice' && 'Gift Price'}
+                        {field === 'customerName' && 'Customer Name'}
+                        {field === 'recipientName' && 'Recipient Name'}
+                        {field === 'occasionDate' && 'Occasion Date'}
+                        {sortField === field && (sortDirection === 'asc' ? ' ↑' : ' ↓')}
+                      </MenuItem>
+                    ))}
+                  </MenuList>
+                </Menu>
+              </Stack>
+              
+              {(searchTerm || statusFilter !== 'all' || billingFilter !== 'all') && (
+                <Text fontSize="sm" color="gray.600">
+                  Showing {sortedOrders.length} of {orders.length} orders
+                  {searchTerm && ` matching "${searchTerm}"`}
+                  {statusFilter !== 'all' && ` with status "${statusFilter}"`}
+                  {billingFilter !== 'all' && ` with billing "${billingFilter}"`}
+                </Text>
+              )}
+            </VStack>
+          </CardBody>
+        </Card>
+
         {/* Bulk Actions */}
-        {orders.filter(o => o.status === 'pending').length > 1 && (
+        {sortedOrders.filter(o => o.status === 'pending').length > 1 && (
           <Card>
             <CardBody>
               <VStack spacing={3} align="stretch">
                 <HStack justify="space-between">
                   <Text fontWeight="bold">🔧 Bulk Actions</Text>
                   <Text fontSize="sm" color="gray.600">
-                    {selectedOrderIds.length} of {orders.filter(o => o.status === 'pending').length} orders selected
+                    {selectedOrderIds.length} of {sortedOrders.filter(o => o.status === 'pending').length} pending orders selected
                   </Text>
                 </HStack>
                 
@@ -333,7 +548,7 @@ const AdminOrderDashboard: React.FC = () => {
                     onClick={toggleSelectAll}
                     variant="outline"
                   >
-                    {selectedOrderIds.length === orders.filter(o => o.status === 'pending').length ? 'Deselect All' : 'Select All Pending'}
+                    {selectedOrderIds.length === sortedOrders.filter(o => o.status === 'pending').length ? 'Deselect All' : 'Select All Pending'}
                   </Button>
                   
                   {selectedOrderIds.length > 0 && (
@@ -364,156 +579,202 @@ const AdminOrderDashboard: React.FC = () => {
         {/* Orders Table */}
         <Card>
           <CardHeader>
-            <Heading size="md">Selected Gifts from Users</Heading>
-            <Text fontSize="sm" color="gray.600">
-              When users select gifts, they appear here for you to order from Amazon
-            </Text>
+            <HStack justify="space-between">
+              <VStack align="start" spacing={1}>
+                <Heading size="md">Selected Gifts from Users</Heading>
+                <Text fontSize="sm" color="gray.600">
+                  When users select gifts, they appear here for you to order from Amazon
+                </Text>
+              </VStack>
+              {sortedOrders.length > 0 && (
+                <Text fontSize="sm" color="gray.500">
+                  Sorted by {sortField} ({sortDirection === 'asc' ? 'ascending' : 'descending'})
+                </Text>
+              )}
+            </HStack>
           </CardHeader>
           <CardBody>
-            <Table variant="simple">
-              <Thead>
-                <Tr>
-                  <Th>
-                    <input
-                      type="checkbox"
-                      checked={selectedOrderIds.length === orders.filter(o => o.status === 'pending').length && orders.filter(o => o.status === 'pending').length > 0}
-                      onChange={toggleSelectAll}
-                      style={{ marginRight: '8px' }}
-                    />
-                    Select
-                  </Th>
-                  <Th>Order Date</Th>
-                  <Th>Customer → Recipient</Th>
-                  <Th>Gift & ASIN</Th>
-                  <Th>Price</Th>
-                  <Th>Occasion</Th>
-                  <Th>Status</Th>
-                  <Th>Billing</Th>
-                  <Th>Actions</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {orders.map((order) => (
-                  <Tr key={order.id}>
-                    <Td>
-                      {order.status === 'pending' && (
+            {sortedOrders.length > 0 ? (
+              <Box overflowX="auto">
+                <Table variant="simple">
+                  <Thead>
+                    <Tr>
+                      <Th>
                         <input
                           type="checkbox"
-                          checked={selectedOrderIds.includes(order.id)}
-                          onChange={() => toggleOrderSelection(order.id)}
+                          checked={selectedOrderIds.length === sortedOrders.filter(o => o.status === 'pending').length && sortedOrders.filter(o => o.status === 'pending').length > 0}
+                          onChange={toggleSelectAll}
+                          style={{ marginRight: '8px' }}
                         />
-                      )}
-                    </Td>
-                    <Td>{format(new Date(order.orderDate), 'MMM dd, yyyy')}</Td>
-                    <Td>
-                      <VStack align="start" spacing={1}>
-                        <HStack>
-                          <Badge colorScheme="blue" size="sm">{order.customerPlan}</Badge>
-                          <Text fontWeight="bold" fontSize="sm">{order.customerName}</Text>
-                        </HStack>
-                        <Text fontSize="xs" color="gray.600">{order.customerEmail}</Text>
-                        <Text fontSize="sm">→ {order.recipientName}</Text>
-                      </VStack>
-                    </Td>
-                    <Td>
-                      <VStack align="start" spacing={1}>
-                        <Text fontWeight="medium" fontSize="sm">{order.giftName}</Text>
-                        {order.giftASIN && (
-                          <HStack spacing={2}>
-                            <Badge colorScheme="orange" size="sm">ASIN: {order.giftASIN}</Badge>
-                            <Button
-                              as="a"
-                              href={`https://amazon.com/dp/${order.giftASIN}`}
-                              target="_blank"
-                              size="xs"
-                              colorScheme="orange"
-                              variant="link"
+                        Select
+                      </Th>
+                      <Th cursor="pointer" onClick={() => handleSort('orderDate')}>
+                        Order Date {sortField === 'orderDate' && (sortDirection === 'asc' ? '↑' : '↓')}
+                      </Th>
+                      <Th cursor="pointer" onClick={() => handleSort('customerName')}>
+                        Customer → Recipient {sortField === 'customerName' && (sortDirection === 'asc' ? '↑' : '↓')}
+                      </Th>
+                      <Th>Gift & ASIN</Th>
+                      <Th cursor="pointer" onClick={() => handleSort('giftPrice')}>
+                        Price {sortField === 'giftPrice' && (sortDirection === 'asc' ? '↑' : '↓')}
+                      </Th>
+                      <Th cursor="pointer" onClick={() => handleSort('occasionDate')}>
+                        Occasion {sortField === 'occasionDate' && (sortDirection === 'asc' ? '↑' : '↓')}
+                      </Th>
+                      <Th>Status</Th>
+                      <Th>Billing</Th>
+                      <Th>Actions</Th>
+                    </Tr>
+                  </Thead>
+                  <Tbody>
+                    {sortedOrders.map((order) => (
+                      <Tr key={order.id}>
+                        <Td>
+                          {order.status === 'pending' && (
+                            <input
+                              type="checkbox"
+                              checked={selectedOrderIds.includes(order.id)}
+                              onChange={() => toggleOrderSelection(order.id)}
+                            />
+                          )}
+                        </Td>
+                        <Td>{format(new Date(order.orderDate), 'MMM dd, yyyy')}</Td>
+                        <Td>
+                          <VStack align="start" spacing={1}>
+                            <HStack>
+                              <Badge colorScheme="blue" size="sm">{order.customerPlan}</Badge>
+                              <Text fontWeight="bold" fontSize="sm">{order.customerName}</Text>
+                            </HStack>
+                            <Text fontSize="xs" color="gray.600">{order.customerEmail}</Text>
+                            <Text fontSize="sm">→ {order.recipientName}</Text>
+                          </VStack>
+                        </Td>
+                        <Td>
+                          <VStack align="start" spacing={1}>
+                            <Text fontWeight="medium" fontSize="sm">{order.giftName}</Text>
+                            {order.giftASIN && (
+                              <HStack spacing={2}>
+                                <Badge colorScheme="orange" size="sm">ASIN: {order.giftASIN}</Badge>
+                                <Button
+                                  as="a"
+                                  href={`https://amazon.com/dp/${order.giftASIN}`}
+                                  target="_blank"
+                                  size="xs"
+                                  colorScheme="orange"
+                                  variant="link"
+                                >
+                                  View on Amazon
+                                </Button>
+                              </HStack>
+                            )}
+                            {order.giftUrl && !order.giftASIN && (
+                              <Button
+                                as="a"
+                                href={order.giftUrl}
+                                target="_blank"
+                                size="xs"
+                                colorScheme="blue"
+                                variant="link"
+                              >
+                                View Product
+                              </Button>
+                            )}
+                            {order.source && (
+                              <Badge size="xs" colorScheme="gray">
+                                {order.source === 'gift_selection' && 'User Selected'}
+                                {order.source === 'auto_send' && 'Auto Send'}
+                                {order.source === 'manual' && 'Manual'}
+                              </Badge>
+                            )}
+                          </VStack>
+                        </Td>
+                        <Td>${order.giftPrice.toFixed(2)}</Td>
+                        <Td>
+                          <Text>{order.occasionName}</Text>
+                          <Text fontSize="sm" color="gray.600">
+                            {format(new Date(order.occasionDate), 'MMM dd, yyyy')}
+                          </Text>
+                        </Td>
+                        <Td>
+                          <Badge colorScheme={getStatusColor(order.status)}>
+                            {order.status.toUpperCase()}
+                          </Badge>
+                        </Td>
+                        <Td>
+                          <VStack align="start" spacing={1}>
+                            <Badge 
+                              colorScheme={order.billingStatus === 'charged' ? 'green' : order.billingStatus === 'refunded' ? 'red' : 'yellow'}
+                              size="sm"
                             >
-                              View on Amazon
-                            </Button>
+                              {order.billingStatus.toUpperCase()}
+                            </Badge>
+                            {order.chargeAmount && (
+                              <Text fontSize="xs">${order.chargeAmount.toFixed(2)}</Text>
+                            )}
+                          </VStack>
+                        </Td>
+                        <Td>
+                          <HStack spacing={2}>
+                            <Tooltip label="View Details">
+                              <IconButton
+                                aria-label="View details"
+                                icon={<FaEye />}
+                                size="sm"
+                                onClick={() => openOrderModal(order)}
+                              />
+                            </Tooltip>
+                            {order.status === 'pending' && (
+                              <Tooltip label="Mark as Ordered">
+                                <IconButton
+                                  aria-label="Mark as ordered"
+                                  icon={<FaShoppingCart />}
+                                  size="sm"
+                                  colorScheme="green"
+                                  onClick={() => openOrderModal(order)}
+                                />
+                              </Tooltip>
+                            )}
+                            {order.status === 'ordered' && (
+                              <Tooltip label="Add Tracking">
+                                <IconButton
+                                  aria-label="Add tracking"
+                                  icon={<FaTruck />}
+                                  size="sm"
+                                  colorScheme="blue"
+                                  onClick={() => openOrderModal(order)}
+                                />
+                              </Tooltip>
+                            )}
+                            <Tooltip label="Delete Order">
+                              <IconButton
+                                aria-label="Delete order"
+                                icon={<FaTrash />}
+                                size="sm"
+                                colorScheme="red"
+                                variant="ghost"
+                                onClick={() => deleteOrder(order.id)}
+                              />
+                            </Tooltip>
                           </HStack>
-                        )}
-                        {order.giftUrl && !order.giftASIN && (
-                          <Button
-                            as="a"
-                            href={order.giftUrl}
-                            target="_blank"
-                            size="xs"
-                            colorScheme="blue"
-                            variant="link"
-                          >
-                            View Product
-                          </Button>
-                        )}
-                      </VStack>
-                    </Td>
-                    <Td>${order.giftPrice.toFixed(2)}</Td>
-                    <Td>
-                      <Text>{order.occasionName}</Text>
-                      <Text fontSize="sm" color="gray.600">
-                        {format(new Date(order.occasionDate), 'MMM dd, yyyy')}
-                      </Text>
-                    </Td>
-                    <Td>
-                      <Badge colorScheme={getStatusColor(order.status)}>
-                        {order.status.toUpperCase()}
-                      </Badge>
-                    </Td>
-                    <Td>
-                      <VStack align="start" spacing={1}>
-                        <Badge 
-                          colorScheme={order.billingStatus === 'charged' ? 'green' : order.billingStatus === 'refunded' ? 'red' : 'yellow'}
-                          size="sm"
-                        >
-                          {order.billingStatus.toUpperCase()}
-                        </Badge>
-                        {order.chargeAmount && (
-                          <Text fontSize="xs">${order.chargeAmount.toFixed(2)}</Text>
-                        )}
-                      </VStack>
-                    </Td>
-                    <Td>
-                      <HStack spacing={2}>
-                        <Tooltip label="View Details">
-                          <IconButton
-                            aria-label="View details"
-                            icon={<FaEye />}
-                            size="sm"
-                            onClick={() => openOrderModal(order)}
-                          />
-                        </Tooltip>
-                        {order.status === 'pending' && (
-                          <Tooltip label="Mark as Ordered">
-                            <IconButton
-                              aria-label="Mark as ordered"
-                              icon={<FaShoppingCart />}
-                              size="sm"
-                              colorScheme="green"
-                              onClick={() => openOrderModal(order)}
-                            />
-                          </Tooltip>
-                        )}
-                        {order.status === 'ordered' && (
-                          <Tooltip label="Add Tracking">
-                            <IconButton
-                              aria-label="Add tracking"
-                              icon={<FaTruck />}
-                              size="sm"
-                              colorScheme="blue"
-                              onClick={() => openOrderModal(order)}
-                            />
-                          </Tooltip>
-                        )}
-                      </HStack>
-                    </Td>
-                  </Tr>
-                ))}
-              </Tbody>
-            </Table>
-
-            {orders.length === 0 && (
+                        </Td>
+                      </Tr>
+                    ))}
+                  </Tbody>
+                </Table>
+              </Box>
+            ) : (
               <Box textAlign="center" py={8}>
-                <Text color="gray.500">No orders yet. Try adding a mock order to test!</Text>
+                <Text color="gray.500" mb={4}>
+                  {orders.length === 0 
+                    ? "No orders yet. Selected gifts will appear here automatically!"
+                    : "No orders match your current filters. Try adjusting your search criteria."
+                  }
+                </Text>
+                {orders.length === 0 && (
+                  <Button onClick={generateMockOrder} colorScheme="blue" size="sm">
+                    Add Mock Order for Testing
+                  </Button>
+                )}
               </Box>
             )}
           </CardBody>
@@ -532,6 +793,11 @@ const AdminOrderDashboard: React.FC = () => {
               </HStack>
               
               <HStack justify="space-between">
+                <Text fontSize="sm">Filtered/Sorted orders:</Text>
+                <Badge colorScheme="green">{sortedOrders.length}</Badge>
+              </HStack>
+              
+              <HStack justify="space-between">
                 <Text fontSize="sm">localStorage key:</Text>
                 <Text fontSize="xs" fontFamily="mono">admin_pending_orders</Text>
               </HStack>
@@ -542,6 +808,8 @@ const AdminOrderDashboard: React.FC = () => {
                   const stored = localStorage.getItem('admin_pending_orders');
                   console.log('🔍 Raw localStorage:', stored);
                   console.log('📋 Current orders state:', orders);
+                  console.log('🔍 Current filters:', { searchTerm, statusFilter, billingFilter, sortField, sortDirection });
+                  console.log('📊 Filtered orders:', sortedOrders);
                   if (stored) {
                     try {
                       const parsed = JSON.parse(stored);
@@ -658,6 +926,14 @@ const AdminOrderDashboard: React.FC = () => {
                         View Product
                       </Button>
                     )}
+
+                    {selectedOrder.source && (
+                      <Badge colorScheme="purple" size="sm">
+                        Source: {selectedOrder.source === 'gift_selection' && 'User Selected'}
+                        {selectedOrder.source === 'auto_send' && 'Auto Send'}
+                        {selectedOrder.source === 'manual' && 'Manual'}
+                      </Badge>
+                    )}
                   </VStack>
                 </Box>
 
@@ -697,6 +973,13 @@ const AdminOrderDashboard: React.FC = () => {
                   </Box>
                 )}
 
+                {selectedOrder.notes && (
+                  <Box>
+                    <Text fontWeight="bold">Order Notes:</Text>
+                    <Text fontSize="sm" color="gray.600">{selectedOrder.notes}</Text>
+                  </Box>
+                )}
+
                 {selectedOrder.status === 'pending' && (
                   <VStack spacing={3} align="stretch">
                     <Text fontWeight="bold" color="red.500">
@@ -707,10 +990,12 @@ const AdminOrderDashboard: React.FC = () => {
                       value={amazonOrderId}
                       onChange={(e) => setAmazonOrderId(e.target.value)}
                     />
-                    <Input
+                    <Textarea
                       placeholder="Notes (optional)"
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
+                      size="sm"
+                      rows={3}
                     />
                   </VStack>
                 )}

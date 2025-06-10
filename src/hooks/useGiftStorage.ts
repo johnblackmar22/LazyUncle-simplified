@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useRecipientStore } from '../store/recipientStore';
+import { useOccasionStore } from '../store/occasionStore';
 
 export interface StoredGift {
   id: string;
@@ -24,7 +26,7 @@ export interface GiftStorage {
   recentRecommendations: Record<string, any[]>; // Keyed by recipient+occasion
 }
 
-const STORAGE_KEY = 'lazyuncle_gifts';
+const STORAGE_KEY = 'lazyuncle_gift_storage';
 
 export function useGiftStorage() {
   const [storage, setStorage] = useState<GiftStorage>({
@@ -35,49 +37,44 @@ export function useGiftStorage() {
   
   const [isLoaded, setIsLoaded] = useState(false);
 
+  // Access to stores for getting real data
+  const { recipients } = useRecipientStore();
+  const { occasions } = useOccasionStore();
+
   // Load from localStorage on mount
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      console.log('Loading gift storage from localStorage:', saved ? 'found data' : 'no data');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const loadedStorage = {
-          selectedGifts: parsed.selectedGifts || [],
-          savedGifts: parsed.savedGifts || [],
-          recentRecommendations: parsed.recentRecommendations || {}
-        };
-        console.log('Loaded storage:', {
-          selectedGiftsCount: loadedStorage.selectedGifts.length,
-          savedGiftsCount: loadedStorage.savedGifts.length,
-          recommendationsCount: Object.keys(loadedStorage.recentRecommendations).length
-        });
-        setStorage(loadedStorage);
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setStorage(parsed);
+      } catch (error) {
+        console.error('Error parsing stored gift data:', error);
       }
-    } catch (error) {
-      console.error('Error loading gift storage:', error);
-    } finally {
-      setIsLoaded(true);
     }
+    setIsLoaded(true);
   }, []);
 
-  // Save to localStorage whenever storage changes, but only after initial load
+  // Save to localStorage whenever storage changes
   useEffect(() => {
-    // Don't save during initial load to prevent overwriting existing data
-    if (!isLoaded) return;
-    
-    try {
-      const jsonString = JSON.stringify(storage);
-      localStorage.setItem(STORAGE_KEY, jsonString);
-      console.log('Saved gift storage to localStorage:', {
-        selectedGiftsCount: storage.selectedGifts.length,
-        savedGiftsCount: storage.savedGifts.length,
-        storageSize: jsonString.length
-      });
-    } catch (error) {
-      console.error('Error saving gift storage:', error);
+    if (isLoaded) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(storage));
     }
   }, [storage, isLoaded]); // Add isLoaded as dependency
+
+  // Helper function to format address for admin orders
+  const formatAddress = (address: any): string => {
+    if (!address) return 'No address provided';
+    const parts = [
+      address.line1,
+      address.line2,
+      address.city,
+      address.state,
+      address.postalCode,
+      address.country
+    ].filter(Boolean);
+    return parts.join(', ');
+  };
 
   const selectGift = (gift: any, recipientId: string, occasionId: string) => {
     console.log('selectGift called with:', {
@@ -124,11 +121,16 @@ export function useGiftStorage() {
 
     // ALSO create an admin order entry for the selected gift
     try {
-      // Get user info from auth store (assuming it's available globally)
+      // Get user info from auth store
       const user = JSON.parse(localStorage.getItem('lazyuncle_auth') || '{}').user;
       
       if (user) {
-        // Create admin order for selected gift
+        // Find real recipient and occasion data
+        const recipient = recipients.find(r => r.id === recipientId);
+        const recipientOccasions = occasions[recipientId] || [];
+        const occasion = recipientOccasions.find(o => o.id === occasionId);
+
+        // Create admin order for selected gift with real data
         const adminOrder = {
           id: `selected-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           // Customer Info (who pays)
@@ -136,12 +138,12 @@ export function useGiftStorage() {
           customerName: user.displayName || user.email?.split('@')[0] || 'Unknown User',
           customerEmail: user.email || '',
           customerPlan: user.planId || 'free',
-          // Recipient Info (we'll need to fetch this)
-          recipientName: `Recipient ${recipientId}`, // Will be updated with real name
-          recipientAddress: 'Address to be confirmed',
-          // Order Details  
-          occasionName: `Occasion ${occasionId}`, // Will be updated with real occasion
-          occasionDate: new Date().toISOString().split('T')[0], // Default to today
+          // Recipient Info (who receives) - use real data if available
+          recipientName: recipient?.name || `Recipient ${recipientId}`,
+          recipientAddress: recipient?.deliveryAddress ? formatAddress(recipient.deliveryAddress) : 'Address to be confirmed',
+          // Order Details - use real data if available
+          occasionName: occasion?.name || `Occasion ${occasionId}`,
+          occasionDate: occasion?.date || new Date().toISOString().split('T')[0],
           giftName: gift.name,
           giftPrice: gift.price,
           giftUrl: gift.purchaseUrl,
@@ -150,14 +152,16 @@ export function useGiftStorage() {
           orderDate: Date.now(),
           amazonOrderId: undefined,
           trackingNumber: undefined,
-          notes: `User selected gift: ${gift.reasoning || 'No reasoning provided'}`,
-          giftWrap: false, // Default
-          personalNote: undefined,
+          notes: `User selected gift: ${gift.reasoning || 'No reasoning provided'}${occasion?.notes ? ` | Occasion notes: ${occasion.notes}` : ''}`,
+          giftWrap: occasion?.giftWrap || false,
+          personalNote: occasion?.noteText || undefined,
           // Billing
           billingStatus: 'pending' as const,
           chargeAmount: gift.price,
-          // New field to track this is a selected gift (not ordered yet)
-          source: 'gift_selection'
+          // Additional tracking fields
+          source: 'gift_selection',
+          recipientId: recipientId,
+          occasionId: occasionId
         };
 
         // Save to admin orders
@@ -172,7 +176,12 @@ export function useGiftStorage() {
         filteredOrders.push(adminOrder);
         localStorage.setItem('admin_pending_orders', JSON.stringify(filteredOrders));
         
-        console.log('📋 Created admin order for selected gift:', adminOrder.id);
+        console.log('📋 Created enhanced admin order for selected gift:', {
+          orderId: adminOrder.id,
+          recipientName: adminOrder.recipientName,
+          occasionName: adminOrder.occasionName,
+          hasAddress: !!recipient?.deliveryAddress
+        });
       }
     } catch (error) {
       console.error('Error creating admin order for selected gift:', error);
