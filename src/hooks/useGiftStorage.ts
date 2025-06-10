@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRecipientStore } from '../store/recipientStore';
 import { useOccasionStore } from '../store/occasionStore';
+import { AdminService, type AdminOrder } from '../services/adminService';
 
 export interface StoredGift {
   id: string;
@@ -131,7 +132,7 @@ export function useGiftStorage() {
         const occasion = recipientOccasions.find(o => o.id === occasionId);
 
         // Create admin order for selected gift with real data
-        const adminOrder = {
+        const adminOrder: AdminOrder = {
           id: `selected-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           // Customer Info (who pays)
           customerId: user.id,
@@ -164,27 +165,11 @@ export function useGiftStorage() {
           occasionId: occasionId
         };
 
-        // Save to admin orders
-        const existingOrders = localStorage.getItem('admin_pending_orders');
-        const orders = existingOrders ? JSON.parse(existingOrders) : [];
-        
-        // Remove any existing order for the same gift to prevent duplicates
-        const filteredOrders = orders.filter((order: any) => 
-          !(order.recipientId === recipientId && order.occasionId === occasionId && order.giftName === gift.name)
-        );
-        
-        filteredOrders.push(adminOrder);
-        localStorage.setItem('admin_pending_orders', JSON.stringify(filteredOrders));
-        
-        console.log('📋 Created enhanced admin order for selected gift:', {
-          orderId: adminOrder.id,
-          recipientName: adminOrder.recipientName,
-          occasionName: adminOrder.occasionName,
-          hasAddress: !!recipient?.deliveryAddress
-        });
+        // Use AdminService to add the order to global admin queue
+        AdminService.addOrder(adminOrder);
       }
     } catch (error) {
-      console.error('Error creating admin order for selected gift:', error);
+      console.error('Error creating global admin order for selected gift:', error);
     }
 
     return storedGift;

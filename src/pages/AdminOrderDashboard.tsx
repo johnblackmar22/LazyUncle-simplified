@@ -61,39 +61,9 @@ import {
   FaEdit
 } from 'react-icons/fa';
 import { format } from 'date-fns';
+import { AdminService, type AdminOrder } from '../services/adminService';
 
-interface PendingOrder {
-  id: string;
-  // Customer Info (who pays)
-  customerId: string;
-  customerName: string;
-  customerEmail: string;
-  customerPlan: string;
-  // Recipient Info (who receives)
-  recipientName: string;
-  recipientAddress: string;
-  // Order Details
-  occasionName: string;
-  occasionDate: string;
-  giftName: string;
-  giftPrice: number;
-  giftUrl?: string;
-  giftASIN?: string; // Amazon ASIN for easy ordering
-  status: 'pending' | 'ordered' | 'shipped' | 'delivered';
-  orderDate: number;
-  amazonOrderId?: string;
-  trackingNumber?: string;
-  notes?: string;
-  giftWrap: boolean;
-  personalNote?: string;
-  // Billing
-  billingStatus: 'pending' | 'charged' | 'refunded';
-  chargeAmount?: number;
-  // Additional tracking fields
-  source?: 'gift_selection' | 'auto_send' | 'manual';
-  recipientId?: string;
-  occasionId?: string;
-}
+interface PendingOrder extends AdminOrder {}
 
 type SortField = 'orderDate' | 'giftPrice' | 'customerName' | 'recipientName' | 'occasionDate';
 type SortDirection = 'asc' | 'desc';
@@ -122,22 +92,24 @@ const AdminOrderDashboard: React.FC = () => {
   }, []);
 
   const loadPendingOrders = () => {
-    // In demo mode, load from localStorage
-    // In production, this would be a Firebase query for orders with admin access
-    const stored = localStorage.getItem('admin_pending_orders');
-    console.log('🔍 Loading orders from localStorage:', stored);
-    if (stored) {
-      const parsedOrders = JSON.parse(stored);
-      console.log('📋 Parsed orders:', parsedOrders);
-      setOrders(parsedOrders);
-    } else {
-      console.log('⚠️ No orders found in localStorage');
+    // Load from AdminService to see ALL users' selected gifts
+    try {
+      const orders = AdminService.getAllOrders();
+      console.log('📋 Loaded global admin orders via AdminService:', orders);
+      setOrders(orders);
+    } catch (error) {
+      console.error('❌ Error loading admin orders:', error);
+      setOrders([]);
     }
   };
 
   const saveOrders = (updatedOrders: PendingOrder[]) => {
-    localStorage.setItem('admin_pending_orders', JSON.stringify(updatedOrders));
-    setOrders(updatedOrders);
+    try {
+      AdminService.saveOrders(updatedOrders);
+      setOrders(updatedOrders);
+    } catch (error) {
+      console.error('❌ Error saving admin orders:', error);
+    }
   };
 
   // Enhanced filtering logic
@@ -276,9 +248,13 @@ const AdminOrderDashboard: React.FC = () => {
 
   const deleteOrder = (orderId: string) => {
     if (window.confirm('Are you sure you want to delete this order? This action cannot be undone.')) {
-      const updatedOrders = orders.filter(order => order.id !== orderId);
-      saveOrders(updatedOrders);
-      console.log('🗑️ Deleted order:', orderId);
+      try {
+        AdminService.deleteOrder(orderId);
+        loadPendingOrders(); // Reload from AdminService
+        console.log('🗑️ Deleted order via AdminService:', orderId);
+      } catch (error) {
+        console.error('❌ Error deleting order:', error);
+      }
     }
   };
 
@@ -386,10 +362,13 @@ const AdminOrderDashboard: React.FC = () => {
         {/* Header */}
         <Flex align="center">
           <VStack align="start" spacing={1}>
-            <Heading size="lg">🧙‍♂️ Admin Order Dashboard</Heading>
+            <Heading size="lg">🧙‍♂️ Global Admin Order Dashboard</Heading>
             <Text color="gray.600" fontSize="sm">
-              Manage selected gifts and process orders for customers
+              View and manage selected gifts from ALL users across the platform
             </Text>
+            <Badge colorScheme="purple" size="sm">
+              Admin View: {AdminService.getOrderStats().uniqueCustomers} Customers • {orders.length} Total Orders
+            </Badge>
           </VStack>
           <Spacer />
           <HStack spacing={3}>
@@ -799,35 +778,32 @@ const AdminOrderDashboard: React.FC = () => {
               
               <HStack justify="space-between">
                 <Text fontSize="sm">localStorage key:</Text>
-                <Text fontSize="xs" fontFamily="mono">admin_pending_orders</Text>
+                <Text fontSize="xs" fontFamily="mono">global_admin_orders</Text>
               </HStack>
               
               <Button
                 size="sm"
                 onClick={() => {
-                  const stored = localStorage.getItem('admin_pending_orders');
-                  console.log('🔍 Raw localStorage:', stored);
-                  console.log('📋 Current orders state:', orders);
-                  console.log('🔍 Current filters:', { searchTerm, statusFilter, billingFilter, sortField, sortDirection });
-                  console.log('📊 Filtered orders:', sortedOrders);
-                  if (stored) {
-                    try {
-                      const parsed = JSON.parse(stored);
-                      console.log('✅ Successfully parsed:', parsed);
-                    } catch (e) {
-                      console.error('❌ Parse error:', e);
-                    }
+                  try {
+                    const orders = AdminService.getAllOrders();
+                    const stats = AdminService.getOrderStats();
+                    console.log('🔍 AdminService Orders:', orders);
+                    console.log('📊 AdminService Stats:', stats);
+                    console.log('🔍 Current filters:', { searchTerm, statusFilter, billingFilter, sortField, sortDirection });
+                    console.log('📊 Filtered orders:', sortedOrders);
+                  } catch (error) {
+                    console.error('❌ Error accessing AdminService:', error);
                   }
                 }}
                 variant="outline"
               >
-                Check Console Logs
+                Check Admin Console
               </Button>
               
               <Button
                 size="sm"
                 onClick={() => {
-                  console.log('🔄 Reloading orders...');
+                  console.log('🔄 Reloading orders via AdminService...');
                   loadPendingOrders();
                 }}
                 colorScheme="green"
@@ -839,14 +815,20 @@ const AdminOrderDashboard: React.FC = () => {
               <Button
                 size="sm"
                 onClick={() => {
-                  localStorage.removeItem('admin_pending_orders');
-                  setOrders([]);
-                  console.log('🗑️ Cleared localStorage and orders');
+                  if (window.confirm('Are you sure you want to clear ALL admin orders? This will remove orders from ALL users!')) {
+                    try {
+                      AdminService.clearAllOrders();
+                      setOrders([]);
+                      console.log('🗑️ Cleared all global admin orders via AdminService');
+                    } catch (error) {
+                      console.error('❌ Error clearing orders:', error);
+                    }
+                  }
                 }}
                 colorScheme="red"
                 variant="outline"
               >
-                Clear All Orders
+                Clear ALL Orders
               </Button>
             </VStack>
           </CardBody>
