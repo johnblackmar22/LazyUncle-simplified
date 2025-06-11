@@ -520,35 +520,45 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
                       {/* Action Buttons */}
                       <VStack spacing={2} minW="120px" maxW="140px" align="stretch">
                         {/* Feedback Buttons */}
-                        <Text fontSize="xs" color="gray.600" textAlign="center">Rate this idea:</Text>
-                        <HStack spacing={2} justify="center">
-                          <Tooltip label="Great suggestion!">
-                            <IconButton
-                              aria-label="Thumbs up"
-                              icon={<span>👍</span>}
-                              size="sm"
-                              variant={feedback[gift.id] === 'thumbs_up' ? 'solid' : 'outline'}
-                              colorScheme={feedback[gift.id] === 'thumbs_up' ? 'green' : 'gray'}
-                              onClick={() => {
-                                console.log('👍 Thumbs up clicked for:', gift.name);
-                                handleFeedback(gift, 'thumbs_up');
-                              }}
-                            />
-                          </Tooltip>
-                          <Tooltip label="Not a good fit">
-                            <IconButton
-                              aria-label="Thumbs down"
-                              icon={<span>👎</span>}
-                              size="sm"
-                              variant={feedback[gift.id] === 'thumbs_down' ? 'solid' : 'outline'}
-                              colorScheme={feedback[gift.id] === 'thumbs_down' ? 'red' : 'gray'}
-                              onClick={() => {
-                                console.log('👎 Thumbs down clicked for:', gift.name);
-                                handleFeedback(gift, 'thumbs_down');
-                              }}
-                            />
-                          </Tooltip>
-                        </HStack>
+                        <Box 
+                          p={2} 
+                          border="2px solid" 
+                          borderColor="blue.200" 
+                          borderRadius="md" 
+                          bg="blue.50"
+                        >
+                          <Text fontSize="xs" color="blue.800" textAlign="center" fontWeight="bold">
+                            Rate this idea:
+                          </Text>
+                          <HStack spacing={2} justify="center" mt={1}>
+                            <Tooltip label="Great suggestion!">
+                              <IconButton
+                                aria-label="Thumbs up"
+                                icon={<span>👍</span>}
+                                size="sm"
+                                variant={feedback[gift.id] === 'thumbs_up' ? 'solid' : 'outline'}
+                                colorScheme={feedback[gift.id] === 'thumbs_up' ? 'green' : 'gray'}
+                                onClick={() => {
+                                  console.log('👍 Thumbs up clicked for:', gift.name);
+                                  handleFeedback(gift, 'thumbs_up');
+                                }}
+                              />
+                            </Tooltip>
+                            <Tooltip label="Not a good fit">
+                              <IconButton
+                                aria-label="Thumbs down"
+                                icon={<span>👎</span>}
+                                size="sm"
+                                variant={feedback[gift.id] === 'thumbs_down' ? 'solid' : 'outline'}
+                                colorScheme={feedback[gift.id] === 'thumbs_down' ? 'red' : 'gray'}
+                                onClick={() => {
+                                  console.log('👎 Thumbs down clicked for:', gift.name);
+                                  handleFeedback(gift, 'thumbs_down');
+                                }}
+                              />
+                            </Tooltip>
+                          </HStack>
+                        </Box>
                         
                         <HStack spacing={2} mt={3}>
                           <Button

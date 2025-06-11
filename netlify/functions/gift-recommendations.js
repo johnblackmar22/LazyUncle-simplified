@@ -48,13 +48,16 @@ About them: ${recipient.description}` : ''}${recipient.interests && recipient.in
 Interests: ${recipient.interests.join(', ')}` : ''}
 
 Occasion: ${occasion.name}
-Budget: $${budget.giftBudget - 10}-${budget.giftBudget}
+Total Budget: $${budget.total} (this MUST include gift price + shipping + any fees)
+Max Gift Price: $${budget.giftBudget} (before shipping)
+
+CRITICAL: Stay well under the total budget of $${budget.total}. Consider shipping costs.
 
 Requirements:
 - Exactly 2 recommendations
 - Real products available on Amazon
 - Include brand names (e.g. "Sony Headphones", "Instant Pot")
-- Stay within budget
+- Gift prices should be $${Math.round(budget.giftBudget * 0.8)} or less to allow for shipping
 
 Respond in JSON format:
 {"recommendations": [{"name": "Product Name", "description": "Why it's perfect", "price": 99, "category": "Electronics", "reasoning": "Explanation"}, {"name": "Second Product", "description": "Why it's great", "price": 45, "category": "Books", "reasoning": "Why this fits"}]}`;
