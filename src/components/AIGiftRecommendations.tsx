@@ -436,11 +436,6 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
                                 {Math.round(gift.confidence * 100)}% match
                               </Badge>
                             )}
-                            {gift.asin && (
-                              <Badge colorScheme="orange" variant="subtle">
-                                ASIN: {gift.asin}
-                              </Badge>
-                            )}
                           </HStack>
                         </VStack>
 
