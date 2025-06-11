@@ -25,6 +25,7 @@ import { useGiftStorage } from '../hooks/useGiftStorage';
 import { useAuthStore } from '../store/authStore';
 import type { Recipient, Occasion } from '../types';
 import { FaCheck, FaHeart } from 'react-icons/fa';
+import AdminService from '../services/adminService';
 
 interface AIGiftRecommendationsProps {
   recipient: Recipient;
@@ -51,6 +52,15 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
   // Get selected gifts for this recipient/occasion to check button state
   const selectedGifts = getSelectedGiftsForOccasion(recipient.id, occasion.id);
   const selectedGiftIds = selectedGifts.map(g => g.id);
+
+  // Debug logging for button states
+  console.log('🔍 AIGiftRecommendations Debug:', {
+    recipientId: recipient.id,
+    occasionId: occasion.id,
+    selectedGifts: selectedGifts.length,
+    selectedGiftIds,
+    recommendationsCount: recommendations.length
+  });
 
   const generateRecommendations = async (excludeIds: string[] = []) => {
     setLoading(true);
@@ -118,25 +128,27 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
     generateRecommendations(newExcludedIds);
   };
 
-  const handleSelectGift = (gift: GiftRecommendation) => {
+  const handleSelectGift = async (gift: GiftRecommendation) => {
+    console.log('🔥 BUTTON CLICKED - handleSelectGift called!');
     try {
-      const selectedGift = selectGift(gift, recipient.id, occasion.id);
-      
+      console.log('🖱️ Select Gift button clicked for:', gift.name);
+      const selectedGift = await selectGift(gift, recipient.id, occasion.id);
+      console.log('✅ Gift selection completed successfully:', selectedGift);
       toast({
         title: 'Gift Selected!',
-        description: `"${gift.name}" has been added to your selections`,
+        description: `"${gift.name}" has been added to your selections and an order has been created for admin processing`,
         status: 'success',
-        duration: 3000,
+        duration: 4000,
         isClosable: true,
       });
-
       onGiftSelected?.(gift);
     } catch (error) {
+      console.error('❌ Error in handleSelectGift (order creation):', error);
       toast({
-        title: 'Error',
-        description: 'Failed to select gift',
+        title: 'Order Creation Failed',
+        description: `Failed to create order: ${error instanceof Error ? error.message : 'Unknown error'}`,
         status: 'error',
-        duration: 3000,
+        duration: 6000,
         isClosable: true,
       });
     }
@@ -177,60 +189,65 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
         return;
       }
 
-      // Create admin order directly for testing wizard of oz workflow
+      // Create admin order for processing
       const adminOrder = {
-        id: `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        // Customer Info (who pays)
-        customerId: user.id,
-        customerName: user.displayName || user.email.split('@')[0],
-        customerEmail: user.email,
-        customerPlan: user.planId || 'free',
+        userId: user.id,
+        userEmail: user.email,
+        userName: user.displayName || user.email.split('@')[0],
         // Recipient Info (who receives)
         recipientName: recipient.name,
+        recipientRelationship: recipient.relationship,
         recipientAddress: formatAddress(recipient.deliveryAddress),
         // Order Details
-        occasionName: occasion.name,
+        occasion: occasion.name,
+        occasionId: occasion.id,
         occasionDate: occasion.date,
-        giftName: gift.name,
+        giftTitle: gift.name,
+        giftDescription: gift.description || '',
         giftPrice: gift.price,
+        giftImageUrl: gift.imageUrl || '',
         giftUrl: gift.purchaseUrl,
-        giftASIN: gift.asin, // Use ASIN from AI recommendation
+        asin: gift.asin, // Use ASIN from AI recommendation
         status: 'pending' as const,
-        orderDate: Date.now(),
-        amazonOrderId: undefined,
-        trackingNumber: undefined,
+        priority: 'normal' as const,
         notes: `User selected: ${gift.reasoning}`,
+        shippingAddress: {
+          name: recipient.name,
+          street: recipient.deliveryAddress?.line1 || '',
+          city: recipient.deliveryAddress?.city || '',
+          state: recipient.deliveryAddress?.state || '',
+          zipCode: recipient.deliveryAddress?.postalCode || '',
+          country: recipient.deliveryAddress?.country || 'US',
+        },
+        source: 'gift_selection' as const,
         giftWrap: occasion.giftWrap || false,
-        personalNote: occasion.noteText,
-        // Billing
-        billingStatus: 'pending' as const,
-        chargeAmount: gift.price,
+        personalNote: occasion.noteText || '',
       };
 
-      // Save to admin orders for wizard of oz processing
-      const existingOrders = localStorage.getItem('admin_pending_orders');
-      const orders = existingOrders ? JSON.parse(existingOrders) : [];
-      orders.push(adminOrder);
-      localStorage.setItem('admin_pending_orders', JSON.stringify(orders));
-
-      console.log('📋 Created admin order from gift recommendation:', adminOrder.id);
+      // Save via AdminService for consistency
+      const orderId = await AdminService.addOrder(adminOrder);
+      console.log('📋 Created admin order from gift recommendation:', orderId);
 
       toast({
-        title: 'Order Created! 🎁',
-        description: `"${gift.name}" has been ordered for ${recipient.name}! Check the admin dashboard to process it.`,
+        title: 'Gift Selected!',
+        description: 'Your gift selection has been sent to our team for processing.',
         status: 'success',
-        duration: 5000,
+        duration: 4000,
         isClosable: true,
       });
 
-      onGiftSelected?.(gift);
+      // Call onGiftSelected if provided
+      if (onGiftSelected) {
+        onGiftSelected(gift);
+      }
+
     } catch (error) {
-      console.error('Error creating order:', error);
+      console.error('❌ Error creating admin order:', error);
       toast({
         title: 'Error',
-        description: 'Failed to create order',
+        description: 'Failed to process your gift selection. Please try again.',
         status: 'error',
-        duration: 3000,
+        duration: 4000,
         isClosable: true,
       });
     }
@@ -461,16 +478,27 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
                       {/* Action Buttons */}
                       <VStack spacing={2} minW="120px" maxW="140px" align="stretch">
                         <HStack spacing={2} mt={3}>
-                          <Button
-                            size="sm"
-                            colorScheme="green"
-                            variant="outline"
-                            leftIcon={<FaCheck />}
-                            onClick={() => handleSelectGift(gift)}
-                            isDisabled={selectedGiftIds.includes(gift.id)}
-                          >
-                            {selectedGiftIds.includes(gift.id) ? 'Selected' : 'Select Gift'}
-                          </Button>
+                          {(() => {
+                            const isDisabled = selectedGiftIds.includes(gift.id);
+                            console.log(`🔘 Button for "${gift.name}":`, {
+                              giftId: gift.id,
+                              isDisabled,
+                              selectedGiftIds,
+                              buttonText: isDisabled ? 'Selected' : 'Select Gift'
+                            });
+                            return (
+                              <Button
+                                size="sm"
+                                colorScheme="green"
+                                variant="outline"
+                                leftIcon={<FaCheck />}
+                                onClick={() => handleSelectGift(gift)}
+                                isDisabled={isDisabled}
+                              >
+                                {isDisabled ? 'Selected' : 'Select Gift'}
+                              </Button>
+                            );
+                          })()}
                           <Button
                             size="sm"
                             variant="outline"

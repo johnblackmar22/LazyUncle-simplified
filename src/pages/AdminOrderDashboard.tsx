@@ -39,26 +39,48 @@ import {
   InputLeftElement,
   Stack,
   Textarea,
+  Tabs,
+  TabList,
+  TabPanels,
+  Tab,
+  TabPanel,
+  Avatar,
+  Accordion,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  AccordionIcon,
+  useToast,
 } from '@chakra-ui/react';
 import { 
   FaShoppingCart, 
-  FaCheck, 
   FaTruck, 
   FaEye, 
   FaCopy, 
   FaSearch,
-  FaSync
+  FaSync,
+  FaUsers,
 } from 'react-icons/fa';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import AdminService from '../services/adminService';
 import { useAuthStore } from '../store/authStore';
-import type { AdminOrder } from '../types';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { db } from '../services/firebase';
+import { COLLECTIONS } from '../utils/constants';
+import type { AdminOrder, User, Recipient, Occasion, Gift } from '../types';
 
 const AdminOrderDashboard: React.FC = () => {
   const { user } = useAuthStore();
+  const toast = useToast();
   
-  // Order management state
+  // Data state
   const [orders, setOrders] = useState<AdminOrder[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [recipients, setRecipients] = useState<Recipient[]>([]);
+  const [occasions, setOccasions] = useState<Occasion[]>([]);
+  const [gifts, setGifts] = useState<Gift[]>([]);
+  
+  // Modal state
   const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
   const [amazonOrderId, setAmazonOrderId] = useState('');
   const [trackingNumber, setTrackingNumber] = useState('');
@@ -70,33 +92,210 @@ const AdminOrderDashboard: React.FC = () => {
   
   const { isOpen, onOpen, onClose } = useDisclosure();
 
-  // Load orders when component mounts
+  // Load all data when component mounts
   useEffect(() => {
-    const fetchOrders = async () => {
+    const fetchAllData = async () => {
+      console.log('🔍 AdminOrderDashboard - Starting data fetch...');
+      console.log('🔍 Current user:', {
+        id: user?.id,
+        email: user?.email,
+        displayName: user?.displayName,
+        role: user?.role
+      });
+      
       try {
-        const orders = await AdminService.getAllOrders();
-        console.log('🔍 Admin Dashboard - Orders loaded:', orders.length);
-        setOrders(orders);
+        // Fetch orders
+        console.log('🔍 Fetching orders...');
+        const ordersData = await AdminService.getAllOrders();
+        console.log('🔍 Orders fetched:', ordersData.length);
+        setOrders(ordersData);
+
+        // Fetch users
+        console.log('🔍 Fetching users...');
+        const usersRef = collection(db, COLLECTIONS.USERS);
+        const usersQuery = query(usersRef, orderBy('createdAt', 'desc'));
+        const usersSnapshot = await getDocs(usersQuery);
+        const usersData: User[] = [];
+        usersSnapshot.forEach((doc) => {
+          const data = doc.data();
+          usersData.push({
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toMillis?.() || data.createdAt || Date.now(),
+            updatedAt: data.updatedAt?.toMillis?.() || data.updatedAt || Date.now()
+          } as User);
+        });
+        console.log('🔍 Users fetched:', usersData.length);
+        setUsers(usersData);
+
+        // Fetch recipients
+        console.log('🔍 Fetching recipients...');
+        const recipientsRef = collection(db, COLLECTIONS.RECIPIENTS);
+        const recipientsQuery = query(recipientsRef, orderBy('createdAt', 'desc'));
+        const recipientsSnapshot = await getDocs(recipientsQuery);
+        const recipientsData: Recipient[] = [];
+        recipientsSnapshot.forEach((doc) => {
+          const data = doc.data();
+          recipientsData.push({
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toMillis?.() || data.createdAt || Date.now(),
+            updatedAt: data.updatedAt?.toMillis?.() || data.updatedAt || Date.now()
+          } as Recipient);
+        });
+        console.log('🔍 Recipients fetched:', recipientsData.length);
+        setRecipients(recipientsData);
+
+        // Fetch occasions
+        console.log('🔍 Fetching occasions...');
+        const occasionsRef = collection(db, COLLECTIONS.OCCASIONS);
+        const occasionsQuery = query(occasionsRef, orderBy('date', 'desc'));
+        const occasionsSnapshot = await getDocs(occasionsQuery);
+        const occasionsData: Occasion[] = [];
+        occasionsSnapshot.forEach((doc) => {
+          const data = doc.data();
+          occasionsData.push({
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toMillis?.() || data.createdAt || Date.now(),
+            updatedAt: data.updatedAt?.toMillis?.() || data.updatedAt || Date.now()
+          } as Occasion);
+        });
+        console.log('🔍 Occasions fetched:', occasionsData.length);
+        setOccasions(occasionsData);
+
+        // Fetch gifts
+        console.log('🔍 Fetching gifts...');
+        const giftsRef = collection(db, COLLECTIONS.GIFTS);
+        const giftsQuery = query(giftsRef, orderBy('createdAt', 'desc'));
+        const giftsSnapshot = await getDocs(giftsQuery);
+        const giftsData: Gift[] = [];
+        giftsSnapshot.forEach((doc) => {
+          const data = doc.data();
+          giftsData.push({
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toMillis?.() || data.createdAt || Date.now(),
+            updatedAt: data.updatedAt?.toMillis?.() || data.updatedAt || Date.now()
+          } as Gift);
+        });
+        console.log('🔍 Gifts fetched:', giftsData.length);
+        setGifts(giftsData);
+
+        console.log('🔍 Admin Dashboard - All data loaded:', {
+          orders: ordersData.length,
+          users: usersData.length,
+          recipients: recipientsData.length,
+          occasions: occasionsData.length,
+          gifts: giftsData.length
+        });
       } catch (error) {
-        console.error('❌ Error fetching admin orders:', error);
+        console.error('❌ Error fetching admin data:', error);
+        console.error('❌ Error details:', {
+          message: error instanceof Error ? error.message : String(error),
+          code: (error as any)?.code,
+          stack: error instanceof Error ? error.stack : undefined
+        });
       }
     };
 
-    fetchOrders();
+    if (user) {
+      fetchAllData();
+    } else {
+      console.log('🔍 No user authenticated, skipping data fetch');
+    }
     
     // Refresh every 30 seconds
-    const interval = setInterval(fetchOrders, 30000);
+    const interval = setInterval(() => {
+      if (user) {
+        fetchAllData();
+      }
+    }, 30000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [user]);
 
-  const refreshOrders = async () => {
+  const refreshAllData = async () => {
     try {
-      const orders = await AdminService.getAllOrders();
-      console.log('🔄 Refreshing orders:', orders.length);
-      setOrders(orders);
+      console.log('🔄 Refreshing all admin data');
+      
+      // Fetch orders
+      const ordersData = await AdminService.getAllOrders();
+      setOrders(ordersData);
+
+      // Fetch users
+      const usersRef = collection(db, COLLECTIONS.USERS);
+      const usersQuery = query(usersRef, orderBy('createdAt', 'desc'));
+      const usersSnapshot = await getDocs(usersQuery);
+      const usersData: User[] = [];
+      usersSnapshot.forEach((doc) => {
+        const data = doc.data();
+        usersData.push({
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toMillis?.() || data.createdAt || Date.now(),
+          updatedAt: data.updatedAt?.toMillis?.() || data.updatedAt || Date.now()
+        } as User);
+      });
+      setUsers(usersData);
+
+      // Fetch recipients
+      const recipientsRef = collection(db, COLLECTIONS.RECIPIENTS);
+      const recipientsQuery = query(recipientsRef, orderBy('createdAt', 'desc'));
+      const recipientsSnapshot = await getDocs(recipientsQuery);
+      const recipientsData: Recipient[] = [];
+      recipientsSnapshot.forEach((doc) => {
+        const data = doc.data();
+        recipientsData.push({
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toMillis?.() || data.createdAt || Date.now(),
+          updatedAt: data.updatedAt?.toMillis?.() || data.updatedAt || Date.now()
+        } as Recipient);
+      });
+      setRecipients(recipientsData);
+
+      // Fetch occasions
+      const occasionsRef = collection(db, COLLECTIONS.OCCASIONS);
+      const occasionsQuery = query(occasionsRef, orderBy('date', 'desc'));
+      const occasionsSnapshot = await getDocs(occasionsQuery);
+      const occasionsData: Occasion[] = [];
+      occasionsSnapshot.forEach((doc) => {
+        const data = doc.data();
+        occasionsData.push({
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toMillis?.() || data.createdAt || Date.now(),
+          updatedAt: data.updatedAt?.toMillis?.() || data.updatedAt || Date.now()
+        } as Occasion);
+      });
+      setOccasions(occasionsData);
+
+      // Fetch gifts
+      const giftsRef = collection(db, COLLECTIONS.GIFTS);
+      const giftsQuery = query(giftsRef, orderBy('createdAt', 'desc'));
+      const giftsSnapshot = await getDocs(giftsQuery);
+      const giftsData: Gift[] = [];
+      giftsSnapshot.forEach((doc) => {
+        const data = doc.data();
+        giftsData.push({
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toMillis?.() || data.createdAt || Date.now(),
+          updatedAt: data.updatedAt?.toMillis?.() || data.updatedAt || Date.now()
+        } as Gift);
+      });
+      setGifts(giftsData);
+
+      console.log('🔄 All admin data refreshed:', {
+        orders: ordersData.length,
+        users: usersData.length,
+        recipients: recipientsData.length,
+        occasions: occasionsData.length,
+        gifts: giftsData.length
+      });
     } catch (error) {
-      console.error('❌ Error refreshing admin orders:', error);
+      console.error('❌ Error refreshing admin data:', error);
     }
   };
 
@@ -130,7 +329,7 @@ const AdminOrderDashboard: React.FC = () => {
         notes: notes.trim()
       });
       
-      await refreshOrders();
+      await refreshAllData();
       onClose();
       setAmazonOrderId('');
       setNotes('');
@@ -148,7 +347,7 @@ const AdminOrderDashboard: React.FC = () => {
         trackingNumber: trackingNumber.trim()
       });
       
-      await refreshOrders();
+      await refreshAllData();
       onClose();
       setTrackingNumber('');
     } catch (error) {
@@ -160,7 +359,7 @@ const AdminOrderDashboard: React.FC = () => {
     if (window.confirm('Are you sure you want to delete this order?')) {
       try {
         await AdminService.deleteOrder(orderId);
-        await refreshOrders();
+        await refreshAllData();
       } catch (error) {
         console.error('❌ Error deleting order:', error);
       }
@@ -189,15 +388,21 @@ const AdminOrderDashboard: React.FC = () => {
 
   // Calculate stats
   const stats = {
-    total: orders.length,
-    pending: orders.filter(o => o.status === 'pending').length,
-    processing: orders.filter(o => o.status === 'processing').length,
-    ordered: orders.filter(o => o.status === 'ordered').length,
-    shipped: orders.filter(o => o.status === 'shipped').length,
-    delivered: orders.filter(o => o.status === 'delivered').length,
+    totalUsers: users.length,
+    totalRecipients: recipients.length,
+    totalOccasions: occasions.length,
+    totalGifts: gifts.length,
+    totalOrders: orders.length,
+    pendingOrders: orders.filter(o => o.status === 'pending').length,
+    orderedItems: orders.filter(o => o.status === 'ordered').length,
+    shippedItems: orders.filter(o => o.status === 'shipped').length,
     totalRevenue: orders.reduce((sum, order) => sum + order.giftPrice, 0),
-    uniqueCustomers: new Set(orders.map(o => o.userId)).size
   };
+
+  // Get user by ID helper
+  const getRecipientsByUserId = (userId: string) => recipients.filter(r => r.userId === userId);
+  const getOccasionsByRecipientId = (recipientId: string) => occasions.filter(o => o.recipientId === recipientId);
+  const getGiftsByOccasionId = (occasionId: string) => gifts.filter(g => g.occasionId === occasionId);
 
   return (
     <Container maxW="full" p={4}>
@@ -205,25 +410,76 @@ const AdminOrderDashboard: React.FC = () => {
       <Flex justify="space-between" align="center" mb={6}>
         <VStack align="start" spacing={1}>
           <Heading size="lg" color="purple.600">
-            🎁 Admin Order Dashboard
+            🎁 Admin Dashboard
           </Heading>
           <Text color="gray.600">
             Welcome back, {user?.displayName}
           </Text>
           <Badge colorScheme="purple" size="sm">
-            {stats.uniqueCustomers} Customers • {stats.total} Orders
+            {stats.totalUsers} Users • {stats.totalOrders} Orders
           </Badge>
         </VStack>
         
         <HStack spacing={3}>
           <Button
             leftIcon={<FaSync />}
-            onClick={refreshOrders}
+            onClick={refreshAllData}
             size="sm"
             variant="outline"
           >
             Refresh
           </Button>
+          {user?.role === 'admin' && (
+            <Button
+              colorScheme="red"
+              size="sm"
+              onClick={async () => {
+                try {
+                  await AdminService.addOrder({
+                    userId: user.id,
+                    userEmail: user.email,
+                    userName: user.displayName || user.email,
+                    recipientName: 'Test Recipient',
+                    recipientRelationship: 'Friend',
+                    occasion: 'Test Occasion',
+                    giftTitle: 'Test Gift',
+                    giftDescription: 'A test gift for debugging',
+                    giftPrice: 42.0,
+                    giftImageUrl: '',
+                    status: 'pending',
+                    priority: 'normal',
+                    notes: 'Test order created by admin',
+                    shippingAddress: {
+                      name: 'Test Recipient',
+                      street: '123 Test St',
+                      city: 'Testville',
+                      state: 'TS',
+                      zipCode: '12345',
+                      country: 'US',
+                    },
+                  });
+                  toast({
+                    title: 'Test Order Created',
+                    description: 'A test order has been added to Firestore.',
+                    status: 'success',
+                    duration: 4000,
+                    isClosable: true,
+                  });
+                  await refreshAllData();
+                } catch (err) {
+                  toast({
+                    title: 'Error Creating Test Order',
+                    description: err instanceof Error ? err.message : String(err),
+                    status: 'error',
+                    duration: 6000,
+                    isClosable: true,
+                  });
+                }
+              }}
+            >
+              Create Test Order
+            </Button>
+          )}
         </HStack>
       </Flex>
 
@@ -232,157 +488,282 @@ const AdminOrderDashboard: React.FC = () => {
         <Card>
           <CardBody>
             <Stat>
-              <StatLabel>Total Orders</StatLabel>
-              <StatNumber>{stats.total}</StatNumber>
+              <StatLabel>👥 Total Users</StatLabel>
+              <StatNumber>{stats.totalUsers}</StatNumber>
             </Stat>
           </CardBody>
         </Card>
         <Card>
           <CardBody>
             <Stat>
-              <StatLabel>Pending</StatLabel>
-              <StatNumber color="red.500">{stats.pending}</StatNumber>
+              <StatLabel>👤 Recipients</StatLabel>
+              <StatNumber>{stats.totalRecipients}</StatNumber>
             </Stat>
           </CardBody>
         </Card>
         <Card>
           <CardBody>
             <Stat>
-              <StatLabel>Ordered</StatLabel>
-              <StatNumber color="yellow.500">{stats.ordered}</StatNumber>
+              <StatLabel>📅 Occasions</StatLabel>
+              <StatNumber>{stats.totalOccasions}</StatNumber>
             </Stat>
           </CardBody>
         </Card>
         <Card>
           <CardBody>
             <Stat>
-              <StatLabel>Shipped</StatLabel>
-              <StatNumber color="blue.500">{stats.shipped}</StatNumber>
+              <StatLabel>🎁 Gifts</StatLabel>
+              <StatNumber>{stats.totalGifts}</StatNumber>
             </Stat>
           </CardBody>
         </Card>
         <Card>
           <CardBody>
             <Stat>
-              <StatLabel>Total Revenue</StatLabel>
+              <StatLabel>📦 Pending Orders</StatLabel>
+              <StatNumber color="red.500">{stats.pendingOrders}</StatNumber>
+            </Stat>
+          </CardBody>
+        </Card>
+        <Card>
+          <CardBody>
+            <Stat>
+              <StatLabel>💰 Total Revenue</StatLabel>
               <StatNumber>${stats.totalRevenue.toFixed(2)}</StatNumber>
             </Stat>
           </CardBody>
         </Card>
       </Grid>
 
-      {/* Filters */}
-      <HStack spacing={4} mb={6}>
-        <InputGroup maxW="300px">
-          <InputLeftElement pointerEvents="none">
-            <FaSearch color="gray.300" />
-          </InputLeftElement>
-          <Input
-            placeholder="Search orders..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </InputGroup>
-        
-        <Select
-          placeholder="All Statuses"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          maxW="200px"
-        >
-          <option value="pending">Pending</option>
-          <option value="processing">Processing</option>
-          <option value="ordered">Ordered</option>
-          <option value="shipped">Shipped</option>
-          <option value="delivered">Delivered</option>
-        </Select>
-      </HStack>
+      {/* Main Dashboard Tabs */}
+      <Tabs variant="enclosed" colorScheme="purple">
+        <TabList>
+          <Tab><FaUsers /> &nbsp; Users & Workflow</Tab>
+          <Tab><FaShoppingCart /> &nbsp; Orders ({stats.pendingOrders} pending)</Tab>
+        </TabList>
 
-      {/* Orders Table */}
-      <Card>
-        <CardHeader>
-          <Heading size="md">Orders ({filteredOrders.length})</Heading>
-        </CardHeader>
-        <CardBody>
-          {filteredOrders.length === 0 ? (
-            <Alert status="info">
-              <AlertIcon />
-              No orders found. Users need to select gifts to create orders.
-            </Alert>
-          ) : (
-            <Table variant="simple">
-              <Thead>
-                <Tr>
-                  <Th>Date</Th>
-                  <Th>Customer → Recipient</Th>
-                  <Th>Gift & ASIN</Th>
-                  <Th>Price</Th>
-                  <Th>Occasion</Th>
-                  <Th>Status</Th>
-                  <Th>Actions</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {filteredOrders.map((order) => (
-                  <Tr key={order.id}>
-                    <Td>{format(new Date(order.createdAt), 'MMM dd, yyyy')}</Td>
-                    <Td>
-                      <VStack align="start" spacing={1}>
-                        <Text fontWeight="bold" fontSize="sm">{order.userName}</Text>
-                        <Text fontSize="xs" color="gray.600">{order.userEmail}</Text>
-                        <Text fontSize="sm">→ {order.recipientName}</Text>
-                      </VStack>
-                    </Td>
-                    <Td>
-                      <VStack align="start" spacing={1}>
-                        <Text fontWeight="medium" fontSize="sm">{order.giftTitle}</Text>
-                        {order.asin && (
-                          <HStack spacing={2}>
-                            <Badge colorScheme="orange" size="sm">ASIN: {order.asin}</Badge>
-                            <Button
-                              as="a"
-                              href={`https://amazon.com/dp/${order.asin}`}
-                              target="_blank"
-                              size="xs"
-                              colorScheme="orange"
-                            >
-                              View on Amazon
-                            </Button>
-                          </HStack>
-                        )}
-                      </VStack>
-                    </Td>
-                    <Td>${order.giftPrice.toFixed(2)}</Td>
-                    <Td>{order.occasion}</Td>
-                    <Td>
-                      <Badge colorScheme={getStatusColor(order.status)}>
-                        {order.status}
-                      </Badge>
-                    </Td>
-                    <Td>
-                      <HStack spacing={2}>
-                        <IconButton
-                          aria-label="View details"
-                          icon={<FaEye />}
-                          size="sm"
-                          onClick={() => openOrderModal(order)}
-                        />
-                        <Button
-                          size="xs"
-                          colorScheme="red"
-                          onClick={() => deleteOrder(order.id)}
-                        >
-                          Delete
-                        </Button>
-                      </HStack>
-                    </Td>
-                  </Tr>
-                ))}
-              </Tbody>
-            </Table>
-          )}
-        </CardBody>
-      </Card>
+        <TabPanels>
+          {/* Users & Workflow Tab */}
+          <TabPanel>
+            <Card>
+              <CardHeader>
+                <Heading size="md">User Journey Overview</Heading>
+                <Text color="gray.600" fontSize="sm">See the complete customer workflow</Text>
+              </CardHeader>
+              <CardBody>
+                {users.length === 0 ? (
+                  <Alert status="info">
+                    <AlertIcon />
+                    No users found yet.
+                  </Alert>
+                ) : (
+                  <Accordion allowMultiple>
+                    {users.map((userItem) => {
+                      const userRecipients = getRecipientsByUserId(userItem.id);
+                      return (
+                        <AccordionItem key={userItem.id}>
+                          <AccordionButton>
+                            <Box flex="1" textAlign="left">
+                              <HStack>
+                                <Avatar size="sm" name={userItem.displayName} />
+                                <VStack align="start" spacing={0}>
+                                  <Text fontWeight="bold">{userItem.displayName}</Text>
+                                  <Text fontSize="sm" color="gray.600">{userItem.email}</Text>
+                                </VStack>
+                                <Spacer />
+                                <Badge colorScheme="blue">{userRecipients.length} recipients</Badge>
+                              </HStack>
+                            </Box>
+                            <AccordionIcon />
+                          </AccordionButton>
+                          <AccordionPanel pb={4}>
+                            <VStack align="stretch" spacing={4}>
+                              {userRecipients.length === 0 ? (
+                                <Text color="gray.500" fontStyle="italic">No recipients added yet</Text>
+                              ) : (
+                                userRecipients.map((recipient) => {
+                                  const recipientOccasions = getOccasionsByRecipientId(recipient.id);
+                                  return (
+                                    <Box key={recipient.id} p={4} border="1px" borderColor="gray.200" borderRadius="md">
+                                      <HStack justify="space-between" mb={2}>
+                                        <VStack align="start" spacing={0}>
+                                          <Text fontWeight="bold">👤 {recipient.name}</Text>
+                                          <Text fontSize="sm" color="gray.600">{recipient.relationship}</Text>
+                                        </VStack>
+                                        <Badge colorScheme="green">{recipientOccasions.length} occasions</Badge>
+                                      </HStack>
+                                      
+                                      {recipientOccasions.length === 0 ? (
+                                        <Text color="gray.500" fontSize="sm" fontStyle="italic">No occasions set up</Text>
+                                      ) : (
+                                        <VStack align="stretch" spacing={2}>
+                                          {recipientOccasions.map((occasion) => {
+                                            const occasionGifts = getGiftsByOccasionId(occasion.id);
+                                            return (
+                                              <Box key={occasion.id} p={3} bg="gray.50" borderRadius="md">
+                                                <HStack justify="space-between" mb={1}>
+                                                  <Text fontWeight="medium">📅 {occasion.name}</Text>
+                                                  <Text fontSize="sm" color="gray.600">
+                                                    {format(parseISO(occasion.date), 'MMM dd, yyyy')}
+                                                  </Text>
+                                                </HStack>
+                                                <HStack justify="space-between">
+                                                  <Text fontSize="sm" color="gray.600">
+                                                    Budget: ${occasion.budget || 'Not set'}
+                                                  </Text>
+                                                  <Badge colorScheme="purple">{occasionGifts.length} gifts</Badge>
+                                                </HStack>
+                                                
+                                                {occasionGifts.length > 0 && (
+                                                  <VStack align="stretch" spacing={1} mt={2}>
+                                                    {occasionGifts.map((gift) => (
+                                                      <HStack key={gift.id} justify="space-between" p={2} bg="white" borderRadius="sm">
+                                                        <Text fontSize="sm">🎁 {gift.name}</Text>
+                                                        <HStack>
+                                                          <Badge colorScheme={getStatusColor(gift.status)}>{gift.status}</Badge>
+                                                          <Text fontSize="sm">${gift.price}</Text>
+                                                        </HStack>
+                                                      </HStack>
+                                                    ))}
+                                                  </VStack>
+                                                )}
+                                              </Box>
+                                            );
+                                          })}
+                                        </VStack>
+                                      )}
+                                    </Box>
+                                  );
+                                })
+                              )}
+                            </VStack>
+                          </AccordionPanel>
+                        </AccordionItem>
+                      );
+                    })}
+                  </Accordion>
+                )}
+              </CardBody>
+            </Card>
+          </TabPanel>
+
+          {/* Orders Tab */}
+          <TabPanel>
+            {/* Filters */}
+            <HStack spacing={4} mb={6}>
+              <InputGroup maxW="300px">
+                <InputLeftElement pointerEvents="none">
+                  <FaSearch color="gray.300" />
+                </InputLeftElement>
+                <Input
+                  placeholder="Search orders..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </InputGroup>
+              
+              <Select
+                placeholder="All Statuses"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                maxW="200px"
+              >
+                <option value="pending">Pending</option>
+                <option value="processing">Processing</option>
+                <option value="ordered">Ordered</option>
+                <option value="shipped">Shipped</option>
+                <option value="delivered">Delivered</option>
+              </Select>
+            </HStack>
+
+            {/* Orders Table */}
+            <Card>
+              <CardHeader>
+                <Heading size="md">Orders ({filteredOrders.length})</Heading>
+              </CardHeader>
+              <CardBody>
+                {filteredOrders.length === 0 ? (
+                  <Alert status="info">
+                    <AlertIcon />
+                    No orders found. Users need to select gifts to create orders.
+                  </Alert>
+                ) : (
+                  <Table variant="simple">
+                    <Thead>
+                      <Tr>
+                        <Th>Date</Th>
+                        <Th>Customer → Recipient</Th>
+                        <Th>Gift & ASIN</Th>
+                        <Th>Price</Th>
+                        <Th>Occasion</Th>
+                        <Th>Status</Th>
+                        <Th>Actions</Th>
+                      </Tr>
+                    </Thead>
+                    <Tbody>
+                      {filteredOrders.map((order) => (
+                        <Tr key={order.id}>
+                          <Td>{format(new Date(order.createdAt), 'MMM dd, yyyy')}</Td>
+                          <Td>
+                            <VStack align="start" spacing={1}>
+                              <Text fontWeight="bold" fontSize="sm">{order.userName}</Text>
+                              <Text fontSize="xs" color="gray.600">{order.userEmail}</Text>
+                              <Text fontSize="sm">→ {order.recipientName}</Text>
+                            </VStack>
+                          </Td>
+                          <Td>
+                            <VStack align="start" spacing={1}>
+                              <Text fontWeight="medium" fontSize="sm">{order.giftTitle}</Text>
+                              {order.asin && (
+                                <HStack spacing={2}>
+                                  <Badge colorScheme="orange" size="sm">ASIN: {order.asin}</Badge>
+                                  <Button
+                                    as="a"
+                                    href={`https://amazon.com/dp/${order.asin}`}
+                                    target="_blank"
+                                    size="xs"
+                                    colorScheme="orange"
+                                  >
+                                    View on Amazon
+                                  </Button>
+                                </HStack>
+                              )}
+                            </VStack>
+                          </Td>
+                          <Td>${order.giftPrice.toFixed(2)}</Td>
+                          <Td>{order.occasion}</Td>
+                          <Td>
+                            <Badge colorScheme={getStatusColor(order.status)}>
+                              {order.status}
+                            </Badge>
+                          </Td>
+                          <Td>
+                            <HStack spacing={2}>
+                              <IconButton
+                                aria-label="View details"
+                                icon={<FaEye />}
+                                size="sm"
+                                onClick={() => openOrderModal(order)}
+                              />
+                              <Button
+                                size="xs"
+                                colorScheme="red"
+                                onClick={() => deleteOrder(order.id)}
+                              >
+                                Delete
+                              </Button>
+                            </HStack>
+                          </Td>
+                        </Tr>
+                      ))}
+                    </Tbody>
+                  </Table>
+                )}
+              </CardBody>
+            </Card>
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
 
       {/* Order Details Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="xl">

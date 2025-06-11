@@ -3,6 +3,10 @@ import type { Recipient, Occasion, Gift } from '../types';
 import { useGiftStore } from '../store/giftStore';
 import { useRecipientStore } from '../store/recipientStore';
 import { useAuthStore } from '../store/authStore';
+import { collection, addDoc, getDocs, query, where, orderBy, Timestamp } from 'firebase/firestore';
+import { db } from './firebase';
+import { COLLECTIONS } from '../utils/constants';
+import AdminService from './adminService';
 
 export interface AutoSendSettings {
   enabled: boolean;
@@ -278,75 +282,63 @@ class AutoSendService {
   }
 
   /**
-   * Create order in admin dashboard (Wizard of Oz)
+   * Create admin order for processing
    */
   private async createAdminOrder(pending: PendingAutoSend): Promise<void> {
     try {
-      // Get recipient and occasion data
-      const recipients = useRecipientStore.getState().recipients;
-      const recipient = recipients.find(r => r.id === pending.recipientId);
-      
-      if (!recipient) {
-        throw new Error('Recipient not found');
-      }
-
-      // Get occasion data (mock for now - would come from occasion store)
-      const occasions = this.getUpcomingOccasions(recipients);
-      const occasion = occasions.find(o => o.id === pending.occasionId);
-      
-      if (!occasion) {
-        throw new Error('Occasion not found');
-      }
-
-      // Get customer info from auth store
+      // Get detailed data
       const user = useAuthStore.getState().user;
-      if (!user) {
-        throw new Error('Customer not found');
+      const recipient = useRecipientStore.getState().recipients.find(r => r.id === pending.recipientId);
+      const occasion = this.getUpcomingOccasions(useRecipientStore.getState().recipients).find(o => o.id === pending.occasionId);
+      
+      if (!user || !recipient || !occasion) {
+        throw new Error('Missing required data for admin order');
       }
 
-      // Use ASIN from AI recommendation (preferred) or extract from URL as fallback
-      const asin = pending.recommendedGift.asin || this.extractASINFromUrl(pending.recommendedGift.purchaseUrl);
+      // Extract ASIN from purchase URL if available
+      const asin = this.extractASIN(pending.recommendedGift.purchaseUrl);
 
       // Create admin order with enhanced customer and ASIN info
       const adminOrder = {
-        id: `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        // Customer Info (who pays)
-        customerId: user.id,
-        customerName: user.displayName || user.email.split('@')[0],
-        customerEmail: user.email,
-        customerPlan: user.planId || 'free',
+        userId: user.id,
+        userEmail: user.email,
+        userName: user.displayName || user.email.split('@')[0],
         // Recipient Info (who receives)
         recipientName: recipient.name,
+        recipientRelationship: recipient.relationship,
         recipientAddress: this.formatAddress(recipient.deliveryAddress),
         // Order Details
-        occasionName: occasion.name,
+        occasion: occasion.name,
+        occasionId: occasion.id,
         occasionDate: occasion.date,
-        giftName: pending.recommendedGift.name,
+        giftTitle: pending.recommendedGift.name,
+        giftDescription: pending.recommendedGift.description || '',
         giftPrice: pending.recommendedGift.price,
+        giftImageUrl: '',
         giftUrl: pending.recommendedGift.purchaseUrl,
-        giftASIN: asin,
+        asin: asin,
         status: 'pending' as const,
-        orderDate: Date.now(),
-        amazonOrderId: undefined,
-        trackingNumber: undefined,
-        notes: `Auto-approved: ${pending.recommendedGift.notes}`,
+        priority: 'normal' as const,
+        notes: `Auto-approved: ${pending.recommendedGift.notes || 'Auto-send gift'}`,
+        shippingAddress: {
+          name: recipient.name,
+          street: recipient.deliveryAddress?.line1 || '',
+          city: recipient.deliveryAddress?.city || '',
+          state: recipient.deliveryAddress?.state || '',
+          zipCode: recipient.deliveryAddress?.postalCode || '',
+          country: recipient.deliveryAddress?.country || 'US',
+        },
+        source: 'auto_send' as const,
         giftWrap: occasion.giftWrap || false,
-        personalNote: occasion.noteText,
-        // Billing
-        billingStatus: 'pending' as const,
-        chargeAmount: pending.recommendedGift.price,
+        personalNote: occasion.noteText || '',
       };
 
-      // Save to admin orders
-      const existingOrders = localStorage.getItem('admin_pending_orders');
-      const orders = existingOrders ? JSON.parse(existingOrders) : [];
-      orders.push(adminOrder);
-      localStorage.setItem('admin_pending_orders', JSON.stringify(orders));
-
-      console.log('📋 Created admin order:', adminOrder.id);
+      // Save to Firebase via AdminService
+      const orderId = await AdminService.addOrder(adminOrder);
+      console.log('📋 Created admin order via AdminService:', orderId);
       
       // TODO: Send notification to admin (email/Slack)
-      this.notifyAdmin(adminOrder);
+      this.notifyAdmin({ id: orderId, ...adminOrder });
       
     } catch (error) {
       console.error('❌ Error creating admin order:', error);
@@ -357,7 +349,7 @@ class AutoSendService {
   /**
    * Extract ASIN from Amazon URL
    */
-  private extractASINFromUrl(url?: string): string | undefined {
+  private extractASIN(url?: string): string | undefined {
     if (!url) return undefined;
     
     // Common Amazon URL patterns:

@@ -98,7 +98,9 @@ export interface AdminOrder {
   recipientRelationship: string;
   recipientAddress?: string;
   occasion: string;
+  occasionId?: string;
   occasionDate?: string;
+  giftId?: string;
   giftTitle: string;
   giftDescription: string;
   giftPrice: number;

@@ -2,6 +2,8 @@
 // In a real application, you would integrate with actual email and SMS providers
 
 import type { UserSettings } from '../types/settings';
+import { useRecipientStore } from '../store/recipientStore';
+import { useGiftStore } from '../store/giftStore';
 
 // Interface for notification payloads
 export interface NotificationPayload {
@@ -11,6 +13,13 @@ export interface NotificationPayload {
   giftDate: Date;
   eventType: 'birthday' | 'anniversary' | 'holiday' | 'other';
   message?: string;
+}
+
+interface UpcomingGift {
+  recipientName: string;
+  giftTitle: string;
+  occasionName: string;
+  daysUntil: number;
 }
 
 /**
@@ -65,12 +74,11 @@ export const checkAndSendReminders = async (settings: UserSettings): Promise<voi
   }
 
   try {
-    // In a real app, you would fetch the user's upcoming gifts from a database
-    // For this demo, we'll simulate it
-    const upcomingGifts = JSON.parse(localStorage.getItem('lazyuncle_gifts') || '[]');
-    const recipients = JSON.parse(localStorage.getItem('lazyuncle_recipients') || '[]');
+    // Use proper stores instead of hardcoded localStorage
+    const { gifts } = useGiftStore.getState();
+    const { recipients } = useRecipientStore.getState();
     
-    if (!upcomingGifts.length) {
+    if (!gifts.length) {
       console.log('No upcoming gifts to check.');
       return;
     }
@@ -80,9 +88,9 @@ export const checkAndSendReminders = async (settings: UserSettings): Promise<voi
     reminderDate.setDate(reminderDate.getDate() + settings.reminderDays);
 
     // Find gifts that need reminders
-    const giftsToRemind = upcomingGifts.filter((gift: any) => {
+    const giftsToRemind = gifts.filter((gift) => {
       const giftDate = new Date(gift.date);
-      return giftDate >= today && giftDate <= reminderDate;
+      return giftDate >= today && giftDate <= reminderDate && gift.status === 'selected';
     });
 
     if (!giftsToRemind.length) {
@@ -92,7 +100,7 @@ export const checkAndSendReminders = async (settings: UserSettings): Promise<voi
 
     // Send notifications for each gift
     for (const gift of giftsToRemind) {
-      const recipient = recipients.find((r: any) => r.id === gift.recipientId);
+      const recipient = recipients.find((r) => r.id === gift.recipientId);
       
       if (!recipient) continue;
 
@@ -101,7 +109,7 @@ export const checkAndSendReminders = async (settings: UserSettings): Promise<voi
         recipientName: recipient.name,
         giftName: gift.name,
         giftDate: new Date(gift.date),
-        eventType: gift.occasion?.toLowerCase() || 'other',
+        eventType: gift.category.toLowerCase() as any || 'other',
         message: `Reminder: ${gift.name} for ${recipient.name} is coming up in ${settings.reminderDays} days!`
       };
 
@@ -120,4 +128,64 @@ export const checkAndSendReminders = async (settings: UserSettings): Promise<voi
   } catch (error) {
     console.error('Error checking for reminders:', error);
   }
-}; 
+};
+
+class NotificationService {
+  static getUpcomingGifts(days: number = 7): UpcomingGift[] {
+    const { gifts } = useGiftStore.getState();
+    const { recipients } = useRecipientStore.getState();
+    
+    const now = new Date();
+    const upcomingGifts: UpcomingGift[] = [];
+
+    gifts.forEach(gift => {
+      const giftDate = new Date(gift.date);
+      const timeDiff = giftDate.getTime() - now.getTime();
+      const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+      if (daysDiff > 0 && daysDiff <= days && gift.status === 'selected') {
+        const recipient = recipients.find(r => r.id === gift.recipientId);
+        if (recipient) {
+          upcomingGifts.push({
+            recipientName: recipient.name,
+            giftTitle: gift.name,
+            occasionName: gift.category, // Using category as occasion name
+            daysUntil: daysDiff,
+          });
+        }
+      }
+    });
+
+    return upcomingGifts.sort((a, b) => a.daysUntil - b.daysUntil);
+  }
+
+  static getOverdueGifts(): UpcomingGift[] {
+    const { gifts } = useGiftStore.getState();
+    const { recipients } = useRecipientStore.getState();
+    
+    const now = new Date();
+    const overdueGifts: UpcomingGift[] = [];
+
+    gifts.forEach(gift => {
+      const giftDate = new Date(gift.date);
+      const timeDiff = now.getTime() - giftDate.getTime();
+      const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+      if (daysDiff > 0 && (gift.status === 'idea' || gift.status === 'selected')) {
+        const recipient = recipients.find(r => r.id === gift.recipientId);
+        if (recipient) {
+          overdueGifts.push({
+            recipientName: recipient.name,
+            giftTitle: gift.name,
+            occasionName: gift.category,
+            daysUntil: -daysDiff, // Negative for overdue
+          });
+        }
+      }
+    });
+
+    return overdueGifts.sort((a, b) => b.daysUntil - a.daysUntil); // Most overdue first
+  }
+}
+
+export default NotificationService; 

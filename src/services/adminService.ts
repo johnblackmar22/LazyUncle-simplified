@@ -14,6 +14,7 @@ import {
 } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { COLLECTIONS } from '../utils/constants';
+import { updateGift } from './giftService';
 import type { AdminOrder } from '../types';
 
 class AdminService {
@@ -32,6 +33,52 @@ class AdminService {
     const userData = userDoc.data();
     if (!userData?.role || !['admin', 'super_admin'].includes(userData.role)) {
       throw new Error('Admin access required - insufficient permissions');
+    }
+  }
+
+  // Extract Gift ID from order notes (format: "Gift ID: {id} | ...")
+  private static extractGiftId(notes: string): string | null {
+    const match = notes.match(/Gift ID: ([^|]+)/);
+    return match ? match[1].trim() : null;
+  }
+
+  // Update linked Gift status when order status changes
+  private static async updateLinkedGiftStatus(orderId: string, newStatus: AdminOrder['status']): Promise<void> {
+    try {
+      // Get the order to extract gift ID
+      const orderDoc = await getDoc(doc(db, COLLECTIONS.ADMIN_ORDERS, orderId));
+      if (!orderDoc.exists()) return;
+
+      const orderData = orderDoc.data() as AdminOrder;
+      const giftId = this.extractGiftId(orderData.notes || '');
+      
+      if (giftId) {
+        // Map order status to gift status
+        let giftStatus: 'idea' | 'selected' | 'ordered' | 'shipped' | 'delivered';
+        switch (newStatus) {
+          case 'pending':
+          case 'processing':
+            giftStatus = 'selected';
+            break;
+          case 'ordered':
+            giftStatus = 'ordered';
+            break;
+          case 'shipped':
+            giftStatus = 'shipped';
+            break;
+          case 'delivered':
+            giftStatus = 'delivered';
+            break;
+          default:
+            giftStatus = 'selected';
+        }
+
+        console.log(`🔗 Updating linked Gift ${giftId} status to: ${giftStatus}`);
+        await updateGift(giftId, { status: giftStatus });
+      }
+    } catch (error) {
+      console.error('❌ Error updating linked gift status:', error);
+      // Don't throw - this is a secondary operation
     }
   }
 
@@ -78,10 +125,19 @@ class AdminService {
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now()
       };
-
+      // Remove undefined fields (especially giftUrl, imageUrl, etc.)
+      const sanitizedOrder: Record<string, any> = { ...orderData };
+      // Ensure giftId is present if available
+      if (order.giftId) sanitizedOrder.giftId = order.giftId;
+      Object.keys(sanitizedOrder).forEach(key => {
+        if (sanitizedOrder[key] === undefined) {
+          delete sanitizedOrder[key];
+        }
+      });
+      console.log('📝 Final sanitized admin order to save:', JSON.stringify(sanitizedOrder, null, 2));
       // Add to Firebase
       const ordersRef = collection(db, COLLECTIONS.ADMIN_ORDERS);
-      const docRef = await addDoc(ordersRef, orderData);
+      const docRef = await addDoc(ordersRef, sanitizedOrder);
       
       console.log('✅ Admin order added to Firebase:', docRef.id);
       return docRef.id;
@@ -108,6 +164,11 @@ class AdminService {
       // Update in Firebase
       const orderRef = doc(db, COLLECTIONS.ADMIN_ORDERS, orderId);
       await updateDoc(orderRef, updateData);
+      
+      // Update linked gift status if order status changed
+      if (updates.status) {
+        await this.updateLinkedGiftStatus(orderId, updates.status);
+      }
       
       console.log('✅ Admin order updated in Firebase');
 
@@ -199,6 +260,67 @@ class AdminService {
     } catch (error) {
       console.error('❌ Error fetching order stats:', error);
       throw error;
+    }
+  }
+
+  // Delete order(s) by Gift ID (used when undoing a gift selection)
+  static async deleteOrderByGiftId(giftId: string, fallback?: { userId?: string, giftTitle?: string, occasionId?: string }) {
+    const ordersRef = collection(db, COLLECTIONS.ADMIN_ORDERS);
+    // Try to delete by giftId field (new orders)
+    let q = query(ordersRef, where('giftId', '==', giftId));
+    let querySnapshot = await getDocs(q);
+    console.log(`[deleteOrderByGiftId] Query by giftId=${giftId} found ${querySnapshot.size} docs`);
+    for (const docSnap of querySnapshot.docs) {
+      await deleteDoc(docSnap.ref);
+      console.log(`🗑️ Deleted admin order for giftId: ${giftId}`);
+    }
+    if (querySnapshot.size === 0 && fallback?.userId && fallback?.occasionId) {
+      // Print all admin orders for this user and occasionId for diagnosis
+      const allQ = query(ordersRef, where('userId', '==', fallback.userId), where('occasionId', '==', fallback.occasionId));
+      const allSnapshot = await getDocs(allQ);
+      console.log(`[deleteOrderByGiftId] No docs found for giftId. All admin orders for userId=${fallback.userId}, occasionId=${fallback.occasionId}:`);
+      allSnapshot.forEach(docSnap => {
+        console.log(docSnap.id, docSnap.data());
+      });
+    }
+    // Fallback: also delete by notes (legacy orders)
+    q = query(ordersRef, where('notes', '>=', `Gift ID: ${giftId}`), where('notes', '<=', `Gift ID: ${giftId}\uf8ff`));
+    querySnapshot = await getDocs(q);
+    console.log(`[deleteOrderByGiftId] Query by notes for giftId=${giftId} found ${querySnapshot.size} docs`);
+    for (const docSnap of querySnapshot.docs) {
+      await deleteDoc(docSnap.ref);
+      console.log(`🗑️ Deleted admin order for Gift ID in notes: ${giftId}`);
+    }
+    // Fallback: try deleting by giftTitle, userId, and occasionId if provided
+    if (fallback?.userId && fallback?.giftTitle && fallback?.occasionId) {
+      q = query(ordersRef, where('userId', '==', fallback.userId), where('giftTitle', '==', fallback.giftTitle), where('occasionId', '==', fallback.occasionId));
+      querySnapshot = await getDocs(q);
+      console.log(`[deleteOrderByGiftId] Fallback query by userId/giftTitle/occasionId found ${querySnapshot.size} docs`);
+      for (const docSnap of querySnapshot.docs) {
+        await deleteDoc(docSnap.ref);
+        console.log(`🗑️ Deleted admin order by fallback fields: userId=${fallback.userId}, giftTitle=${fallback.giftTitle}, occasionId=${fallback.occasionId}`);
+      }
+    }
+  }
+
+  // Delete all orders for a given user and occasion (used when deleting an occasion)
+  static async deleteOrdersByOccasion(userId: string, occasionId: string, occasionName?: string): Promise<void> {
+    const ordersRef = collection(db, COLLECTIONS.ADMIN_ORDERS);
+    // Try to delete by occasionId (new orders)
+    let q = query(ordersRef, where('userId', '==', userId), where('occasionId', '==', occasionId));
+    let querySnapshot = await getDocs(q);
+    for (const docSnap of querySnapshot.docs) {
+      await deleteDoc(docSnap.ref);
+      console.log(`🗑️ Deleted admin order for occasionId: ${occasionId}`);
+    }
+    // Fallback: also delete by occasion name (legacy orders)
+    if (occasionName) {
+      q = query(ordersRef, where('userId', '==', userId), where('occasion', '==', occasionName));
+      querySnapshot = await getDocs(q);
+      for (const docSnap of querySnapshot.docs) {
+        await deleteDoc(docSnap.ref);
+        console.log(`🗑️ Deleted admin order for occasion name: ${occasionName}`);
+      }
     }
   }
 }

@@ -52,6 +52,7 @@ import type { Occasion, Recipient, GiftSuggestion, Gift } from '../types';
 import { format } from 'date-fns';
 import { giftRecommendationEngine, type GiftRecommendation } from '../services/giftRecommendationEngine';
 import { useGiftStore } from '../store/giftStore';
+import { useGiftStorage } from '../hooks/useGiftStorage';
 
 interface OccasionCardProps {
   occasion: Occasion;
@@ -82,11 +83,13 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
   const { 
     createGift, 
     updateGift, 
-    removeGift, 
     fetchGiftsByRecipient, 
     recipientGifts,
     loading: giftLoading 
   } = useGiftStore();
+
+  // Use removeGift from useGiftStorage for admin order deletion
+  const { selectGift, removeGift } = useGiftStorage();
 
   // Get existing selected gifts for this occasion
   const existingGifts = recipientGifts[recipient.id] || [];
@@ -169,7 +172,6 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
 
   const handleSelectGift = async (gift: GiftRecommendation) => {
     try {
-      // Check if there's already a selected gift for this occasion
       if (selectedGiftsForOccasion.length > 0) {
         toast({
           title: 'One Gift Per Occasion',
@@ -180,38 +182,11 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
         });
         return;
       }
-
-      // Create a new gift record with 'selected' status
-      const newGift: Omit<Gift, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {
-        recipientId: recipient.id,
-        name: gift.name,
-        description: gift.description || '',
-        price: gift.price,
-        category: gift.category,
-        occasionId: occasion.id,
-        date: new Date(occasion.date).getTime(),
-        status: 'selected',
-        notes: gift.reasoning || '',
-        recurring: occasion.recurring || false
-      };
-
-      // Only add optional fields if they have actual values
-      if (gift.imageUrl) {
-        newGift.imageUrl = gift.imageUrl;
-      }
-      
-      if (gift.purchaseUrl) {
-        newGift.purchaseUrl = gift.purchaseUrl;
-      }
-
-      await createGift(newGift);
-      
-      // Hide suggestions after selection
+      await selectGift(gift, recipient.id, occasion.id);
       setShowSuggestions(false);
-      
       toast({
         title: 'Gift Selected!',
-        description: `"${gift.name}" has been saved for ${recipient.name}'s ${occasion.name}`,
+        description: `"${gift.name}" has been saved and sent to admin for processing`,
         status: 'success',
         duration: 3000,
         isClosable: true,
@@ -220,7 +195,7 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
       console.error('❌ Error saving selected gift:', error);
       toast({
         title: 'Error Saving Gift',
-        description: 'Please try again',
+        description: error instanceof Error ? error.message : 'Please try again',
         status: 'error',
         duration: 3000,
         isClosable: true,
@@ -230,13 +205,14 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
 
   const handleUndoSelection = async (gift: Gift) => {
     try {
-      await removeGift(gift.id);
-      
+      // Remove from localStorage/admin order
+      await removeGift(gift.id, 'selected');
+      // Remove from Firestore/Zustand
+      await useGiftStore.getState().removeGift(gift.id);
       // Show suggestions again after undo (if they were previously generated)
       if (suggestions.length > 0) {
         setShowSuggestions(true);
       }
-      
       toast({
         title: 'Selection Removed',
         description: `"${gift.name}" has been removed. You can now select a different gift.`,

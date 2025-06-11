@@ -112,8 +112,36 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       // Firebase login for real credentials
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      let user = convertFirebaseUser(userCredential.user);
+      
+      // Fetch and merge Firestore user document fields (role, displayName, permissions, etc.)
+      try {
+        const { doc, getDoc, setDoc } = await import('firebase/firestore');
+        const userDocRef = doc(db, 'users', user.id);
+        const userDoc = await getDoc(userDocRef);
+        
+        if (!userDoc.exists()) {
+          console.log('🔧 SignIn: User document missing, creating Firestore document for:', user.email);
+          await setDoc(userDocRef, {
+            email: user.email,
+            displayName: user.displayName,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+            planId: user.planId
+          });
+          console.log('✅ SignIn: User document created successfully');
+        } else {
+          // Merge Firestore fields into user object
+          const firestoreData = userDoc.data();
+          user = { ...user, ...firestoreData };
+        }
+      } catch (docError) {
+        console.error('❌ Error handling user document during sign in:', docError);
+        // Don't fail the login if document creation fails
+      }
+      
       set({ 
-        user: convertFirebaseUser(userCredential.user),
+        user,
         loading: false,
         demoMode: false,
         initialized: true

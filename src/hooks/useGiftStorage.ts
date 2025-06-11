@@ -2,8 +2,12 @@ import { useState, useEffect } from 'react';
 import { useRecipientStore } from '../store/recipientStore';
 import { useOccasionStore } from '../store/occasionStore';
 import { useAuthStore } from '../store/authStore';
+import { addGift } from '../services/giftService';
 import AdminService from '../services/adminService';
-import type { AdminOrder } from '../types';
+import type { AdminOrder, Gift } from '../types';
+import { useToast } from '@chakra-ui/react';
+import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { db } from '../services/firebase';
 
 export interface StoredGift {
   id: string;
@@ -44,6 +48,8 @@ export function useGiftStorage() {
   const { recipients } = useRecipientStore();
   const { occasions } = useOccasionStore();
 
+  const toast = useToast();
+
   // Load from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -80,88 +86,202 @@ export function useGiftStorage() {
   };
 
   const selectGift = async (gift: any, recipientId: string, occasionId: string) => {
-    console.log('🎁 Gift selected:', {
+    console.log('🟢 selectGift called:', { gift, recipientId, occasionId });
+    console.log('🎁 Gift selected - Creating proper Gift entity first:', {
       giftId: gift.id,
       giftName: gift.name,
       recipientId,
-      occasionId
+      occasionId,
+      userState: useAuthStore.getState()
     });
     
-    const storedGift: StoredGift = {
-      id: gift.id,
-      name: gift.name,
-      description: gift.description,
-      price: gift.price,
-      category: gift.category,
-      recipientId,
-      occasionId,
-      selectedAt: Date.now(),
-      status: 'selected',
-      metadata: {
-        model: gift.metadata?.model,
-        confidence: gift.confidence,
-        reasoning: gift.reasoning,
-        tags: gift.tags
-      }
-    };
-
-    setStorage(prev => ({
-      ...prev,
-      selectedGifts: [...prev.selectedGifts.filter(g => g.id !== gift.id), storedGift]
-    }));
-
-    // Create admin order for the selected gift
     try {
       const { user } = useAuthStore.getState();
       
-      if (user) {
-        // Find real recipient and occasion data
-        const recipient = recipients.find(r => r.id === recipientId);
-        const recipientOccasions = occasions[recipientId] || [];
-        const occasion = recipientOccasions.find(o => o.id === occasionId);
-
-        // Create admin order with all required fields
-        const adminOrder: Omit<AdminOrder, 'id' | 'createdAt' | 'updatedAt'> = {
-          userId: user.id,
-          userEmail: user.email || '',
-          userName: user.displayName || user.email?.split('@')[0] || 'Unknown User',
-          recipientName: recipient?.name || `Recipient ${recipientId}`,
-          recipientRelationship: recipient?.relationship || 'Unknown',
-          occasion: occasion?.name || `Occasion ${occasionId}`,
-          giftTitle: gift.name,
-          giftDescription: gift.description || '',
-          giftPrice: gift.price,
-          giftImageUrl: gift.imageUrl || '',
-          asin: gift.asin,
-          status: 'pending',
-          priority: 'normal',
-          notes: gift.reasoning || 'User selected gift',
-          shippingAddress: {
-            name: recipient?.name || 'Unknown',
-            street: recipient?.deliveryAddress?.line1 || 'Address TBD',
-            city: recipient?.deliveryAddress?.city || 'City TBD',
-            state: recipient?.deliveryAddress?.state || 'State TBD',
-            zipCode: recipient?.deliveryAddress?.postalCode || 'ZIP TBD',
-            country: recipient?.deliveryAddress?.country || 'US'
-          },
-          giftUrl: gift.purchaseUrl,
-          occasionDate: occasion?.date,
-          source: 'gift_selection',
-          giftWrap: occasion?.giftWrap || false,
-          personalNote: occasion?.noteText
-        };
-
-        // Add to admin orders via AdminService
-        await AdminService.addOrder(adminOrder);
-        console.log('✅ Admin order created for selected gift');
-      } else {
-        console.warn('⚠️ No authenticated user - cannot create admin order');
+      if (!user) {
+        console.error('⚠️ CRITICAL: No authenticated user - cannot create gift');
+        toast({
+          title: 'Not Authenticated',
+          description: 'You must be logged in to select a gift.',
+          status: 'error',
+          duration: 6000,
+          isClosable: true,
+        });
+        throw new Error('User not authenticated');
       }
-    } catch (error) {
-      console.error('❌ Error creating admin order:', error);
-    }
 
-    return storedGift;
+      console.log('✅ User authenticated:', {
+        userId: user.id,
+        userEmail: user.email,
+        userDisplayName: user.displayName
+      });
+
+      // Find real recipient and occasion data
+      const recipient = recipients.find(r => r.id === recipientId);
+      const recipientOccasions = occasions[recipientId] || [];
+      const occasion = recipientOccasions.find(o => o.id === occasionId);
+
+      console.log('🔍 Found recipient and occasion data:', {
+        recipient: recipient ? { id: recipient.id, name: recipient.name } : 'NOT FOUND',
+        occasion: occasion ? { id: occasion.id, name: occasion.name } : 'NOT FOUND',
+        availableRecipients: recipients.length,
+        availableOccasions: recipientOccasions.length
+      });
+
+      // 1. FIRST: Create proper Gift entity in Firebase
+      const giftData: Omit<Gift, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {
+        recipientId,
+        name: gift.name,
+        description: gift.description || '',
+        price: gift.price,
+        category: gift.category,
+        occasionId,
+        date: occasion ? new Date(occasion.date).getTime() : Date.now(),
+        status: 'selected',
+        imageUrl: gift.imageUrl,
+        purchaseUrl: gift.purchaseUrl,
+        asin: gift.asin,
+        notes: gift.reasoning || 'AI recommended gift',
+        recurring: false
+      };
+
+      console.log('🎁 Creating Gift entity in Firebase with data:', giftData);
+      const createdGift = await addGift(giftData);
+      console.log('✅ Gift entity created successfully with ID:', createdGift.id);
+
+      // Refresh Zustand store so UI updates
+      try {
+        const useGiftStore = (await import('../store/giftStore')).useGiftStore;
+        await useGiftStore.getState().fetchGiftsByRecipient(recipientId);
+      } catch (err) {
+        console.error('❌ Failed to refresh Zustand gift store after selectGift:', err);
+      }
+
+      // 2. THEN: Create AdminOrder that references the Gift
+      const adminOrder: Omit<AdminOrder, 'id' | 'createdAt' | 'updatedAt'> = {
+        userId: user.id,
+        userEmail: user.email,
+        userName: user.displayName || user.email,
+        recipientName: recipient?.name || 'Unknown Recipient',
+        recipientRelationship: recipient?.relationship || 'Unknown',
+        recipientAddress: recipient?.deliveryAddress ? 
+          `${recipient.deliveryAddress.line1}, ${recipient.deliveryAddress.city}, ${recipient.deliveryAddress.state} ${recipient.deliveryAddress.postalCode}` : 
+          'Address not provided',
+        occasion: occasion?.name || 'Unknown Occasion',
+        occasionId: occasionId,
+        occasionDate: occasion?.date || new Date().toISOString().split('T')[0],
+        giftTitle: gift.name,
+        giftDescription: gift.description || '',
+        giftPrice: gift.price,
+        giftImageUrl: gift.imageUrl || '',
+        giftUrl: gift.purchaseUrl,
+        asin: gift.asin || '',
+        status: 'pending',
+        priority: 'normal',
+        notes: `Gift ID: ${gift.id} | User selected this gift for ${recipient?.name || 'recipient'}`,
+        shippingAddress: {
+          name: recipient?.name || 'Unknown Recipient',
+          street: recipient?.deliveryAddress?.line1 || '',
+          city: recipient?.deliveryAddress?.city || '',
+          state: recipient?.deliveryAddress?.state || '',
+          zipCode: recipient?.deliveryAddress?.postalCode || '',
+          country: recipient?.deliveryAddress?.country || 'US',
+        },
+        source: 'gift_selection',
+        giftWrap: occasion?.giftWrap || false,
+        personalNote: occasion?.noteText || '',
+        giftId: gift.id,
+      };
+
+      console.log('🟡 About to create AdminOrder for user gift selection...', adminOrder);
+      try {
+        const orderId = await AdminService.addOrder(adminOrder);
+        console.log('✅ AdminOrder.addOrder returned orderId:', orderId);
+        toast({
+          title: 'Order Created',
+          description: 'Your gift selection has been sent to the admin for processing.',
+          status: 'success',
+          duration: 4000,
+          isClosable: true,
+        });
+      } catch (adminOrderError: any) {
+        console.error('❌ AdminService.addOrder failed, attempting direct Firestore write:', adminOrderError);
+        // Fallback: Write directly to Firestore
+        try {
+          const orderData = {
+            ...adminOrder,
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now(),
+          };
+          // Remove undefined fields
+          const sanitizedOrder: Record<string, any> = { ...orderData };
+          // Ensure giftId is present if available
+          if (orderData.giftId) sanitizedOrder.giftId = orderData.giftId;
+          Object.keys(sanitizedOrder).forEach(key => {
+            if (sanitizedOrder[key] === undefined) {
+              delete sanitizedOrder[key];
+            }
+          });
+          console.log('📝 Final sanitized fallback admin order to save:', sanitizedOrder);
+          const docRef = await addDoc(collection(db, 'admin_orders'), sanitizedOrder);
+          console.log('✅ Fallback Firestore order creation succeeded, docRef.id:', docRef.id);
+          toast({
+            title: 'Order Created (Fallback)',
+            description: 'Your gift selection has been sent to the admin for processing (fallback mode).',
+            status: 'success',
+            duration: 4000,
+            isClosable: true,
+          });
+        } catch (fallbackError) {
+          console.error('❌ Fallback Firestore order creation failed:', fallbackError);
+          toast({
+            title: 'Order Creation Failed',
+            description: fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
+            status: 'error',
+            duration: 6000,
+            isClosable: true,
+          });
+          throw fallbackError;
+        }
+      }
+
+      // 3. Update localStorage tracking
+      const storedGift: StoredGift = {
+        id: createdGift.id, // Use the actual Gift ID from Firebase
+        name: gift.name,
+        description: gift.description,
+        price: gift.price,
+        category: gift.category,
+        recipientId,
+        occasionId,
+        selectedAt: Date.now(),
+        status: 'selected',
+        metadata: {
+          model: gift.metadata?.model,
+          confidence: gift.confidence,
+          reasoning: gift.reasoning,
+          tags: gift.tags
+        }
+      };
+
+      setStorage(prev => ({
+        ...prev,
+        selectedGifts: [...prev.selectedGifts.filter(g => g.id !== gift.id), storedGift]
+      }));
+
+      console.log('🔵 selectGift returning storedGift:', storedGift);
+      return storedGift;
+    } catch (error) {
+      console.error('❌ CRITICAL ERROR in complete gift selection workflow:', error);
+      toast({
+        title: 'Gift Selection Failed',
+        description: error instanceof Error ? error.message : String(error),
+        status: 'error',
+        duration: 6000,
+        isClosable: true,
+      });
+      throw error;
+    }
   };
 
   const saveForLater = (gift: any, recipientId: string, occasionId: string) => {
@@ -191,12 +311,39 @@ export function useGiftStorage() {
     return storedGift;
   };
 
-  const removeGift = (giftId: string, type: 'selected' | 'saved') => {
+  const removeGift = async (giftId: string, type: 'selected' | 'saved') => {
     setStorage(prev => ({
       ...prev,
       [type === 'selected' ? 'selectedGifts' : 'savedGifts']: 
         prev[type === 'selected' ? 'selectedGifts' : 'savedGifts'].filter(g => g.id !== giftId)
     }));
+    // Also delete related admin order if type is 'selected'
+    if (type === 'selected') {
+      try {
+        const { user } = useAuthStore.getState();
+        await AdminService.deleteOrderByGiftId(giftId, {
+          userId: user?.id,
+          giftTitle: storage.selectedGifts.find(g => g.id === giftId)?.name,
+          occasionId: storage.selectedGifts.find(g => g.id === giftId)?.occasionId
+        });
+        toast({
+          title: 'Order Removed',
+          description: 'The related admin order has been deleted.',
+          status: 'info',
+          duration: 3000,
+          isClosable: true,
+        });
+      } catch (error) {
+        console.error('❌ Error deleting related admin order:', error);
+        toast({
+          title: 'Order Deletion Failed',
+          description: error instanceof Error ? error.message : 'Failed to delete related admin order',
+          status: 'error',
+          duration: 4000,
+          isClosable: true,
+        });
+      }
+    }
   };
 
   const markAsPurchased = (giftId: string) => {

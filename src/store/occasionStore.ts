@@ -260,7 +260,20 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
         return;
       } else {
         await deleteDoc(doc(db, COLLECTIONS.OCCASIONS, occasionId));
-        const updated = (get().occasions[recipientId] || []).filter(o => o.id !== occasionId);
+        // Also delete related admin orders
+        const user = useAuthStore.getState().user;
+        const occasions = get().occasions[recipientId] || [];
+        const deletedOccasion = occasions.find(o => o.id === occasionId);
+        if (user && deletedOccasion) {
+          try {
+            const AdminService = (await import('../services/adminService')).default;
+            await AdminService.deleteOrdersByOccasion(user.id, deletedOccasion.id, deletedOccasion.name);
+            console.log('🗑️ Deleted related admin orders for occasion:', deletedOccasion.id, deletedOccasion.name);
+          } catch (error) {
+            console.error('❌ Error deleting related admin orders:', error);
+          }
+        }
+        const updated = occasions.filter(o => o.id !== occasionId);
         set(state => ({ occasions: { ...state.occasions, [recipientId]: updated }, loading: false }));
       }
     } catch (error) {

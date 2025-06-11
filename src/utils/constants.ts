@@ -1,4 +1,4 @@
-// localStorage keys used throughout the app
+// localStorage keys used throughout the app (primarily for demo mode)
 export const STORAGE_KEYS = {
   RECIPIENTS: 'lazyuncle_recipients',
   OCCASIONS: (recipientId: string) => `lazyuncle_occasions_${recipientId}`,
@@ -13,7 +13,7 @@ export const COLLECTIONS = {
   OCCASIONS: 'occasions',
   GIFTS: 'gifts',
   USERS: 'users',
-  ADMIN_ORDERS: 'admin_orders', // Global admin orders for gift selection workflow
+  ADMIN_ORDERS: 'admin_orders',
 } as const;
 
 // Demo user ID constant
