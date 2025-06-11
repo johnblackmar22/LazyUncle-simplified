@@ -273,10 +273,10 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
       transition="all 0.2s"
     >
       <CardHeader pb={2}>
-        <Flex justify="space-between" align="center">
-          <Flex align="center" gap={2}>
+        <Flex justify="space-between" align="center" gap={2}>
+          <Flex align="center" gap={2} flex={1} minW={0}>
             <Icon as={FaGift} color="purple.500" />
-            <Text fontWeight="bold" fontSize="lg">
+            <Text fontWeight="bold" fontSize={{ base: "md", md: "lg" }} noOfLines={1}>
               {occasion.name}
               {occasion.recurring && (
                 <Tooltip label="This occasion repeats every year" fontSize="sm">
@@ -295,12 +295,12 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
               )}
             </Text>
           </Flex>
-          <HStack>
+          <HStack spacing={1} flexShrink={0}>
             {getStatusBadge()}
             <IconButton
               aria-label="Edit occasion"
               icon={<EditIcon />}
-              size="sm"
+              size={{ base: "xs", md: "sm" }}
               variant="ghost"
               colorScheme="teal"
               onClick={() => onEdit(occasion)}
@@ -308,7 +308,7 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
             <IconButton
               aria-label="Delete occasion"
               icon={<DeleteIcon />}
-              size="sm"
+              size={{ base: "xs", md: "sm" }}
               variant="ghost"
               colorScheme="red"
               isLoading={isDeleting}
@@ -399,8 +399,8 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
                   borderWidth="2px"
                   borderColor={useColorModeValue('green.200', 'green.600')}
                 >
-                  <Flex justify="space-between" align="start" mb={2}>
-                    <VStack align="start" spacing={1} flex={1}>
+                  <Flex justify="space-between" align="start" mb={2} gap={3}>
+                    <VStack align="start" spacing={1} flex={1} minW={0}>
                       <HStack>
                         <Icon as={FaCheckCircle} color="green.500" />
                         <Text fontWeight="semibold" fontSize="sm" noOfLines={1}>
@@ -418,7 +418,7 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
                         </Badge>
                       </HStack>
                     </VStack>
-                    <VStack spacing={1}>
+                    <VStack spacing={1} align="stretch" w={{ base: "100%", md: "auto" }} maxW={{ base: "none", md: "120px" }}>
                       <Button
                         size="xs"
                         colorScheme="red"
@@ -515,7 +515,7 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
                           <Text fontSize="xs" color="gray.600" noOfLines={2}>
                             {gift.description}
                           </Text>
-                          <HStack spacing={2}>
+                          <HStack spacing={2} wrap="wrap">
                             <Badge colorScheme="green" size="sm">
                               Gift: ${gift.price.toFixed(2)}
                             </Badge>
@@ -539,7 +539,7 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
                             )}
                           </HStack>
                         </VStack>
-                        <VStack spacing={1} minW="120px" maxW="140px" align="stretch">
+                        <VStack spacing={1} align="stretch" w={{ base: "100%", md: "120px" }}>
                           {isSelected ? (
                             <Button
                               size="xs"

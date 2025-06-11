@@ -515,10 +515,77 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
                         <Text fontSize="xs" color="gray.500">
                           Estimated delivery: {gift.estimatedDelivery}
                         </Text>
+
+                        {/* Mobile Action Buttons - moved inside details section */}
+                        <VStack spacing={3} align="stretch" w="100%" display={{ base: "flex", md: "none" }}>
+                          {/* Feedback Buttons */}
+                          <Box 
+                            p={2} 
+                            border="2px solid" 
+                            borderColor="blue.200" 
+                            borderRadius="md" 
+                            bg="blue.50"
+                          >
+                            <Text fontSize="xs" color="blue.800" textAlign="center" fontWeight="bold">
+                              Rate this idea:
+                            </Text>
+                            <HStack spacing={2} justify="center" mt={1}>
+                              <Tooltip label="Great suggestion!" placement="top" hasArrow>
+                                <IconButton
+                                  aria-label="Thumbs up"
+                                  icon={<span>👍</span>}
+                                  size="sm"
+                                  variant={feedback[gift.id] === 'thumbs_up' ? 'solid' : 'outline'}
+                                  colorScheme={feedback[gift.id] === 'thumbs_up' ? 'green' : 'gray'}
+                                  onClick={() => {
+                                    console.log('👍 Thumbs up clicked for:', gift.name);
+                                    handleFeedback(gift, 'thumbs_up');
+                                  }}
+                                />
+                              </Tooltip>
+                              <Tooltip label="Not a good fit" placement="top" hasArrow>
+                                <IconButton
+                                  aria-label="Thumbs down"
+                                  icon={<span>👎</span>}
+                                  size="sm"
+                                  variant={feedback[gift.id] === 'thumbs_down' ? 'solid' : 'outline'}
+                                  colorScheme={feedback[gift.id] === 'thumbs_down' ? 'red' : 'gray'}
+                                  onClick={() => {
+                                    console.log('👎 Thumbs down clicked for:', gift.name);
+                                    handleFeedback(gift, 'thumbs_down');
+                                  }}
+                                />
+                              </Tooltip>
+                            </HStack>
+                          </Box>
+                          
+                          <HStack spacing={2}>
+                            <Button
+                              size="sm"
+                              colorScheme="green"
+                              variant="outline"
+                              leftIcon={<FaCheck />}
+                              onClick={() => handleSelectGift(gift)}
+                              isDisabled={selectedGiftIds.includes(gift.id)}
+                              flex={1}
+                            >
+                              {selectedGiftIds.includes(gift.id) ? 'Selected' : 'Select Gift'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              leftIcon={<FaHeart />}
+                              onClick={() => handleSaveForLater(gift)}
+                              flex={1}
+                            >
+                              Save for Later
+                            </Button>
+                          </HStack>
+                        </VStack>
                       </VStack>
 
-                      {/* Action Buttons */}
-                      <VStack spacing={2} minW="120px" maxW="140px" align="stretch">
+                      {/* Desktop Action Buttons - only show on desktop */}
+                      <VStack spacing={2} minW="120px" maxW="140px" align="stretch" display={{ base: "none", md: "flex" }}>
                         {/* Feedback Buttons */}
                         <Box 
                           p={2} 
