@@ -263,11 +263,19 @@ class AdminService {
   // Delete order(s) by Gift ID (used when undoing a gift selection)
   static async deleteOrderByGiftId(giftId: string): Promise<void> {
     const ordersRef = collection(db, COLLECTIONS.ADMIN_ORDERS);
-    const q = query(ordersRef, where('notes', '>=', `Gift ID: ${giftId}`), where('notes', '<=', `Gift ID: ${giftId}\uf8ff`));
-    const querySnapshot = await getDocs(q);
+    // Try to delete by giftId field (new orders)
+    let q = query(ordersRef, where('giftId', '==', giftId));
+    let querySnapshot = await getDocs(q);
     for (const docSnap of querySnapshot.docs) {
       await deleteDoc(docSnap.ref);
-      console.log(`🗑️ Deleted admin order for Gift ID: ${giftId}`);
+      console.log(`🗑️ Deleted admin order for giftId: ${giftId}`);
+    }
+    // Fallback: also delete by notes (legacy orders)
+    q = query(ordersRef, where('notes', '>=', `Gift ID: ${giftId}`), where('notes', '<=', `Gift ID: ${giftId}\uf8ff`));
+    querySnapshot = await getDocs(q);
+    for (const docSnap of querySnapshot.docs) {
+      await deleteDoc(docSnap.ref);
+      console.log(`🗑️ Deleted admin order for Gift ID in notes: ${giftId}`);
     }
   }
 

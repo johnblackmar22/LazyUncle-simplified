@@ -100,6 +100,7 @@ export interface AdminOrder {
   occasion: string;
   occasionId?: string;
   occasionDate?: string;
+  giftId?: string;
   giftTitle: string;
   giftDescription: string;
   giftPrice: number;
