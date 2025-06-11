@@ -110,7 +110,7 @@ const AdminOrderDashboard: React.FC = () => {
         console.log('🔍 Orders fetched:', ordersData.length);
         setOrders(ordersData);
 
-        // Fetch users
+        // Fetch users - only active users
         console.log('🔍 Fetching users...');
         const usersRef = collection(db, COLLECTIONS.USERS);
         const usersQuery = query(usersRef, orderBy('createdAt', 'desc'));
@@ -128,7 +128,7 @@ const AdminOrderDashboard: React.FC = () => {
         console.log('🔍 Users fetched:', usersData.length);
         setUsers(usersData);
 
-        // Fetch recipients
+        // Fetch recipients - only existing ones
         console.log('🔍 Fetching recipients...');
         const recipientsRef = collection(db, COLLECTIONS.RECIPIENTS);
         const recipientsQuery = query(recipientsRef, orderBy('createdAt', 'desc'));
@@ -146,7 +146,7 @@ const AdminOrderDashboard: React.FC = () => {
         console.log('🔍 Recipients fetched:', recipientsData.length);
         setRecipients(recipientsData);
 
-        // Fetch occasions
+        // Fetch occasions - only existing ones
         console.log('🔍 Fetching occasions...');
         const occasionsRef = collection(db, COLLECTIONS.OCCASIONS);
         const occasionsQuery = query(occasionsRef, orderBy('date', 'desc'));
@@ -164,7 +164,7 @@ const AdminOrderDashboard: React.FC = () => {
         console.log('🔍 Occasions fetched:', occasionsData.length);
         setOccasions(occasionsData);
 
-        // Fetch gifts
+        // Fetch gifts - only existing ones
         console.log('🔍 Fetching gifts...');
         const giftsRef = collection(db, COLLECTIONS.GIFTS);
         const giftsQuery = query(giftsRef, orderBy('createdAt', 'desc'));
@@ -204,26 +204,16 @@ const AdminOrderDashboard: React.FC = () => {
     } else {
       console.log('🔍 No user authenticated, skipping data fetch');
     }
-    
-    // Refresh every 30 seconds
-    const interval = setInterval(() => {
-      if (user) {
-        fetchAllData();
-      }
-    }, 30000);
-    
-    return () => clearInterval(interval);
   }, [user]);
 
   const refreshAllData = async () => {
     try {
       console.log('🔄 Refreshing all admin data');
       
-      // Fetch orders
+      // Fetch fresh data from Firestore
       const ordersData = await AdminService.getAllOrders();
       setOrders(ordersData);
 
-      // Fetch users
       const usersRef = collection(db, COLLECTIONS.USERS);
       const usersQuery = query(usersRef, orderBy('createdAt', 'desc'));
       const usersSnapshot = await getDocs(usersQuery);
@@ -239,7 +229,6 @@ const AdminOrderDashboard: React.FC = () => {
       });
       setUsers(usersData);
 
-      // Fetch recipients
       const recipientsRef = collection(db, COLLECTIONS.RECIPIENTS);
       const recipientsQuery = query(recipientsRef, orderBy('createdAt', 'desc'));
       const recipientsSnapshot = await getDocs(recipientsQuery);
@@ -255,7 +244,6 @@ const AdminOrderDashboard: React.FC = () => {
       });
       setRecipients(recipientsData);
 
-      // Fetch occasions
       const occasionsRef = collection(db, COLLECTIONS.OCCASIONS);
       const occasionsQuery = query(occasionsRef, orderBy('date', 'desc'));
       const occasionsSnapshot = await getDocs(occasionsQuery);
@@ -271,7 +259,6 @@ const AdminOrderDashboard: React.FC = () => {
       });
       setOccasions(occasionsData);
 
-      // Fetch gifts
       const giftsRef = collection(db, COLLECTIONS.GIFTS);
       const giftsQuery = query(giftsRef, orderBy('createdAt', 'desc'));
       const giftsSnapshot = await getDocs(giftsQuery);
@@ -386,7 +373,7 @@ const AdminOrderDashboard: React.FC = () => {
     onOpen();
   };
 
-  // Calculate stats
+  // Calculate stats - removed revenue counter
   const stats = {
     totalUsers: users.length,
     totalRecipients: recipients.length,
@@ -396,7 +383,6 @@ const AdminOrderDashboard: React.FC = () => {
     pendingOrders: orders.filter(o => o.status === 'pending').length,
     orderedItems: orders.filter(o => o.status === 'ordered').length,
     shippedItems: orders.filter(o => o.status === 'shipped').length,
-    totalRevenue: orders.reduce((sum, order) => sum + order.giftPrice, 0),
   };
 
   // Get user by ID helper
@@ -483,7 +469,7 @@ const AdminOrderDashboard: React.FC = () => {
         </HStack>
       </Flex>
 
-      {/* Stats Cards */}
+      {/* Stats Cards - Removed Revenue Counter */}
       <Grid templateColumns="repeat(auto-fit, minmax(200px, 1fr))" gap={4} mb={6}>
         <Card>
           <CardBody>
@@ -520,16 +506,16 @@ const AdminOrderDashboard: React.FC = () => {
         <Card>
           <CardBody>
             <Stat>
-              <StatLabel>📦 Pending Orders</StatLabel>
-              <StatNumber color="red.500">{stats.pendingOrders}</StatNumber>
+              <StatLabel>📦 Total Orders</StatLabel>
+              <StatNumber>{stats.totalOrders}</StatNumber>
             </Stat>
           </CardBody>
         </Card>
         <Card>
           <CardBody>
             <Stat>
-              <StatLabel>💰 Total Revenue</StatLabel>
-              <StatNumber>${stats.totalRevenue.toFixed(2)}</StatNumber>
+              <StatLabel>⏳ Pending Orders</StatLabel>
+              <StatNumber color="orange.500">{stats.pendingOrders}</StatNumber>
             </Stat>
           </CardBody>
         </Card>
