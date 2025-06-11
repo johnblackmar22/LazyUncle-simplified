@@ -269,13 +269,24 @@ class AdminService {
     // Try to delete by giftId field (new orders)
     let q = query(ordersRef, where('giftId', '==', giftId));
     let querySnapshot = await getDocs(q);
+    console.log(`[deleteOrderByGiftId] Query by giftId=${giftId} found ${querySnapshot.size} docs`);
     for (const docSnap of querySnapshot.docs) {
       await deleteDoc(docSnap.ref);
       console.log(`🗑️ Deleted admin order for giftId: ${giftId}`);
     }
+    if (querySnapshot.size === 0 && fallback?.userId && fallback?.occasionId) {
+      // Print all admin orders for this user and occasionId for diagnosis
+      const allQ = query(ordersRef, where('userId', '==', fallback.userId), where('occasionId', '==', fallback.occasionId));
+      const allSnapshot = await getDocs(allQ);
+      console.log(`[deleteOrderByGiftId] No docs found for giftId. All admin orders for userId=${fallback.userId}, occasionId=${fallback.occasionId}:`);
+      allSnapshot.forEach(docSnap => {
+        console.log(docSnap.id, docSnap.data());
+      });
+    }
     // Fallback: also delete by notes (legacy orders)
     q = query(ordersRef, where('notes', '>=', `Gift ID: ${giftId}`), where('notes', '<=', `Gift ID: ${giftId}\uf8ff`));
     querySnapshot = await getDocs(q);
+    console.log(`[deleteOrderByGiftId] Query by notes for giftId=${giftId} found ${querySnapshot.size} docs`);
     for (const docSnap of querySnapshot.docs) {
       await deleteDoc(docSnap.ref);
       console.log(`🗑️ Deleted admin order for Gift ID in notes: ${giftId}`);
@@ -284,6 +295,7 @@ class AdminService {
     if (fallback?.userId && fallback?.giftTitle && fallback?.occasionId) {
       q = query(ordersRef, where('userId', '==', fallback.userId), where('giftTitle', '==', fallback.giftTitle), where('occasionId', '==', fallback.occasionId));
       querySnapshot = await getDocs(q);
+      console.log(`[deleteOrderByGiftId] Fallback query by userId/giftTitle/occasionId found ${querySnapshot.size} docs`);
       for (const docSnap of querySnapshot.docs) {
         await deleteDoc(docSnap.ref);
         console.log(`🗑️ Deleted admin order by fallback fields: userId=${fallback.userId}, giftTitle=${fallback.giftTitle}, occasionId=${fallback.occasionId}`);
