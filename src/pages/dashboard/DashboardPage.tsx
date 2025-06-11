@@ -39,9 +39,6 @@ import {
   Divider,
   IconButton,
   Collapse,
-  Wrap,
-  WrapItem,
-  Progress,
   Tooltip,
   Center,
 } from '@chakra-ui/react';
@@ -57,9 +54,6 @@ import {
   FaClock, 
   FaExpand, 
   FaCompress, 
-  FaCheckCircle,
-  FaShoppingCart,
-  FaHeart,
   FaPlus,
   FaChevronLeft,
   FaChevronRight
@@ -222,35 +216,6 @@ const DashboardPage: React.FC = () => {
         return isSameDay(date, occasionDate);
       }
     });
-  };
-
-  // Get gift status for recipient
-  const getRecipientGiftStatus = (recipientId: string) => {
-    const recipientGifts = gifts.filter(g => g.recipientId === recipientId);
-    const totalOccasions = (occasions[recipientId] || []).length;
-    
-    const selectedGifts = recipientGifts.filter(g => g.status === 'selected').length;
-    const deliveredGifts = recipientGifts.filter(g => g.status === 'delivered').length;
-    const savedGifts = recipientGifts.filter(g => g.status === 'idea').length;
-    
-    // Debug logging for the issue
-    if (recipientGifts.length > 0 && totalOccasions === 0) {
-      console.log(`🐛 Dashboard Debug - Recipient has gifts but no occasions:`, {
-        recipientId,
-        giftsCount: recipientGifts.length,
-        occasionsCount: totalOccasions,
-        gifts: recipientGifts.map(g => ({ id: g.id, name: g.name, status: g.status, occasionId: g.occasionId })),
-        occasions: occasions[recipientId]
-      });
-    }
-
-    return {
-      total: totalOccasions,
-      selected: selectedGifts,
-      purchased: deliveredGifts,
-      saved: savedGifts,
-      completion: totalOccasions > 0 ? (selectedGifts + deliveredGifts) / totalOccasions : 0
-    };
   };
 
   // Stats calculations
@@ -655,7 +620,6 @@ const DashboardPage: React.FC = () => {
             {recipients.length > 0 ? (
               <SimpleGrid columns={{ base: 1, md: 2, lg: 3, xl: 4 }} spacing={4}>
                 {recipients.map((recipient) => {
-                  const giftStatus = getRecipientGiftStatus(recipient.id);
                   const recipientOccasions = occasions[recipient.id] || [];
                   const nextOccasion = upcomingOccasions.find(o => o.recipientId === recipient.id);
 
@@ -681,67 +645,6 @@ const DashboardPage: React.FC = () => {
                               </Badge>
                             </VStack>
                           </Flex>
-
-                          {/* Progress indicator */}
-                          <Box>
-                            <Flex justify="space-between" align="center" mb={1}>
-                              <Text fontSize="xs" color="gray.600">Gift Progress</Text>
-                              <Text fontSize="xs" color="gray.600">
-                                {(() => {
-                                  const totalGifts = giftStatus.selected + giftStatus.purchased;
-                                  if (giftStatus.total === 0 && totalGifts > 0) {
-                                    // Show gifts count when there are gifts but no occasions
-                                    return `${totalGifts} gift${totalGifts !== 1 ? 's' : ''}`;
-                                  } else if (giftStatus.total === 0) {
-                                    // No occasions, no gifts
-                                    return 'No occasions';
-                                  } else {
-                                    // Normal case: gifts/occasions
-                                    return `${totalGifts}/${giftStatus.total}`;
-                                  }
-                                })()}
-                              </Text>
-                            </Flex>
-                            <Progress 
-                              value={giftStatus.completion * 100} 
-                              size="sm" 
-                              colorScheme={giftStatus.completion === 1 ? 'green' : 'blue'}
-                            />
-                          </Box>
-
-                          {/* Status badges */}
-                          <Wrap spacing={1}>
-                            {giftStatus.purchased > 0 && (
-                              <WrapItem>
-                                <Badge colorScheme="green" variant="subtle">
-                                  <HStack spacing={1}>
-                                    <Icon as={FaCheckCircle} boxSize={2} />
-                                    <Text fontSize="xs">{giftStatus.purchased} completed</Text>
-                                  </HStack>
-                                </Badge>
-                              </WrapItem>
-                            )}
-                            {giftStatus.selected > 0 && (
-                              <WrapItem>
-                                <Badge colorScheme="blue" variant="subtle">
-                                  <HStack spacing={1}>
-                                    <Icon as={FaShoppingCart} boxSize={2} />
-                                    <Text fontSize="xs">{giftStatus.selected} selected</Text>
-                                  </HStack>
-                                </Badge>
-                              </WrapItem>
-                            )}
-                            {giftStatus.saved > 0 && (
-                              <WrapItem>
-                                <Badge colorScheme="orange" variant="subtle">
-                                  <HStack spacing={1}>
-                                    <Icon as={FaHeart} boxSize={2} />
-                                    <Text fontSize="xs">{giftStatus.saved} ideas</Text>
-                                  </HStack>
-                                </Badge>
-                              </WrapItem>
-                            )}
-                          </Wrap>
 
                           {/* Next occasion */}
                           {nextOccasion && (
