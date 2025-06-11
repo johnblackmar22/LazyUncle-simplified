@@ -173,7 +173,9 @@ const RecipientsListPage: React.FC = () => {
             to="/recipients/add"
             colorScheme="blue"
             leftIcon={<AddIcon />}
-            size="lg"
+            size={{ base: 'md', md: 'lg' }}
+            fontSize={{ base: 'sm', md: 'md' }}
+            w={{ base: 'full', md: 'auto' }}
           >
             Add Recipient
           </Button>
