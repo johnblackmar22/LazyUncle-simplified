@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { ChakraProvider } from '@chakra-ui/react'
+import { ChakraProvider, PortalManager } from '@chakra-ui/react'
 import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.tsx'
@@ -40,7 +40,9 @@ try {
     <StrictMode>
       <BrowserRouter>
         <ChakraProvider theme={theme}>
-          <App />
+          <PortalManager>
+            <App />
+          </PortalManager>
         </ChakraProvider>
       </BrowserRouter>
     </StrictMode>,

@@ -308,6 +308,8 @@ const DashboardPage: React.FC = () => {
                         ''
                       }
                       isDisabled={dayOccasions.length === 0}
+                      placement="top"
+                      hasArrow
                     >
                       <Center
                         h="6"
@@ -392,17 +394,17 @@ const DashboardPage: React.FC = () => {
                             <Text fontSize="xs" color="gray.500">
                               {occasion.name}
                               {occasion.recurring && (
-                                <Tooltip label="Recurring annually" fontSize="sm">
+                                <Tooltip label="Recurring annually" fontSize="sm" placement="top" hasArrow>
                                   <Icon as={FaRedo} color="gray.400" ml={1} boxSize="2.5" />
                                 </Tooltip>
                               )}
                               {occasion.giftWrap && (
-                                <Tooltip label="Gift wrap included" fontSize="sm">
+                                <Tooltip label="Gift wrap included" fontSize="sm" placement="top" hasArrow>
                                   <Icon as={FaGift} color="gray.400" ml={1} boxSize="2.5" />
                                 </Tooltip>
                               )}
                               {occasion.personalizedNote && (
-                                <Tooltip label="Personalized note included" fontSize="sm">
+                                <Tooltip label="Personalized note included" fontSize="sm" placement="top" hasArrow>
                                   <Icon as={FaEdit} color="gray.400" ml={1} boxSize="2.5" />
                                 </Tooltip>
                               )}
@@ -525,17 +527,17 @@ const DashboardPage: React.FC = () => {
                               <Text key={occasion.id} fontSize="xs" color="gray.600">
                                 {occasion.recipient?.name}: {occasion.name}
                                 {occasion.recurring && (
-                                  <Tooltip label="Recurring annually" fontSize="sm">
+                                  <Tooltip label="Recurring annually" fontSize="sm" placement="top" hasArrow>
                                     <Icon as={FaRedo} color="gray.400" ml={1} boxSize="2.5" />
                                   </Tooltip>
                                 )}
                                 {occasion.giftWrap && (
-                                  <Tooltip label="Gift wrap included" fontSize="sm">
+                                  <Tooltip label="Gift wrap included" fontSize="sm" placement="top" hasArrow>
                                     <Icon as={FaGift} color="gray.400" ml={1} boxSize="2.5" />
                                   </Tooltip>
                                 )}
                                 {occasion.personalizedNote && (
-                                  <Tooltip label="Personalized note included" fontSize="sm">
+                                  <Tooltip label="Personalized note included" fontSize="sm" placement="top" hasArrow>
                                     <Icon as={FaEdit} color="gray.400" ml={1} boxSize="2.5" />
                                   </Tooltip>
                                 )}
@@ -612,17 +614,17 @@ const DashboardPage: React.FC = () => {
                                 >
                                   {occasion.recipient?.name}: {occasion.name}
                                   {occasion.recurring && (
-                                    <Tooltip label="Recurring annually" fontSize="sm">
+                                    <Tooltip label="Recurring annually" fontSize="sm" placement="top" hasArrow>
                                       <Icon as={FaRedo} color="gray.400" ml={1} boxSize="2.5" />
                                     </Tooltip>
                                   )}
                                   {occasion.giftWrap && (
-                                    <Tooltip label="Gift wrap included" fontSize="sm">
+                                    <Tooltip label="Gift wrap included" fontSize="sm" placement="top" hasArrow>
                                       <Icon as={FaGift} color="gray.400" ml={1} boxSize="2.5" />
                                     </Tooltip>
                                   )}
                                   {occasion.personalizedNote && (
-                                    <Tooltip label="Personalized note included" fontSize="sm">
+                                    <Tooltip label="Personalized note included" fontSize="sm" placement="top" hasArrow>
                                       <Icon as={FaEdit} color="gray.400" ml={1} boxSize="2.5" />
                                     </Tooltip>
                                   )}
@@ -746,17 +748,17 @@ const DashboardPage: React.FC = () => {
                                   <Text fontSize="xs" fontWeight="medium">
                                     {occasion.name}
                                     {occasion.recurring && (
-                                      <Tooltip label="Recurring annually" fontSize="sm">
+                                      <Tooltip label="Recurring annually" fontSize="sm" placement="top" hasArrow>
                                         <Icon as={FaRedo} color="gray.400" ml={1} boxSize="2.5" />
                                       </Tooltip>
                                     )}
                                     {occasion.giftWrap && (
-                                      <Tooltip label="Gift wrap included" fontSize="sm">
+                                      <Tooltip label="Gift wrap included" fontSize="sm" placement="top" hasArrow>
                                         <Icon as={FaGift} color="gray.400" ml={1} boxSize="2.5" />
                                       </Tooltip>
                                     )}
                                     {occasion.personalizedNote && (
-                                      <Tooltip label="Personalized note included" fontSize="sm">
+                                      <Tooltip label="Personalized note included" fontSize="sm" placement="top" hasArrow>
                                         <Icon as={FaEdit} color="gray.400" ml={1} boxSize="2.5" />
                                       </Tooltip>
                                     )}

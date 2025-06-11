@@ -79,3 +79,18 @@ body.homepage-view {
 body.homepage-view #root > div > div[position="absolute"] {
   z-index: 10;
 }
+
+/* Fix tooltip positioning issues */
+.chakra-tooltip {
+  z-index: 9999 !important;
+}
+
+/* Ensure portal containers render properly */
+.chakra-portal {
+  z-index: 9999;
+}
+
+/* Fix any transform issues that might affect tooltip positioning */
+[data-popper-placement] {
+  z-index: 9999 !important;
+}

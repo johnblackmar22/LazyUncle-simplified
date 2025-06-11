@@ -531,7 +531,7 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
                             Rate this idea:
                           </Text>
                           <HStack spacing={2} justify="center" mt={1}>
-                            <Tooltip label="Great suggestion!">
+                            <Tooltip label="Great suggestion!" placement="top" hasArrow>
                               <IconButton
                                 aria-label="Thumbs up"
                                 icon={<span>👍</span>}
@@ -544,7 +544,7 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
                                 }}
                               />
                             </Tooltip>
-                            <Tooltip label="Not a good fit">
+                            <Tooltip label="Not a good fit" placement="top" hasArrow>
                               <IconButton
                                 aria-label="Thumbs down"
                                 icon={<span>👎</span>}
