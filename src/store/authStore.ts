@@ -9,7 +9,7 @@ import {
 } from 'firebase/auth';
 import { auth, db, DEMO_MODE } from '../services/firebase';
 import type { User } from '../types';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 
 interface AuthState {
   user: User | null;

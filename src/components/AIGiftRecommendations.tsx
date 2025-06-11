@@ -133,23 +133,21 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
       console.log('🖱️ Select Gift button clicked for:', gift.name);
       const selectedGift = await selectGift(gift, recipient.id, occasion.id);
       console.log('✅ Gift selection completed successfully:', selectedGift);
-      
       toast({
         title: 'Gift Selected!',
-        description: `"${gift.name}" has been added to your selections`,
+        description: `"${gift.name}" has been added to your selections and an order has been created for admin processing`,
         status: 'success',
-        duration: 3000,
+        duration: 4000,
         isClosable: true,
       });
-
       onGiftSelected?.(gift);
     } catch (error) {
-      console.error('❌ Error in handleSelectGift:', error);
+      console.error('❌ Error in handleSelectGift (order creation):', error);
       toast({
-        title: 'Error',
-        description: `Failed to select gift: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        title: 'Order Creation Failed',
+        description: `Failed to create order: ${error instanceof Error ? error.message : 'Unknown error'}`,
         status: 'error',
-        duration: 5000,
+        duration: 6000,
         isClosable: true,
       });
     }

@@ -50,19 +50,16 @@ import {
   AccordionButton,
   AccordionPanel,
   AccordionIcon,
+  useToast,
 } from '@chakra-ui/react';
 import { 
   FaShoppingCart, 
-  FaCheck, 
   FaTruck, 
   FaEye, 
   FaCopy, 
   FaSearch,
   FaSync,
   FaUsers,
-  FaUserFriends,
-  FaCalendarAlt,
-  FaGift
 } from 'react-icons/fa';
 import { format, parseISO } from 'date-fns';
 import AdminService from '../services/adminService';
@@ -74,6 +71,7 @@ import type { AdminOrder, User, Recipient, Occasion, Gift } from '../types';
 
 const AdminOrderDashboard: React.FC = () => {
   const { user } = useAuthStore();
+  const toast = useToast();
   
   // Data state
   const [orders, setOrders] = useState<AdminOrder[]>([]);
@@ -402,7 +400,6 @@ const AdminOrderDashboard: React.FC = () => {
   };
 
   // Get user by ID helper
-  const getUserById = (userId: string) => users.find(u => u.id === userId);
   const getRecipientsByUserId = (userId: string) => recipients.filter(r => r.userId === userId);
   const getOccasionsByRecipientId = (recipientId: string) => occasions.filter(o => o.recipientId === recipientId);
   const getGiftsByOccasionId = (occasionId: string) => gifts.filter(g => g.occasionId === occasionId);
@@ -432,6 +429,57 @@ const AdminOrderDashboard: React.FC = () => {
           >
             Refresh
           </Button>
+          {user?.role === 'admin' && (
+            <Button
+              colorScheme="red"
+              size="sm"
+              onClick={async () => {
+                try {
+                  await AdminService.addOrder({
+                    userId: user.id,
+                    userEmail: user.email,
+                    userName: user.displayName || user.email,
+                    recipientName: 'Test Recipient',
+                    recipientRelationship: 'Friend',
+                    occasion: 'Test Occasion',
+                    giftTitle: 'Test Gift',
+                    giftDescription: 'A test gift for debugging',
+                    giftPrice: 42.0,
+                    giftImageUrl: '',
+                    status: 'pending',
+                    priority: 'normal',
+                    notes: 'Test order created by admin',
+                    shippingAddress: {
+                      name: 'Test Recipient',
+                      street: '123 Test St',
+                      city: 'Testville',
+                      state: 'TS',
+                      zipCode: '12345',
+                      country: 'US',
+                    },
+                  });
+                  toast({
+                    title: 'Test Order Created',
+                    description: 'A test order has been added to Firestore.',
+                    status: 'success',
+                    duration: 4000,
+                    isClosable: true,
+                  });
+                  await refreshAllData();
+                } catch (err) {
+                  toast({
+                    title: 'Error Creating Test Order',
+                    description: err instanceof Error ? err.message : String(err),
+                    status: 'error',
+                    duration: 6000,
+                    isClosable: true,
+                  });
+                }
+              }}
+            >
+              Create Test Order
+            </Button>
+          )}
         </HStack>
       </Flex>
 

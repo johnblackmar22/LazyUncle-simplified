@@ -7,8 +7,7 @@ import {
   updateDoc, 
   deleteDoc, 
   query, 
-  where,
-  orderBy
+  where
 } from 'firebase/firestore';
 import { db, DEMO_MODE } from './firebase';
 import { useAuthStore } from '../store/authStore';
@@ -31,7 +30,6 @@ export const getGifts = async (): Promise<Gift[]> => {
     const q = query(
       collection(db, COLLECTION), 
       where("userId", "==", user.id)
-      // Removed orderBy to avoid index requirement for testing
     );
     const querySnapshot = await getDocs(q);
     
@@ -65,7 +63,6 @@ export const getGiftsByRecipient = async (recipientId: string): Promise<Gift[]> 
       collection(db, COLLECTION), 
       where("userId", "==", user.id),
       where("recipientId", "==", recipientId)
-      // Removed orderBy to avoid composite index requirement for testing
     );
     const querySnapshot = await getDocs(q);
     
