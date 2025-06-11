@@ -51,8 +51,8 @@ Occasion: ${occasion.name}
 TOTAL BUDGET: $${budget.total} (includes ALL costs - gift + shipping + fees)
 
 CRITICAL PRICING RULES:
-- Maximum gift price: $${Math.round(budget.total * 0.6)} (to allow for shipping/fees)
-- Recommend gifts in the $${Math.round(budget.total * 0.3)}-$${Math.round(budget.total * 0.6)} range
+- Maximum gift price: $${Math.round(budget.total * 0.9)} (to allow for shipping/fees)
+- Recommend gifts in the $${Math.round(budget.total * 0.5)}-$${Math.round(budget.total * 0.9)} range
 - Consider shipping costs will add $5-15 to each item
 
 Requirements:
@@ -62,7 +62,7 @@ Requirements:
 - STAY WELL UNDER the total budget of $${budget.total}
 
 Respond in JSON format:
-{"recommendations": [{"name": "Product Name", "description": "Why it's perfect", "price": 25, "category": "Books", "reasoning": "Explanation"}, {"name": "Second Product", "description": "Why it's great", "price": 18, "category": "Home", "reasoning": "Why this fits"}]}`;
+{"recommendations": [{"name": "Product Name", "description": "Why it's perfect", "price": 45, "category": "Books", "reasoning": "Explanation"}, {"name": "Second Product", "description": "Why it's great", "price": 38, "category": "Home", "reasoning": "Why this fits"}]}`;
 
     console.log('🤖 Getting gift ideas from AI...');
     const completion = await openai.chat.completions.create({
