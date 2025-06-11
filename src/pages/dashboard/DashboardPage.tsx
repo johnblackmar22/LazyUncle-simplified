@@ -644,8 +644,8 @@ const DashboardPage: React.FC = () => {
                     })
                     .sort((a, b) => a.displayDate.getTime() - b.displayDate.getTime());
 
-                  const displayOccasions = isExpanded ? upcomingRecipientOccasions : upcomingRecipientOccasions.slice(0, 3);
-                  const hasMoreOccasions = upcomingRecipientOccasions.length > 3;
+                  const displayOccasions = isExpanded ? upcomingRecipientOccasions : upcomingRecipientOccasions.slice(0, 2);
+                  const hasMoreOccasions = upcomingRecipientOccasions.length > 2;
 
                   const toggleExpanded = (e: React.MouseEvent) => {
                     e.stopPropagation();
@@ -715,7 +715,7 @@ const DashboardPage: React.FC = () => {
                                 >
                                   {isExpanded 
                                     ? `Show Less` 
-                                    : `Show ${upcomingRecipientOccasions.length - 3} More`
+                                    : `Show ${upcomingRecipientOccasions.length - 2} More`
                                   }
                                 </Button>
                               )}
