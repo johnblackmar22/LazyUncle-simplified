@@ -254,7 +254,11 @@ const RecipientDetail = () => {
                       <Text fontWeight="bold">
                         {occasion.name} 
                         <Badge ml={2} colorScheme="blue">{occasion.type}</Badge>
-                        {occasion.recurring && <Badge ml={2} colorScheme="gray" variant="outline">Recurring</Badge>}
+                        {occasion.recurring && (
+                          <Text as="span" color="gray.500" ml={2}>
+                            ↻
+                          </Text>
+                        )}
                       </Text>
                       <Text fontSize="sm">{new Date(occasion.date).toLocaleDateString()}</Text>
                       {occasion.notes && <Text fontSize="sm" color="gray.500">{occasion.notes}</Text>}

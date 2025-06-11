@@ -275,12 +275,16 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
         <Flex justify="space-between" align="center">
           <Flex align="center" gap={2}>
             <Icon as={FaGift} color="purple.500" />
-            <Text fontWeight="bold" fontSize="lg">{occasion.name}</Text>
-            {occasion.recurring && (
-              <Badge colorScheme="gray" variant="outline" size="sm">
-                Recurring
-              </Badge>
-            )}
+            <Text fontWeight="bold" fontSize="lg">
+              {occasion.name}
+              {occasion.recurring && (
+                <Tooltip label="This occasion repeats every year" fontSize="sm">
+                  <Text as="span" color="gray.500" ml={2} fontSize="sm" cursor="help">
+                    ↻
+                  </Text>
+                </Tooltip>
+              )}
+            </Text>
           </Flex>
           <HStack>
             {getStatusBadge()}
@@ -368,15 +372,6 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
             <Text fontSize="sm" color="gray.600">
               <strong>Notes:</strong> {occasion.notes}
             </Text>
-          )}
-
-          {occasion.recurring && (
-            <HStack>
-              <Icon as={FaCalendarAlt} color="gray.500" />
-              <Text fontSize="sm" color="gray.600">
-                <strong>Recurring:</strong> This occasion repeats every year
-              </Text>
-            </HStack>
           )}
         </VStack>
 

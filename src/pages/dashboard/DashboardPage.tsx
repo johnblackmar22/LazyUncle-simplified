@@ -390,9 +390,9 @@ const DashboardPage: React.FC = () => {
                             <Text fontSize="xs" color="gray.500">
                               {occasion.name}
                               {occasion.recurring && (
-                                <Badge ml={1} size="sm" colorScheme="gray" variant="outline">
-                                  Recurring
-                                </Badge>
+                                <Text as="span" color="gray.400" ml={1}>
+                                  ↻
+                                </Text>
                               )}
                             </Text>
                           </VStack>
@@ -513,9 +513,9 @@ const DashboardPage: React.FC = () => {
                               <Text key={occasion.id} fontSize="xs" color="gray.600">
                                 {occasion.recipient?.name}: {occasion.name}
                                 {occasion.recurring && (
-                                  <Badge ml={1} size="xs" colorScheme="gray" variant="outline">
-                                    Recurring
-                                  </Badge>
+                                  <Text as="span" color="gray.400" ml={1}>
+                                    ↻
+                                  </Text>
                                 )}
                               </Text>
                             ))}
@@ -590,9 +590,9 @@ const DashboardPage: React.FC = () => {
                                 >
                                   {occasion.recipient?.name}: {occasion.name}
                                   {occasion.recurring && (
-                                    <Badge ml={1} size="xs" colorScheme="gray" variant="outline">
-                                      Recurring
-                                    </Badge>
+                                    <Text as="span" color="gray.400" ml={1}>
+                                      ↻
+                                    </Text>
                                   )}
                                 </Badge>
                               ))}
@@ -714,9 +714,9 @@ const DashboardPage: React.FC = () => {
                                   <Text fontSize="xs" fontWeight="medium">
                                     {occasion.name}
                                     {occasion.recurring && (
-                                      <Badge ml={1} size="xs" colorScheme="gray" variant="outline">
-                                        Recurring
-                                      </Badge>
+                                      <Text as="span" color="gray.400" ml={1}>
+                                        ↻
+                                      </Text>
                                     )}
                                   </Text>
                                   <Text fontSize="xs" color={index === 0 ? "purple.600" : "gray.600"}>
