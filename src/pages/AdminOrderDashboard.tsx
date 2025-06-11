@@ -188,10 +188,83 @@ const AdminOrderDashboard: React.FC = () => {
 
   const refreshAllData = async () => {
     try {
-      const ordersData = await AdminService.getAllOrders();
       console.log('🔄 Refreshing all admin data');
+      
+      // Fetch orders
+      const ordersData = await AdminService.getAllOrders();
       setOrders(ordersData);
-      // TODO: Refresh other data too
+
+      // Fetch users
+      const usersRef = collection(db, COLLECTIONS.USERS);
+      const usersQuery = query(usersRef, orderBy('createdAt', 'desc'));
+      const usersSnapshot = await getDocs(usersQuery);
+      const usersData: User[] = [];
+      usersSnapshot.forEach((doc) => {
+        const data = doc.data();
+        usersData.push({
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toMillis?.() || data.createdAt || Date.now(),
+          updatedAt: data.updatedAt?.toMillis?.() || data.updatedAt || Date.now()
+        } as User);
+      });
+      setUsers(usersData);
+
+      // Fetch recipients
+      const recipientsRef = collection(db, COLLECTIONS.RECIPIENTS);
+      const recipientsQuery = query(recipientsRef, orderBy('createdAt', 'desc'));
+      const recipientsSnapshot = await getDocs(recipientsQuery);
+      const recipientsData: Recipient[] = [];
+      recipientsSnapshot.forEach((doc) => {
+        const data = doc.data();
+        recipientsData.push({
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toMillis?.() || data.createdAt || Date.now(),
+          updatedAt: data.updatedAt?.toMillis?.() || data.updatedAt || Date.now()
+        } as Recipient);
+      });
+      setRecipients(recipientsData);
+
+      // Fetch occasions
+      const occasionsRef = collection(db, COLLECTIONS.OCCASIONS);
+      const occasionsQuery = query(occasionsRef, orderBy('date', 'desc'));
+      const occasionsSnapshot = await getDocs(occasionsQuery);
+      const occasionsData: Occasion[] = [];
+      occasionsSnapshot.forEach((doc) => {
+        const data = doc.data();
+        occasionsData.push({
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toMillis?.() || data.createdAt || Date.now(),
+          updatedAt: data.updatedAt?.toMillis?.() || data.updatedAt || Date.now()
+        } as Occasion);
+      });
+      setOccasions(occasionsData);
+
+      // Fetch gifts
+      const giftsRef = collection(db, COLLECTIONS.GIFTS);
+      const giftsQuery = query(giftsRef, orderBy('createdAt', 'desc'));
+      const giftsSnapshot = await getDocs(giftsQuery);
+      const giftsData: Gift[] = [];
+      giftsSnapshot.forEach((doc) => {
+        const data = doc.data();
+        giftsData.push({
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toMillis?.() || data.createdAt || Date.now(),
+          updatedAt: data.updatedAt?.toMillis?.() || data.updatedAt || Date.now()
+        } as Gift);
+      });
+      setGifts(giftsData);
+
+      console.log('🔄 All admin data refreshed:', {
+        orders: ordersData.length,
+        users: usersData.length,
+        recipients: recipientsData.length,
+        occasions: occasionsData.length,
+        gifts: giftsData.length
+      });
     } catch (error) {
       console.error('❌ Error refreshing admin data:', error);
     }

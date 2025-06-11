@@ -14,6 +14,7 @@ import {
 } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { COLLECTIONS } from '../utils/constants';
+import { updateGift } from './giftService';
 import type { AdminOrder } from '../types';
 
 class AdminService {
@@ -32,6 +33,52 @@ class AdminService {
     const userData = userDoc.data();
     if (!userData?.role || !['admin', 'super_admin'].includes(userData.role)) {
       throw new Error('Admin access required - insufficient permissions');
+    }
+  }
+
+  // Extract Gift ID from order notes (format: "Gift ID: {id} | ...")
+  private static extractGiftId(notes: string): string | null {
+    const match = notes.match(/Gift ID: ([^|]+)/);
+    return match ? match[1].trim() : null;
+  }
+
+  // Update linked Gift status when order status changes
+  private static async updateLinkedGiftStatus(orderId: string, newStatus: AdminOrder['status']): Promise<void> {
+    try {
+      // Get the order to extract gift ID
+      const orderDoc = await getDoc(doc(db, COLLECTIONS.ADMIN_ORDERS, orderId));
+      if (!orderDoc.exists()) return;
+
+      const orderData = orderDoc.data() as AdminOrder;
+      const giftId = this.extractGiftId(orderData.notes || '');
+      
+      if (giftId) {
+        // Map order status to gift status
+        let giftStatus: 'idea' | 'selected' | 'ordered' | 'shipped' | 'delivered';
+        switch (newStatus) {
+          case 'pending':
+          case 'processing':
+            giftStatus = 'selected';
+            break;
+          case 'ordered':
+            giftStatus = 'ordered';
+            break;
+          case 'shipped':
+            giftStatus = 'shipped';
+            break;
+          case 'delivered':
+            giftStatus = 'delivered';
+            break;
+          default:
+            giftStatus = 'selected';
+        }
+
+        console.log(`🔗 Updating linked Gift ${giftId} status to: ${giftStatus}`);
+        await updateGift(giftId, { status: giftStatus });
+      }
+    } catch (error) {
+      console.error('❌ Error updating linked gift status:', error);
+      // Don't throw - this is a secondary operation
     }
   }
 
@@ -108,6 +155,11 @@ class AdminService {
       // Update in Firebase
       const orderRef = doc(db, COLLECTIONS.ADMIN_ORDERS, orderId);
       await updateDoc(orderRef, updateData);
+      
+      // Update linked gift status if order status changed
+      if (updates.status) {
+        await this.updateLinkedGiftStatus(orderId, updates.status);
+      }
       
       console.log('✅ Admin order updated in Firebase');
 

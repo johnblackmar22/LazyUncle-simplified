@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { useRecipientStore } from '../store/recipientStore';
 import { useOccasionStore } from '../store/occasionStore';
 import { useAuthStore } from '../store/authStore';
+import { addGift } from '../services/giftService';
 import AdminService from '../services/adminService';
-import type { AdminOrder } from '../types';
+import type { AdminOrder, Gift } from '../types';
 
 export interface StoredGift {
   id: string;
@@ -80,88 +81,111 @@ export function useGiftStorage() {
   };
 
   const selectGift = async (gift: any, recipientId: string, occasionId: string) => {
-    console.log('🎁 Gift selected:', {
+    console.log('🎁 Gift selected - Creating proper Gift entity first:', {
       giftId: gift.id,
       giftName: gift.name,
       recipientId,
       occasionId
     });
     
-    const storedGift: StoredGift = {
-      id: gift.id,
-      name: gift.name,
-      description: gift.description,
-      price: gift.price,
-      category: gift.category,
-      recipientId,
-      occasionId,
-      selectedAt: Date.now(),
-      status: 'selected',
-      metadata: {
-        model: gift.metadata?.model,
-        confidence: gift.confidence,
-        reasoning: gift.reasoning,
-        tags: gift.tags
-      }
-    };
-
-    setStorage(prev => ({
-      ...prev,
-      selectedGifts: [...prev.selectedGifts.filter(g => g.id !== gift.id), storedGift]
-    }));
-
-    // Create admin order for the selected gift
     try {
       const { user } = useAuthStore.getState();
       
-      if (user) {
-        // Find real recipient and occasion data
-        const recipient = recipients.find(r => r.id === recipientId);
-        const recipientOccasions = occasions[recipientId] || [];
-        const occasion = recipientOccasions.find(o => o.id === occasionId);
-
-        // Create admin order with all required fields
-        const adminOrder: Omit<AdminOrder, 'id' | 'createdAt' | 'updatedAt'> = {
-          userId: user.id,
-          userEmail: user.email || '',
-          userName: user.displayName || user.email?.split('@')[0] || 'Unknown User',
-          recipientName: recipient?.name || `Recipient ${recipientId}`,
-          recipientRelationship: recipient?.relationship || 'Unknown',
-          occasion: occasion?.name || `Occasion ${occasionId}`,
-          giftTitle: gift.name,
-          giftDescription: gift.description || '',
-          giftPrice: gift.price,
-          giftImageUrl: gift.imageUrl || '',
-          asin: gift.asin,
-          status: 'pending',
-          priority: 'normal',
-          notes: gift.reasoning || 'User selected gift',
-          shippingAddress: {
-            name: recipient?.name || 'Unknown',
-            street: recipient?.deliveryAddress?.line1 || 'Address TBD',
-            city: recipient?.deliveryAddress?.city || 'City TBD',
-            state: recipient?.deliveryAddress?.state || 'State TBD',
-            zipCode: recipient?.deliveryAddress?.postalCode || 'ZIP TBD',
-            country: recipient?.deliveryAddress?.country || 'US'
-          },
-          giftUrl: gift.purchaseUrl,
-          occasionDate: occasion?.date,
-          source: 'gift_selection',
-          giftWrap: occasion?.giftWrap || false,
-          personalNote: occasion?.noteText
-        };
-
-        // Add to admin orders via AdminService
-        await AdminService.addOrder(adminOrder);
-        console.log('✅ Admin order created for selected gift');
-      } else {
-        console.warn('⚠️ No authenticated user - cannot create admin order');
+      if (!user) {
+        console.warn('⚠️ No authenticated user - cannot create gift');
+        return;
       }
-    } catch (error) {
-      console.error('❌ Error creating admin order:', error);
-    }
 
-    return storedGift;
+      // Find real recipient and occasion data
+      const recipient = recipients.find(r => r.id === recipientId);
+      const recipientOccasions = occasions[recipientId] || [];
+      const occasion = recipientOccasions.find(o => o.id === occasionId);
+
+      // 1. FIRST: Create proper Gift entity in Firebase
+      const giftData: Omit<Gift, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {
+        recipientId,
+        name: gift.name,
+        description: gift.description || '',
+        price: gift.price,
+        category: gift.category,
+        occasionId,
+        date: occasion ? new Date(occasion.date).getTime() : Date.now(),
+        status: 'selected',
+        imageUrl: gift.imageUrl,
+        purchaseUrl: gift.purchaseUrl,
+        asin: gift.asin,
+        notes: gift.reasoning || 'AI recommended gift',
+        recurring: false
+      };
+
+      console.log('🎁 Creating Gift entity in Firebase:', giftData);
+      const createdGift = await addGift(giftData);
+      console.log('✅ Gift entity created with ID:', createdGift.id);
+
+      // 2. THEN: Create AdminOrder that references the Gift
+      const adminOrder: Omit<AdminOrder, 'id' | 'createdAt' | 'updatedAt'> = {
+        userId: user.id,
+        userEmail: user.email || '',
+        userName: user.displayName || user.email?.split('@')[0] || 'Unknown User',
+        recipientName: recipient?.name || `Recipient ${recipientId}`,
+        recipientRelationship: recipient?.relationship || 'Unknown',
+        occasion: occasion?.name || `Occasion ${occasionId}`,
+        giftTitle: gift.name,
+        giftDescription: gift.description || '',
+        giftPrice: gift.price,
+        giftImageUrl: gift.imageUrl || '',
+        asin: gift.asin,
+        status: 'pending',
+        priority: 'normal',
+        notes: `Gift ID: ${createdGift.id} | ${gift.reasoning || 'User selected gift'}`,
+        shippingAddress: {
+          name: recipient?.name || 'Unknown',
+          street: recipient?.deliveryAddress?.line1 || 'Address TBD',
+          city: recipient?.deliveryAddress?.city || 'City TBD',
+          state: recipient?.deliveryAddress?.state || 'State TBD',
+          zipCode: recipient?.deliveryAddress?.postalCode || 'ZIP TBD',
+          country: recipient?.deliveryAddress?.country || 'US'
+        },
+        giftUrl: gift.purchaseUrl,
+        occasionDate: occasion?.date,
+        source: 'gift_selection',
+        giftWrap: occasion?.giftWrap || false,
+        personalNote: occasion?.noteText
+      };
+
+      console.log('🎁 Creating AdminOrder with Gift reference:', adminOrder);
+      await AdminService.addOrder(adminOrder);
+      console.log('✅ AdminOrder created with proper Gift linkage');
+
+      // 3. Update localStorage tracking
+      const storedGift: StoredGift = {
+        id: createdGift.id, // Use the actual Gift ID from Firebase
+        name: gift.name,
+        description: gift.description,
+        price: gift.price,
+        category: gift.category,
+        recipientId,
+        occasionId,
+        selectedAt: Date.now(),
+        status: 'selected',
+        metadata: {
+          model: gift.metadata?.model,
+          confidence: gift.confidence,
+          reasoning: gift.reasoning,
+          tags: gift.tags
+        }
+      };
+
+      setStorage(prev => ({
+        ...prev,
+        selectedGifts: [...prev.selectedGifts.filter(g => g.id !== gift.id), storedGift]
+      }));
+
+      return storedGift;
+    } catch (error) {
+      console.error('❌ Error in complete gift selection workflow:', error);
+      throw error;
+    }
   };
 
   const saveForLater = (gift: any, recipientId: string, occasionId: string) => {
