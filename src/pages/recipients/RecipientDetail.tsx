@@ -30,6 +30,8 @@ import {
 } from '@chakra-ui/react';
 import { useRecipientStore } from '../../store/recipientStore';
 import { useOccasionStore } from '../../store/occasionStore';
+import { getNextBirthday, getCurrentDateISO } from '../../utils/dateUtils';
+import { useAuthStore } from '../../store/authStore';
 
 const RecipientDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -40,7 +42,8 @@ const RecipientDetail = () => {
   
   const { recipients, deleteRecipient } = useRecipientStore();
   const { occasions, fetchOccasions, addOccasion, deleteOccasion } = useOccasionStore();
-  const [newOccasion, setNewOccasion] = useState<{ name: string; date: string; type: 'birthday' | 'anniversary' | 'custom'; notes: string }>({ name: '', date: '', type: 'custom', notes: '' });
+  const { user } = useAuthStore();
+  const [newOccasion, setNewOccasion] = useState<{ name: string; date: string; type: 'birthday' | 'custom'; notes: string; userId?: string }>({ name: '', date: '', type: 'custom', notes: '', userId: '' });
   const [adding, setAdding] = useState(false);
   
   const recipient = id ? recipients.find(r => r.id === id) : undefined;
@@ -64,6 +67,22 @@ const RecipientDetail = () => {
       navigate('/recipients');
     }
   }, [id, recipient, recipients, navigate, toast]);
+  
+  // Auto-fill date when occasion type changes
+  useEffect(() => {
+    if (newOccasion.type === 'birthday' && recipient?.birthdate) {
+      const nextBirthday = getNextBirthday(recipient.birthdate);
+      setNewOccasion(prev => ({ ...prev, date: nextBirthday, name: 'Birthday' }));
+    } else if (newOccasion.type === 'birthday' && !recipient?.birthdate) {
+      // If no birthdate set, use a date in the future
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 30); // 30 days from now
+      const futureDateISO = futureDate.toISOString().split('T')[0];
+      setNewOccasion(prev => ({ ...prev, date: futureDateISO, name: 'Birthday' }));
+    } else if (newOccasion.type === 'custom') {
+      setNewOccasion(prev => ({ ...prev, name: '' }));
+    }
+  }, [newOccasion.type, recipient?.birthdate]);
   
   const handleDelete = () => {
     if (id) {
@@ -98,7 +117,14 @@ const RecipientDetail = () => {
     setAdding(true);
     try {
       console.log('Adding occasion:', { recipientId: id, ...newOccasion });
-      const result = await addOccasion(id, newOccasion);
+      const occasionData = {
+        name: newOccasion.name,
+        date: newOccasion.date,
+        type: newOccasion.type,
+        notes: newOccasion.notes,
+        userId: user?.id || ''
+      };
+      const result = await addOccasion(id, occasionData);
       if (!result) {
         toast({
           title: 'Failed to add occasion',
@@ -127,7 +153,7 @@ const RecipientDetail = () => {
         isClosable: true,
       });
     }
-    setNewOccasion({ name: '', date: '', type: 'custom', notes: '' });
+    setNewOccasion({ name: '', date: '', type: 'custom', notes: '', userId: '' });
     setAdding(false);
   };
   
@@ -269,12 +295,11 @@ const RecipientDetail = () => {
                 />
                 <select
                   value={newOccasion.type}
-                  onChange={e => setNewOccasion({ ...newOccasion, type: e.target.value as 'birthday' | 'anniversary' | 'custom' })}
+                  onChange={e => setNewOccasion({ ...newOccasion, type: e.target.value as 'birthday' | 'custom' })}
                   className="border rounded p-2"
                   disabled={!recipient.deliveryAddress}
                 >
                   <option value="birthday">Birthday</option>
-                  <option value="anniversary">Anniversary</option>
                   <option value="custom">Custom</option>
                 </select>
                 <input
