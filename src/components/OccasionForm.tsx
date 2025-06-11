@@ -269,6 +269,11 @@ export const OccasionForm: React.FC<OccasionFormProps> = ({
         <FormControl display="flex" alignItems="center">
           <FormLabel htmlFor="recurring" mb="0">
             Recurring
+            <Tooltip label="Automatically repeat this occasion every year" fontSize="sm">
+              <Text as="span" color="gray.500" ml={1} fontSize="sm" cursor="help">
+                ↻
+              </Text>
+            </Tooltip>
           </FormLabel>
           <Switch 
             id="recurring" 
@@ -284,6 +289,11 @@ export const OccasionForm: React.FC<OccasionFormProps> = ({
         <FormControl display="flex" alignItems="center">
           <FormLabel htmlFor="gift-wrap" mb="0">
             Gift Wrap
+            <Tooltip label="Include beautiful gift wrapping with your order" fontSize="sm">
+              <Text as="span" color="gray.500" ml={1} fontSize="sm" cursor="help">
+                🎁
+              </Text>
+            </Tooltip>
           </FormLabel>
           <Switch 
             id="gift-wrap" 
@@ -296,6 +306,11 @@ export const OccasionForm: React.FC<OccasionFormProps> = ({
         <FormControl display="flex" alignItems="center">
           <FormLabel htmlFor="personalized-note" mb="0">
             Include Personalized Note
+            <Tooltip label="Add a custom message to be included with the gift" fontSize="sm">
+              <Text as="span" color="gray.500" ml={1} fontSize="sm" cursor="help">
+                ✏️
+              </Text>
+            </Tooltip>
           </FormLabel>
           <Switch 
             id="personalized-note" 

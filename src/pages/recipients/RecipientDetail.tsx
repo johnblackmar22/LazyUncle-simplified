@@ -43,7 +43,7 @@ const RecipientDetail = () => {
   const { recipients, deleteRecipient } = useRecipientStore();
   const { occasions, fetchOccasions, addOccasion, deleteOccasion } = useOccasionStore();
   const { user } = useAuthStore();
-  const [newOccasion, setNewOccasion] = useState<{ name: string; date: string; type: 'birthday' | 'custom'; notes: string; userId?: string; recurring?: boolean }>({ name: '', date: '', type: 'custom', notes: '', userId: '', recurring: true });
+  const [newOccasion, setNewOccasion] = useState<{ name: string; date: string; type: 'birthday' | 'custom'; notes: string; userId?: string; recurring?: boolean; giftWrap?: boolean; personalizedNote?: boolean }>({ name: '', date: '', type: 'custom', notes: '', userId: '', recurring: true, giftWrap: false, personalizedNote: false });
   const [adding, setAdding] = useState(false);
   
   const recipient = id ? recipients.find(r => r.id === id) : undefined;
@@ -123,6 +123,8 @@ const RecipientDetail = () => {
         type: newOccasion.type,
         notes: newOccasion.notes,
         recurring: newOccasion.recurring,
+        giftWrap: newOccasion.giftWrap,
+        personalizedNote: newOccasion.personalizedNote,
         userId: user?.id || ''
       };
       const result = await addOccasion(id, occasionData);
@@ -154,7 +156,7 @@ const RecipientDetail = () => {
         isClosable: true,
       });
     }
-    setNewOccasion({ name: '', date: '', type: 'custom', notes: '', userId: '', recurring: true });
+    setNewOccasion({ name: '', date: '', type: 'custom', notes: '', userId: '', recurring: true, giftWrap: false, personalizedNote: false });
     setAdding(false);
   };
   
@@ -255,8 +257,18 @@ const RecipientDetail = () => {
                         {occasion.name} 
                         <Badge ml={2} colorScheme="blue">{occasion.type}</Badge>
                         {occasion.recurring && (
-                          <Text as="span" color="gray.500" ml={2}>
+                          <Text as="span" color="gray.500" ml={2} title="Recurring annually">
                             ↻
+                          </Text>
+                        )}
+                        {occasion.giftWrap && (
+                          <Text as="span" color="gray.500" ml={2} title="Gift wrap included">
+                            🎁
+                          </Text>
+                        )}
+                        {occasion.personalizedNote && (
+                          <Text as="span" color="gray.500" ml={2} title="Personalized note included">
+                            ✏️
                           </Text>
                         )}
                       </Text>
@@ -320,6 +332,58 @@ const RecipientDetail = () => {
                   disabled={!recipient.deliveryAddress}
                 />
               </SimpleGrid>
+              
+              {/* Options with symbols */}
+              <HStack spacing={6} mb={4} fontSize="sm">
+                <HStack>
+                  <input
+                    type="checkbox"
+                    id="recurring-checkbox"
+                    checked={newOccasion.recurring}
+                    onChange={e => setNewOccasion({ ...newOccasion, recurring: e.target.checked })}
+                    disabled={!recipient.deliveryAddress}
+                  />
+                  <Text as="label" htmlFor="recurring-checkbox" cursor="pointer">
+                    Recurring 
+                    <Text as="span" color="gray.500" ml={1} fontSize="sm" title="Automatically repeat this occasion every year">
+                      ↻
+                    </Text>
+                  </Text>
+                </HStack>
+                
+                <HStack>
+                  <input
+                    type="checkbox"
+                    id="giftwrap-checkbox"
+                    checked={newOccasion.giftWrap}
+                    onChange={e => setNewOccasion({ ...newOccasion, giftWrap: e.target.checked })}
+                    disabled={!recipient.deliveryAddress}
+                  />
+                  <Text as="label" htmlFor="giftwrap-checkbox" cursor="pointer">
+                    Gift Wrap 
+                    <Text as="span" color="gray.500" ml={1} fontSize="sm" title="Include beautiful gift wrapping">
+                      🎁
+                    </Text>
+                  </Text>
+                </HStack>
+                
+                <HStack>
+                  <input
+                    type="checkbox"
+                    id="note-checkbox"
+                    checked={newOccasion.personalizedNote}
+                    onChange={e => setNewOccasion({ ...newOccasion, personalizedNote: e.target.checked })}
+                    disabled={!recipient.deliveryAddress}
+                  />
+                  <Text as="label" htmlFor="note-checkbox" cursor="pointer">
+                    Personal Note 
+                    <Text as="span" color="gray.500" ml={1} fontSize="sm" title="Add a custom message with the gift">
+                      ✏️
+                    </Text>
+                  </Text>
+                </HStack>
+              </HStack>
+              
               <Button 
                 colorScheme="blue" 
                 size="sm" 
