@@ -392,13 +392,19 @@ const DashboardPage: React.FC = () => {
                             <Text fontSize="xs" color="gray.500">
                               {occasion.name}
                               {occasion.recurring && (
-                                <Icon as={FaRedo} color="gray.400" ml={1} boxSize="2.5" />
+                                <Tooltip label="Recurring annually" fontSize="sm">
+                                  <Icon as={FaRedo} color="gray.400" ml={1} boxSize="2.5" cursor="help" />
+                                </Tooltip>
                               )}
                               {occasion.giftWrap && (
-                                <Icon as={FaGift} color="gray.400" ml={1} boxSize="2.5" />
+                                <Tooltip label="Gift wrap included" fontSize="sm">
+                                  <Icon as={FaGift} color="gray.400" ml={1} boxSize="2.5" cursor="help" />
+                                </Tooltip>
                               )}
                               {occasion.personalizedNote && (
-                                <Icon as={FaEdit} color="gray.400" ml={1} boxSize="2.5" />
+                                <Tooltip label="Personalized note included" fontSize="sm">
+                                  <Icon as={FaEdit} color="gray.400" ml={1} boxSize="2.5" cursor="help" />
+                                </Tooltip>
                               )}
                             </Text>
                           </VStack>
@@ -519,13 +525,19 @@ const DashboardPage: React.FC = () => {
                               <Text key={occasion.id} fontSize="xs" color="gray.600">
                                 {occasion.recipient?.name}: {occasion.name}
                                 {occasion.recurring && (
-                                  <Icon as={FaRedo} color="gray.400" ml={1} boxSize="2.5" />
+                                  <Tooltip label="Recurring annually" fontSize="sm">
+                                    <Icon as={FaRedo} color="gray.400" ml={1} boxSize="2.5" cursor="help" />
+                                  </Tooltip>
                                 )}
                                 {occasion.giftWrap && (
-                                  <Icon as={FaGift} color="gray.400" ml={1} boxSize="2.5" />
+                                  <Tooltip label="Gift wrap included" fontSize="sm">
+                                    <Icon as={FaGift} color="gray.400" ml={1} boxSize="2.5" cursor="help" />
+                                  </Tooltip>
                                 )}
                                 {occasion.personalizedNote && (
-                                  <Icon as={FaEdit} color="gray.400" ml={1} boxSize="2.5" />
+                                  <Tooltip label="Personalized note included" fontSize="sm">
+                                    <Icon as={FaEdit} color="gray.400" ml={1} boxSize="2.5" cursor="help" />
+                                  </Tooltip>
                                 )}
                               </Text>
                             ))}
@@ -600,13 +612,19 @@ const DashboardPage: React.FC = () => {
                                 >
                                   {occasion.recipient?.name}: {occasion.name}
                                   {occasion.recurring && (
-                                    <Icon as={FaRedo} color="gray.400" ml={1} boxSize="2.5" />
+                                    <Tooltip label="Recurring annually" fontSize="sm">
+                                      <Icon as={FaRedo} color="gray.400" ml={1} boxSize="2.5" cursor="help" />
+                                    </Tooltip>
                                   )}
                                   {occasion.giftWrap && (
-                                    <Icon as={FaGift} color="gray.400" ml={1} boxSize="2.5" />
+                                    <Tooltip label="Gift wrap included" fontSize="sm">
+                                      <Icon as={FaGift} color="gray.400" ml={1} boxSize="2.5" cursor="help" />
+                                    </Tooltip>
                                   )}
                                   {occasion.personalizedNote && (
-                                    <Icon as={FaEdit} color="gray.400" ml={1} boxSize="2.5" />
+                                    <Tooltip label="Personalized note included" fontSize="sm">
+                                      <Icon as={FaEdit} color="gray.400" ml={1} boxSize="2.5" cursor="help" />
+                                    </Tooltip>
                                   )}
                                 </Badge>
                               ))}
@@ -728,13 +746,19 @@ const DashboardPage: React.FC = () => {
                                   <Text fontSize="xs" fontWeight="medium">
                                     {occasion.name}
                                     {occasion.recurring && (
-                                      <Icon as={FaRedo} color="gray.400" ml={1} boxSize="2.5" />
+                                      <Tooltip label="Recurring annually" fontSize="sm">
+                                        <Icon as={FaRedo} color="gray.400" ml={1} boxSize="2.5" cursor="help" />
+                                      </Tooltip>
                                     )}
                                     {occasion.giftWrap && (
-                                      <Icon as={FaGift} color="gray.400" ml={1} boxSize="2.5" />
+                                      <Tooltip label="Gift wrap included" fontSize="sm">
+                                        <Icon as={FaGift} color="gray.400" ml={1} boxSize="2.5" cursor="help" />
+                                      </Tooltip>
                                     )}
                                     {occasion.personalizedNote && (
-                                      <Icon as={FaEdit} color="gray.400" ml={1} boxSize="2.5" />
+                                      <Tooltip label="Personalized note included" fontSize="sm">
+                                        <Icon as={FaEdit} color="gray.400" ml={1} boxSize="2.5" cursor="help" />
+                                      </Tooltip>
                                     )}
                                   </Text>
                                   <Text fontSize="xs" color={index === 0 ? "purple.600" : "gray.600"}>

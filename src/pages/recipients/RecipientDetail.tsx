@@ -28,6 +28,7 @@ import {
   AlertDialogOverlay,
   useDisclosure,
   Icon,
+  Tooltip,
 } from '@chakra-ui/react';
 import { useRecipientStore } from '../../store/recipientStore';
 import { useOccasionStore } from '../../store/occasionStore';
@@ -259,13 +260,19 @@ const RecipientDetail = () => {
                         {occasion.name} 
                         <Badge ml={2} colorScheme="blue">{occasion.type}</Badge>
                         {occasion.recurring && (
-                          <Icon as={FaRedo} color="gray.500" ml={2} boxSize="3" title="Recurring annually" />
+                          <Tooltip label="Recurring annually" fontSize="sm">
+                            <Icon as={FaRedo} color="gray.500" ml={2} boxSize="3" cursor="help" />
+                          </Tooltip>
                         )}
                         {occasion.giftWrap && (
-                          <Icon as={FaGift} color="gray.500" ml={2} boxSize="3" title="Gift wrap included" />
+                          <Tooltip label="Gift wrap included" fontSize="sm">
+                            <Icon as={FaGift} color="gray.500" ml={2} boxSize="3" cursor="help" />
+                          </Tooltip>
                         )}
                         {occasion.personalizedNote && (
-                          <Icon as={FaEdit} color="gray.500" ml={2} boxSize="3" title="Personalized note included" />
+                          <Tooltip label="Personalized note included" fontSize="sm">
+                            <Icon as={FaEdit} color="gray.500" ml={2} boxSize="3" cursor="help" />
+                          </Tooltip>
                         )}
                       </Text>
                       <Text fontSize="sm">{new Date(occasion.date).toLocaleDateString()}</Text>
@@ -341,7 +348,9 @@ const RecipientDetail = () => {
                   />
                   <Text as="label" htmlFor="recurring-checkbox" cursor="pointer">
                     Recurring 
-                    <Icon as={FaRedo} color="gray.500" ml={1} boxSize="3" title="Automatically repeat this occasion every year" />
+                    <Tooltip label="Automatically repeat this occasion every year" fontSize="sm">
+                      <Icon as={FaRedo} color="gray.500" ml={1} boxSize="3" cursor="help" />
+                    </Tooltip>
                   </Text>
                 </HStack>
                 
@@ -355,7 +364,9 @@ const RecipientDetail = () => {
                   />
                   <Text as="label" htmlFor="giftwrap-checkbox" cursor="pointer">
                     Gift Wrap 
-                    <Icon as={FaGift} color="gray.500" ml={1} boxSize="3" title="Include beautiful gift wrapping" />
+                    <Tooltip label="Include beautiful gift wrapping" fontSize="sm">
+                      <Icon as={FaGift} color="gray.500" ml={1} boxSize="3" cursor="help" />
+                    </Tooltip>
                   </Text>
                 </HStack>
                 
@@ -369,7 +380,9 @@ const RecipientDetail = () => {
                   />
                   <Text as="label" htmlFor="note-checkbox" cursor="pointer">
                     Personal Note 
-                    <Icon as={FaEdit} color="gray.500" ml={1} boxSize="3" title="Add a custom message with the gift" />
+                    <Tooltip label="Add a custom message with the gift" fontSize="sm">
+                      <Icon as={FaEdit} color="gray.500" ml={1} boxSize="3" cursor="help" />
+                    </Tooltip>
                   </Text>
                 </HStack>
               </HStack>
