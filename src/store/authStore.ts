@@ -9,7 +9,7 @@ import {
 } from 'firebase/auth';
 import { auth, db, DEMO_MODE } from '../services/firebase';
 import type { User } from '../types';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 
 interface AuthState {
   user: User | null;
@@ -112,8 +112,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       // Firebase login for real credentials
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = convertFirebaseUser(userCredential.user);
+      
+      // Check if user document exists in Firestore, create if missing
+      try {
+        const { doc, getDoc, setDoc } = await import('firebase/firestore');
+        const userDocRef = doc(db, 'users', user.id);
+        const userDoc = await getDoc(userDocRef);
+        
+        if (!userDoc.exists()) {
+          console.log('🔧 SignIn: User document missing, creating Firestore document for:', user.email);
+          await setDoc(userDocRef, {
+            email: user.email,
+            displayName: user.displayName,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+            planId: user.planId
+          });
+          console.log('✅ SignIn: User document created successfully');
+        }
+      } catch (docError) {
+        console.error('❌ Error handling user document during sign in:', docError);
+        // Don't fail the login if document creation fails
+      }
+      
       set({ 
-        user: convertFirebaseUser(userCredential.user),
+        user,
         loading: false,
         demoMode: false,
         initialized: true
