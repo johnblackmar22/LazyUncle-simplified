@@ -43,7 +43,7 @@ const RecipientDetail = () => {
   const { recipients, deleteRecipient } = useRecipientStore();
   const { occasions, fetchOccasions, addOccasion, deleteOccasion } = useOccasionStore();
   const { user } = useAuthStore();
-  const [newOccasion, setNewOccasion] = useState<{ name: string; date: string; type: 'birthday' | 'custom'; notes: string; userId?: string }>({ name: '', date: '', type: 'custom', notes: '', userId: '' });
+  const [newOccasion, setNewOccasion] = useState<{ name: string; date: string; type: 'birthday' | 'custom'; notes: string; userId?: string; recurring?: boolean }>({ name: '', date: '', type: 'custom', notes: '', userId: '', recurring: true });
   const [adding, setAdding] = useState(false);
   
   const recipient = id ? recipients.find(r => r.id === id) : undefined;
@@ -122,6 +122,7 @@ const RecipientDetail = () => {
         date: newOccasion.date,
         type: newOccasion.type,
         notes: newOccasion.notes,
+        recurring: newOccasion.recurring,
         userId: user?.id || ''
       };
       const result = await addOccasion(id, occasionData);
@@ -153,7 +154,7 @@ const RecipientDetail = () => {
         isClosable: true,
       });
     }
-    setNewOccasion({ name: '', date: '', type: 'custom', notes: '', userId: '' });
+    setNewOccasion({ name: '', date: '', type: 'custom', notes: '', userId: '', recurring: true });
     setAdding(false);
   };
   
@@ -250,7 +251,11 @@ const RecipientDetail = () => {
                 {recipientOccasions.map(occasion => (
                   <Box key={occasion.id} p={3} borderWidth="1px" borderRadius="md" display="flex" alignItems="center" justifyContent="space-between">
                     <Box textAlign="left">
-                      <Text fontWeight="bold">{occasion.name} <Badge ml={2}>{occasion.type}</Badge></Text>
+                      <Text fontWeight="bold">
+                        {occasion.name} 
+                        <Badge ml={2} colorScheme="blue">{occasion.type}</Badge>
+                        {occasion.recurring && <Badge ml={2} colorScheme="purple">🔄 Annual</Badge>}
+                      </Text>
                       <Text fontSize="sm">{new Date(occasion.date).toLocaleDateString()}</Text>
                       {occasion.notes && <Text fontSize="sm" color="gray.500">{occasion.notes}</Text>}
                     </Box>

@@ -389,6 +389,11 @@ const DashboardPage: React.FC = () => {
                             </Text>
                             <Text fontSize="xs" color="gray.500">
                               {occasion.name}
+                              {occasion.recurring && (
+                                <Badge ml={1} size="sm" colorScheme="purple" variant="subtle">
+                                  🔄
+                                </Badge>
+                              )}
                             </Text>
                           </VStack>
                         </Flex>
@@ -507,6 +512,11 @@ const DashboardPage: React.FC = () => {
                             {monthOccasions.slice(0, 3).map(occasion => (
                               <Text key={occasion.id} fontSize="xs" color="gray.600">
                                 {occasion.recipient?.name}: {occasion.name}
+                                {occasion.recurring && (
+                                  <Badge ml={1} size="xs" colorScheme="purple" variant="subtle">
+                                    🔄
+                                  </Badge>
+                                )}
                               </Text>
                             ))}
                             {monthOccasions.length > 3 && (
@@ -579,6 +589,11 @@ const DashboardPage: React.FC = () => {
                                   textAlign="center"
                                 >
                                   {occasion.recipient?.name}: {occasion.name}
+                                  {occasion.recurring && (
+                                    <Badge ml={1} size="xs" colorScheme="purple" variant="subtle">
+                                      🔄
+                                    </Badge>
+                                  )}
                                 </Badge>
                               ))}
                               {dayOccasions.length > 2 && (
@@ -698,6 +713,11 @@ const DashboardPage: React.FC = () => {
                                 >
                                   <Text fontSize="xs" fontWeight="medium">
                                     {occasion.name}
+                                    {occasion.recurring && (
+                                      <Badge ml={1} size="xs" colorScheme="purple" variant="subtle">
+                                        🔄
+                                      </Badge>
+                                    )}
                                   </Text>
                                   <Text fontSize="xs" color={index === 0 ? "purple.600" : "gray.600"}>
                                     {format(occasion.displayDate, 'MMM dd, yyyy')}

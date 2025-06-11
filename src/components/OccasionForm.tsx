@@ -244,6 +244,21 @@ export const OccasionForm: React.FC<OccasionFormProps> = ({
         </FormControl>
 
         <FormControl display="flex" alignItems="center">
+          <FormLabel htmlFor="recurring" mb="0">
+            Annual Recurring
+          </FormLabel>
+          <Switch 
+            id="recurring" 
+            isChecked={recurring} 
+            onChange={e => setRecurring(e.target.checked)} 
+            colorScheme="purple" 
+          />
+          <Text fontSize="xs" color="gray.500" ml={3}>
+            Automatically repeat this occasion every year
+          </Text>
+        </FormControl>
+
+        <FormControl display="flex" alignItems="center">
           <FormLabel htmlFor="gift-wrap" mb="0">
             Gift Wrap
           </FormLabel>
