@@ -19,7 +19,7 @@ import {
   Tooltip,
   Flex
 } from '@chakra-ui/react';
-import { FiRefreshCw, FiHeart, FiShoppingCart, FiInfo } from 'react-icons/fi';
+import { FiRefreshCw, FiHeart, FiShoppingCart, FiInfo, FiThumbsUp, FiThumbsDown } from 'react-icons/fi';
 import { giftRecommendationEngine, type GiftRecommendationRequest, type GiftRecommendation } from '../services/giftRecommendationEngine';
 import { useGiftStorage } from '../hooks/useGiftStorage';
 import { useAuthStore } from '../store/authStore';
@@ -44,6 +44,7 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [excludedIds, setExcludedIds] = useState<string[]>([]);
+  const [feedback, setFeedback] = useState<Record<string, 'thumbs_up' | 'thumbs_down'>>({});
   
   const { selectGift, saveForLater, getRecommendations, getSelectedGiftsForOccasion } = useGiftStorage();
   const { user } = useAuthStore();
@@ -169,6 +170,45 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
       toast({
         title: 'Error',
         description: 'Failed to save gift',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleFeedback = async (gift: GiftRecommendation, feedbackType: 'thumbs_up' | 'thumbs_down') => {
+    try {
+      // Update local state immediately for UI responsiveness
+      setFeedback(prev => ({ ...prev, [gift.id]: feedbackType }));
+      
+      // TODO: Store feedback in database
+      // For now, just show toast feedback
+      const message = feedbackType === 'thumbs_up' 
+        ? 'Thanks! This helps us recommend better gifts.'
+        : 'Got it! We\'ll avoid similar suggestions.';
+      
+      toast({
+        title: feedbackType === 'thumbs_up' ? 'Great choice!' : 'Feedback noted',
+        description: message,
+        status: feedbackType === 'thumbs_up' ? 'success' : 'info',
+        duration: 2000,
+        isClosable: true,
+      });
+      
+      console.log('📝 Gift feedback:', {
+        giftId: gift.id,
+        giftName: gift.name,
+        feedbackType,
+        recipientId: recipient.id,
+        occasionId: occasion.id
+      });
+      
+    } catch (error) {
+      console.error('Error saving feedback:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to save feedback',
         status: 'error',
         duration: 3000,
         isClosable: true,
@@ -472,28 +512,41 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
 
                       {/* Action Buttons */}
                       <VStack spacing={2} minW="120px" maxW="140px" align="stretch">
+                        {/* Feedback Buttons */}
+                        <HStack spacing={1} justify="center">
+                          <Tooltip label="Great suggestion!">
+                            <IconButton
+                              aria-label="Thumbs up"
+                              icon={<FiThumbsUp />}
+                              size="sm"
+                              variant={feedback[gift.id] === 'thumbs_up' ? 'solid' : 'outline'}
+                              colorScheme={feedback[gift.id] === 'thumbs_up' ? 'green' : 'gray'}
+                              onClick={() => handleFeedback(gift, 'thumbs_up')}
+                            />
+                          </Tooltip>
+                          <Tooltip label="Not a good fit">
+                            <IconButton
+                              aria-label="Thumbs down"
+                              icon={<FiThumbsDown />}
+                              size="sm"
+                              variant={feedback[gift.id] === 'thumbs_down' ? 'solid' : 'outline'}
+                              colorScheme={feedback[gift.id] === 'thumbs_down' ? 'red' : 'gray'}
+                              onClick={() => handleFeedback(gift, 'thumbs_down')}
+                            />
+                          </Tooltip>
+                        </HStack>
+                        
                         <HStack spacing={2} mt={3}>
-                          {(() => {
-                            const isDisabled = selectedGiftIds.includes(gift.id);
-                            console.log(`🔘 Button for "${gift.name}":`, {
-                              giftId: gift.id,
-                              isDisabled,
-                              selectedGiftIds,
-                              buttonText: isDisabled ? 'Selected' : 'Select Gift'
-                            });
-                            return (
-                              <Button
-                                size="sm"
-                                colorScheme="green"
-                                variant="outline"
-                                leftIcon={<FaCheck />}
-                                onClick={() => handleSelectGift(gift)}
-                                isDisabled={isDisabled}
-                              >
-                                {isDisabled ? 'Selected' : 'Select Gift'}
-                              </Button>
-                            );
-                          })()}
+                          <Button
+                            size="sm"
+                            colorScheme="green"
+                            variant="outline"
+                            leftIcon={<FaCheck />}
+                            onClick={() => handleSelectGift(gift)}
+                            isDisabled={selectedGiftIds.includes(gift.id)}
+                          >
+                            {selectedGiftIds.includes(gift.id) ? 'Selected' : 'Select Gift'}
+                          </Button>
                           <Button
                             size="sm"
                             variant="outline"
