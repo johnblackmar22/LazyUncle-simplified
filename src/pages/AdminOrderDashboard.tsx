@@ -97,12 +97,23 @@ const AdminOrderDashboard: React.FC = () => {
   // Load all data when component mounts
   useEffect(() => {
     const fetchAllData = async () => {
+      console.log('🔍 AdminOrderDashboard - Starting data fetch...');
+      console.log('🔍 Current user:', {
+        id: user?.id,
+        email: user?.email,
+        displayName: user?.displayName,
+        role: user?.role
+      });
+      
       try {
         // Fetch orders
+        console.log('🔍 Fetching orders...');
         const ordersData = await AdminService.getAllOrders();
+        console.log('🔍 Orders fetched:', ordersData.length);
         setOrders(ordersData);
 
         // Fetch users
+        console.log('🔍 Fetching users...');
         const usersRef = collection(db, COLLECTIONS.USERS);
         const usersQuery = query(usersRef, orderBy('createdAt', 'desc'));
         const usersSnapshot = await getDocs(usersQuery);
@@ -116,9 +127,11 @@ const AdminOrderDashboard: React.FC = () => {
             updatedAt: data.updatedAt?.toMillis?.() || data.updatedAt || Date.now()
           } as User);
         });
+        console.log('🔍 Users fetched:', usersData.length);
         setUsers(usersData);
 
         // Fetch recipients
+        console.log('🔍 Fetching recipients...');
         const recipientsRef = collection(db, COLLECTIONS.RECIPIENTS);
         const recipientsQuery = query(recipientsRef, orderBy('createdAt', 'desc'));
         const recipientsSnapshot = await getDocs(recipientsQuery);
@@ -132,9 +145,11 @@ const AdminOrderDashboard: React.FC = () => {
             updatedAt: data.updatedAt?.toMillis?.() || data.updatedAt || Date.now()
           } as Recipient);
         });
+        console.log('🔍 Recipients fetched:', recipientsData.length);
         setRecipients(recipientsData);
 
         // Fetch occasions
+        console.log('🔍 Fetching occasions...');
         const occasionsRef = collection(db, COLLECTIONS.OCCASIONS);
         const occasionsQuery = query(occasionsRef, orderBy('date', 'desc'));
         const occasionsSnapshot = await getDocs(occasionsQuery);
@@ -148,9 +163,11 @@ const AdminOrderDashboard: React.FC = () => {
             updatedAt: data.updatedAt?.toMillis?.() || data.updatedAt || Date.now()
           } as Occasion);
         });
+        console.log('🔍 Occasions fetched:', occasionsData.length);
         setOccasions(occasionsData);
 
         // Fetch gifts
+        console.log('🔍 Fetching gifts...');
         const giftsRef = collection(db, COLLECTIONS.GIFTS);
         const giftsQuery = query(giftsRef, orderBy('createdAt', 'desc'));
         const giftsSnapshot = await getDocs(giftsQuery);
@@ -164,6 +181,7 @@ const AdminOrderDashboard: React.FC = () => {
             updatedAt: data.updatedAt?.toMillis?.() || data.updatedAt || Date.now()
           } as Gift);
         });
+        console.log('🔍 Gifts fetched:', giftsData.length);
         setGifts(giftsData);
 
         console.log('🔍 Admin Dashboard - All data loaded:', {
@@ -175,16 +193,29 @@ const AdminOrderDashboard: React.FC = () => {
         });
       } catch (error) {
         console.error('❌ Error fetching admin data:', error);
+        console.error('❌ Error details:', {
+          message: error instanceof Error ? error.message : String(error),
+          code: (error as any)?.code,
+          stack: error instanceof Error ? error.stack : undefined
+        });
       }
     };
 
-    fetchAllData();
+    if (user) {
+      fetchAllData();
+    } else {
+      console.log('🔍 No user authenticated, skipping data fetch');
+    }
     
     // Refresh every 30 seconds
-    const interval = setInterval(fetchAllData, 30000);
+    const interval = setInterval(() => {
+      if (user) {
+        fetchAllData();
+      }
+    }, 30000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [user]);
 
   const refreshAllData = async () => {
     try {

@@ -10,14 +10,20 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
     
+    function isAdmin() {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'super_admin'];
+    }
+    
     // Users collection
     match /users/{userId} {
-      // Users can only read and write their own data
+      // Users can read and write their own data
       allow read, update, delete: if isAuthenticated() && isOwner(userId);
       allow create: if isAuthenticated() && isOwner(userId);
       
-      // Admin users can read all user data (you'd need to implement admin role)
-      // allow read: if isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      // Admin users can read all user data
+      allow read: if isAdmin();
     }
     
     // Recipients collection
@@ -29,6 +35,9 @@ service cloud.firestore {
       // For new documents, ensure userId is set properly
       allow create: if isAuthenticated() && 
                       request.resource.data.userId == request.auth.uid;
+      
+      // Admin users can read all recipients
+      allow read: if isAdmin();
     }
     
     // Gifts collection
@@ -40,6 +49,9 @@ service cloud.firestore {
       // For new documents, ensure userId is set properly
       allow create: if isAuthenticated() && 
                       request.resource.data.userId == request.auth.uid;
+      
+      // Admin users can read all gifts and update gift status
+      allow read, update: if isAdmin();
     }
     
     // Occasions collection
@@ -51,6 +63,9 @@ service cloud.firestore {
       // For new documents, ensure userId is set properly
       allow create: if isAuthenticated() && 
                       request.resource.data.userId == request.auth.uid;
+      
+      // Admin users can read all occasions
+      allow read: if isAdmin();
     }
     
     // Admin Orders collection - Global access for admin functionality
