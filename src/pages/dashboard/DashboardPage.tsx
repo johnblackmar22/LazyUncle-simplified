@@ -124,8 +124,10 @@ const DashboardPage: React.FC = () => {
 
   // Load occasions when recipients change
   useEffect(() => {
+    console.log('🗓️ Dashboard - Loading occasions for recipients:', recipients.length);
     if (recipients.length > 0) {
       recipients.forEach(recipient => {
+        console.log(`🗓️ Dashboard - Fetching occasions for: ${recipient.name} (${recipient.id})`);
         fetchOccasions(recipient.id);
       });
     }
@@ -141,6 +143,13 @@ const DashboardPage: React.FC = () => {
       }))
     )
     .filter(occasion => occasion.recipient);
+
+  // Debug logging for occasions
+  useEffect(() => {
+    console.log('🗓️ Dashboard - Occasions state:', occasions);
+    console.log('🗓️ Dashboard - All occasions processed:', allOccasions.length);
+    console.log('🗓️ Dashboard - Recipients with occasions:', Object.keys(occasions));
+  }, [occasions, allOccasions.length]);
 
   // Get upcoming occasions (next 30 days)
   const upcomingOccasions = allOccasions
@@ -223,6 +232,17 @@ const DashboardPage: React.FC = () => {
     const selectedGifts = recipientGifts.filter(g => g.status === 'selected').length;
     const deliveredGifts = recipientGifts.filter(g => g.status === 'delivered').length;
     const savedGifts = recipientGifts.filter(g => g.status === 'idea').length;
+    
+    // Debug logging for the issue
+    if (recipientGifts.length > 0 && totalOccasions === 0) {
+      console.log(`🐛 Dashboard Debug - Recipient has gifts but no occasions:`, {
+        recipientId,
+        giftsCount: recipientGifts.length,
+        occasionsCount: totalOccasions,
+        gifts: recipientGifts.map(g => ({ id: g.id, name: g.name, status: g.status, occasionId: g.occasionId })),
+        occasions: occasions[recipientId]
+      });
+    }
 
     return {
       total: totalOccasions,
@@ -667,7 +687,19 @@ const DashboardPage: React.FC = () => {
                             <Flex justify="space-between" align="center" mb={1}>
                               <Text fontSize="xs" color="gray.600">Gift Progress</Text>
                               <Text fontSize="xs" color="gray.600">
-                                {giftStatus.selected + giftStatus.purchased}/{giftStatus.total}
+                                {(() => {
+                                  const totalGifts = giftStatus.selected + giftStatus.purchased;
+                                  if (giftStatus.total === 0 && totalGifts > 0) {
+                                    // Show gifts count when there are gifts but no occasions
+                                    return `${totalGifts} gift${totalGifts !== 1 ? 's' : ''}`;
+                                  } else if (giftStatus.total === 0) {
+                                    // No occasions, no gifts
+                                    return 'No occasions';
+                                  } else {
+                                    // Normal case: gifts/occasions
+                                    return `${totalGifts}/${giftStatus.total}`;
+                                  }
+                                })()}
                               </Text>
                             </Flex>
                             <Progress 
