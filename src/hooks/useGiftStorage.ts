@@ -85,21 +85,35 @@ export function useGiftStorage() {
       giftId: gift.id,
       giftName: gift.name,
       recipientId,
-      occasionId
+      occasionId,
+      userState: useAuthStore.getState()
     });
     
     try {
       const { user } = useAuthStore.getState();
       
       if (!user) {
-        console.warn('⚠️ No authenticated user - cannot create gift');
-        return;
+        console.error('⚠️ CRITICAL: No authenticated user - cannot create gift');
+        throw new Error('User not authenticated');
       }
+
+      console.log('✅ User authenticated:', {
+        userId: user.id,
+        userEmail: user.email,
+        userDisplayName: user.displayName
+      });
 
       // Find real recipient and occasion data
       const recipient = recipients.find(r => r.id === recipientId);
       const recipientOccasions = occasions[recipientId] || [];
       const occasion = recipientOccasions.find(o => o.id === occasionId);
+
+      console.log('🔍 Found recipient and occasion data:', {
+        recipient: recipient ? { id: recipient.id, name: recipient.name } : 'NOT FOUND',
+        occasion: occasion ? { id: occasion.id, name: occasion.name } : 'NOT FOUND',
+        availableRecipients: recipients.length,
+        availableOccasions: recipientOccasions.length
+      });
 
       // 1. FIRST: Create proper Gift entity in Firebase
       const giftData: Omit<Gift, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {
@@ -118,9 +132,9 @@ export function useGiftStorage() {
         recurring: false
       };
 
-      console.log('🎁 Creating Gift entity in Firebase:', giftData);
+      console.log('🎁 Creating Gift entity in Firebase with data:', giftData);
       const createdGift = await addGift(giftData);
-      console.log('✅ Gift entity created with ID:', createdGift.id);
+      console.log('✅ Gift entity created successfully with ID:', createdGift.id);
 
       // 2. THEN: Create AdminOrder that references the Gift
       const adminOrder: Omit<AdminOrder, 'id' | 'createdAt' | 'updatedAt'> = {
@@ -153,9 +167,20 @@ export function useGiftStorage() {
         personalNote: occasion?.noteText
       };
 
-      console.log('🎁 Creating AdminOrder with Gift reference:', adminOrder);
-      await AdminService.addOrder(adminOrder);
-      console.log('✅ AdminOrder created with proper Gift linkage');
+      console.log('📋 Creating AdminOrder with data:', adminOrder);
+      
+      try {
+        const orderId = await AdminService.addOrder(adminOrder);
+        console.log('✅ AdminOrder created successfully with ID:', orderId);
+      } catch (adminOrderError: any) {
+        console.error('❌ CRITICAL: Failed to create AdminOrder:', adminOrderError);
+        console.error('❌ AdminOrder error details:', {
+          message: adminOrderError.message,
+          code: adminOrderError?.code,
+          stack: adminOrderError.stack
+        });
+        throw adminOrderError;
+      }
 
       // 3. Update localStorage tracking
       const storedGift: StoredGift = {
@@ -181,9 +206,22 @@ export function useGiftStorage() {
         selectedGifts: [...prev.selectedGifts.filter(g => g.id !== gift.id), storedGift]
       }));
 
+      console.log('🎉 COMPLETE GIFT SELECTION SUCCESS!', {
+        giftId: createdGift.id,
+        giftName: gift.name,
+        recipientName: recipient?.name,
+        occasionName: occasion?.name
+      });
+
       return storedGift;
     } catch (error) {
-      console.error('❌ Error in complete gift selection workflow:', error);
+      console.error('❌ CRITICAL ERROR in complete gift selection workflow:', error);
+      console.error('❌ Error details:', {
+        message: error instanceof Error ? error.message : String(error),
+        code: (error as any)?.code,
+        stack: error instanceof Error ? error.stack : undefined,
+        giftData: { giftId: gift.id, giftName: gift.name, recipientId, occasionId }
+      });
       throw error;
     }
   };
