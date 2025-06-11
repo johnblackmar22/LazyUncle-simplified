@@ -83,11 +83,13 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
   const { 
     createGift, 
     updateGift, 
-    removeGift, 
     fetchGiftsByRecipient, 
     recipientGifts,
     loading: giftLoading 
   } = useGiftStore();
+
+  // Use removeGift from useGiftStorage for admin order deletion
+  const { selectGift, removeGift } = useGiftStorage();
 
   // Get existing selected gifts for this occasion
   const existingGifts = recipientGifts[recipient.id] || [];
@@ -101,8 +103,6 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
       fetchGiftsByRecipient(recipient.id);
     }
   }, [recipient.id, fetchGiftsByRecipient]);
-
-  const { selectGift } = useGiftStorage();
 
   const handleGenerateSuggestions = async () => {
     setGenerating(true);
@@ -205,13 +205,11 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
 
   const handleUndoSelection = async (gift: Gift) => {
     try {
-      await removeGift(gift.id);
-      
+      await removeGift(gift.id, 'selected');
       // Show suggestions again after undo (if they were previously generated)
       if (suggestions.length > 0) {
         setShowSuggestions(true);
       }
-      
       toast({
         title: 'Selection Removed',
         description: `"${gift.name}" has been removed. You can now select a different gift.`,
