@@ -41,7 +41,7 @@ const handler = async (event) => {
     console.log('✅ OpenAI client initialized');
 
     // Build a thoughtful prompt for gift ideas (without ASINs)
-    const prompt = `\nYou are a creative gift recommendation expert. Generate thoughtful gift ideas that can be found on Amazon.\n\nTHE MOST IMPORTANT RULES:\n- Consider the recipient's AGE: ${recipient.age} years old\n- Consider the RELATIONSHIP: ${recipient.relationship}\n- Budget range: $${budget.giftBudget - 10} - $${budget.giftBudget}\n- Do NOT recommend any of these previous gifts: ${previousGiftNames && previousGiftNames.length > 0 ? previousGiftNames.join(', ') : 'none'}\n- Be CREATIVE and UNIQUE! Think outside the box.\n- Focus on gifts that would be meaningful for this specific person\n\nRecipient info:\n${JSON.stringify(recipient, null, 2)}\nOccasion info:\n${JSON.stringify({ ...occasion, budget: budget.total, instructions: instructions || '' }, null, 2)}\n\nProvide 2 creative, thoughtful gift recommendations. For each gift:\n- Give it a descriptive name that would help find it on Amazon\n- Explain why it's perfect for this person\n- Include an estimated price within budget\n- Suggest what category to search for on Amazon\n\nNote: Actual product links will be added manually by admin.\n\nRespond with ONLY valid JSON:\n{\n  "recommendations": [\n    {\n      "name": "descriptive product name",\n      "description": "what makes this gift special",\n      "price": estimated_price_number,\n      "category": "amazon_category",\n      "reasoning": "why this is perfect for them (age, relationship, interests)"\n    }\n  ]\n}\n`;
+    const prompt = `\nYou are a creative gift recommendation expert. Generate thoughtful, specific gift recommendations that can be found on Amazon.\n\nTHE MOST IMPORTANT RULES:\n- Consider the recipient's AGE: ${recipient.age} years old\n- Consider the RELATIONSHIP: ${recipient.relationship}\n- Budget range: $${budget.giftBudget - 10} - $${budget.giftBudget}\n- Do NOT recommend any of these previous gifts: ${previousGiftNames && previousGiftNames.length > 0 ? previousGiftNames.join(', ') : 'none'}\n- Be CREATIVE and UNIQUE! Think outside the box.\n- Focus on gifts that would be meaningful for this specific person\n\nPRODUCT NAMING GUIDELINES:\n- Use SPECIFIC but FLEXIBLE descriptions\n- Include brand names when there's a clear market leader\n- Include key distinguishing features (size, type, etc.)\n- Avoid overly generic names like "premium headphones"\n- Avoid full Amazon product titles with all specs\n\nEXAMPLES OF GOOD PRODUCT NAMES:\n✅ "Sony Noise-Canceling Headphones"\n✅ "Instant Pot 6-Quart Pressure Cooker"\n✅ "Apple AirPods Pro"\n✅ "Kindle Paperwhite E-Reader"\n✅ "Weighted Blanket 15-20 lbs"\n✅ "Atomic Habits by James Clear"\n✅ "Lodge Cast Iron Skillet 10-inch"\n\nEXAMPLES TO AVOID:\n❌ "Premium wireless headphones" (too generic)\n❌ "Sony WH-1000XM4 Wireless Premium Noise Canceling Overhead Headphones with 30 Hour Battery Life" (too specific)\n\nRecipient info:\n${JSON.stringify(recipient, null, 2)}\nOccasion info:\n${JSON.stringify({ ...occasion, budget: budget.total, instructions: instructions || '' }, null, 2)}\n\nProvide 2 creative, thoughtful gift recommendations. For each gift:\n- Give it a specific but flexible name that includes brand/key features\n- Explain why it's perfect for this person\n- Include an estimated price within budget\n- Suggest what category to search for on Amazon\n\nNote: These will be manually verified and potentially refined before showing to customers.\n\nRespond with ONLY valid JSON:\n{\n  "recommendations": [\n    {\n      "name": "Sony Noise-Canceling Headphones",\n      "description": "what makes this gift special and perfect for them",\n      "price": estimated_price_number,\n      "category": "Electronics",\n      "reasoning": "why this is perfect for them (age, relationship, interests)"\n    }\n  ]\n}\n`;
 
     console.log('🤖 Getting gift ideas from AI...');
     const completion = await openai.chat.completions.create({
@@ -67,10 +67,10 @@ const handler = async (event) => {
       console.log('⚠️ Failed to parse AI response, using fallback');
       recommendations = [
         {
-          name: 'Amazon Gift Card',
+          name: 'Amazon Gift Card $25-50',
           description: 'Let them choose what they want',
           price: Math.min(budget.giftBudget, 50),
-          category: 'gift_cards',
+          category: 'Gift Cards',
           reasoning: 'A safe choice that allows the recipient to select their preferred gift'
         }
       ];
@@ -79,10 +79,10 @@ const handler = async (event) => {
     // Ensure at least two recommendations
     while (recommendations.length < 2) {
       recommendations.push({
-        name: 'Thoughtful Gift Option',
-        description: 'A carefully selected gift for this special person',
+        name: 'Thoughtful Gift Selection',
+        description: 'A carefully chosen gift for this special person',
         price: Math.min(budget.giftBudget * 0.8, 35),
-        category: 'gifts',
+        category: 'Popular Gifts',
         reasoning: 'A thoughtful option that shows you care'
       });
     }
@@ -144,11 +144,11 @@ const handler = async (event) => {
         recommendations: [
           {
             id: 'fallback-1',
-            name: 'Amazon Gift Card',
+            name: 'Amazon Gift Card $25',
             description: 'A safe choice when AI is unavailable',
             price: 25,
             asin: 'B004LLIKVU', // This one we know works
-            category: 'gift_cards',
+            category: 'Gift Cards',
             confidence: 0.8,
             availability: 'in_stock',
             estimatedDelivery: 'Digital delivery - instant',
