@@ -204,11 +204,14 @@ export function useGiftStorage() {
           };
           // Remove undefined fields
           const sanitizedOrder: Record<string, any> = { ...orderData };
+          // Ensure giftId is present if available
+          if (orderData.giftId) sanitizedOrder.giftId = orderData.giftId;
           Object.keys(sanitizedOrder).forEach(key => {
             if (sanitizedOrder[key] === undefined) {
               delete sanitizedOrder[key];
             }
           });
+          console.log('📝 Final sanitized fallback admin order to save:', sanitizedOrder);
           const docRef = await addDoc(collection(db, 'admin_orders'), sanitizedOrder);
           console.log('✅ Fallback Firestore order creation succeeded, docRef.id:', docRef.id);
           toast({
