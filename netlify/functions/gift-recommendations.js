@@ -41,37 +41,23 @@ const handler = async (event) => {
     console.log('✅ OpenAI client initialized');
 
     // Build a simple, focused prompt for gift ideas
-    const prompt = `Generate EXACTLY 2 thoughtful gift recommendations for Amazon.
+    const prompt = `Generate exactly 2 gift recommendations for Amazon.
 
-RECIPIENT: ${recipient.age}-year-old ${recipient.relationship}${recipient.description ? `
+Recipient: ${recipient.age}-year-old ${recipient.relationship}${recipient.description ? `
 About them: ${recipient.description}` : ''}${recipient.interests && recipient.interests.length > 0 ? `
 Interests: ${recipient.interests.join(', ')}` : ''}
-OCCASION: ${occasion.name}
-BUDGET: $${budget.giftBudget - 10} - $${budget.giftBudget}
 
-NAMING STYLE: Be specific but flexible
-✅ Good: "Sony Noise-Canceling Headphones", "Instant Pot 6-Quart", "Atomic Habits by James Clear"
-❌ Avoid: "premium headphones" (too generic) or full product titles with all specs
+Occasion: ${occasion.name}
+Budget: $${budget.giftBudget - 10}-${budget.giftBudget}
 
-IMPORTANT: You must provide exactly 2 recommendations in this JSON format:
-{
-  "recommendations": [
-    {
-      "name": "Sony Noise-Canceling Headphones",
-      "description": "Perfect for their daily commute and love of music",
-      "price": 250,
-      "category": "Electronics",
-      "reasoning": "Great for a tech-savvy person who values quality audio"
-    },
-    {
-      "name": "Lodge Cast Iron Skillet 10-inch", 
-      "description": "Essential for home cooking enthusiasts",
-      "price": 35,
-      "category": "Kitchen",
-      "reasoning": "Perfect for someone getting into cooking"
-    }
-  ]
-}`;
+Requirements:
+- Exactly 2 recommendations
+- Real products available on Amazon
+- Include brand names (e.g. "Sony Headphones", "Instant Pot")
+- Stay within budget
+
+Respond in JSON format:
+{"recommendations": [{"name": "Product Name", "description": "Why it's perfect", "price": 99, "category": "Electronics", "reasoning": "Explanation"}, {"name": "Second Product", "description": "Why it's great", "price": 45, "category": "Books", "reasoning": "Why this fits"}]}`;
 
     console.log('🤖 Getting gift ideas from AI...');
     const completion = await openai.chat.completions.create({
