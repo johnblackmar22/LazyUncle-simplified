@@ -27,9 +27,14 @@ import {
   AlertDialogContent,
   AlertDialogOverlay,
   useDisclosure,
+  Icon,
+  Tooltip,
 } from '@chakra-ui/react';
 import { useRecipientStore } from '../../store/recipientStore';
 import { useOccasionStore } from '../../store/occasionStore';
+import { getNextBirthday, getCurrentDateISO } from '../../utils/dateUtils';
+import { useAuthStore } from '../../store/authStore';
+import { FaRedo, FaGift, FaEdit } from 'react-icons/fa';
 
 const RecipientDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -40,7 +45,8 @@ const RecipientDetail = () => {
   
   const { recipients, deleteRecipient } = useRecipientStore();
   const { occasions, fetchOccasions, addOccasion, deleteOccasion } = useOccasionStore();
-  const [newOccasion, setNewOccasion] = useState<{ name: string; date: string; type: 'birthday' | 'anniversary' | 'custom'; notes: string }>({ name: '', date: '', type: 'custom', notes: '' });
+  const { user } = useAuthStore();
+  const [newOccasion, setNewOccasion] = useState<{ name: string; date: string; type: 'birthday' | 'custom'; notes: string; userId?: string; recurring?: boolean; giftWrap?: boolean; personalizedNote?: boolean }>({ name: '', date: '', type: 'custom', notes: '', userId: '', recurring: true, giftWrap: false, personalizedNote: false });
   const [adding, setAdding] = useState(false);
   
   const recipient = id ? recipients.find(r => r.id === id) : undefined;
@@ -64,6 +70,22 @@ const RecipientDetail = () => {
       navigate('/recipients');
     }
   }, [id, recipient, recipients, navigate, toast]);
+  
+  // Auto-fill date when occasion type changes
+  useEffect(() => {
+    if (newOccasion.type === 'birthday' && recipient?.birthdate) {
+      const nextBirthday = getNextBirthday(recipient.birthdate);
+      setNewOccasion(prev => ({ ...prev, date: nextBirthday, name: 'Birthday' }));
+    } else if (newOccasion.type === 'birthday' && !recipient?.birthdate) {
+      // If no birthdate set, use a date in the future
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 30); // 30 days from now
+      const futureDateISO = futureDate.toISOString().split('T')[0];
+      setNewOccasion(prev => ({ ...prev, date: futureDateISO, name: 'Birthday' }));
+    } else if (newOccasion.type === 'custom') {
+      setNewOccasion(prev => ({ ...prev, name: '' }));
+    }
+  }, [newOccasion.type, recipient?.birthdate]);
   
   const handleDelete = () => {
     if (id) {
@@ -98,7 +120,17 @@ const RecipientDetail = () => {
     setAdding(true);
     try {
       console.log('Adding occasion:', { recipientId: id, ...newOccasion });
-      const result = await addOccasion(id, newOccasion);
+      const occasionData = {
+        name: newOccasion.name,
+        date: newOccasion.date,
+        type: newOccasion.type,
+        notes: newOccasion.notes,
+        recurring: newOccasion.recurring,
+        giftWrap: newOccasion.giftWrap,
+        personalizedNote: newOccasion.personalizedNote,
+        userId: user?.id || ''
+      };
+      const result = await addOccasion(id, occasionData);
       if (!result) {
         toast({
           title: 'Failed to add occasion',
@@ -127,7 +159,7 @@ const RecipientDetail = () => {
         isClosable: true,
       });
     }
-    setNewOccasion({ name: '', date: '', type: 'custom', notes: '' });
+    setNewOccasion({ name: '', date: '', type: 'custom', notes: '', userId: '', recurring: true, giftWrap: false, personalizedNote: false });
     setAdding(false);
   };
   
@@ -224,7 +256,25 @@ const RecipientDetail = () => {
                 {recipientOccasions.map(occasion => (
                   <Box key={occasion.id} p={3} borderWidth="1px" borderRadius="md" display="flex" alignItems="center" justifyContent="space-between">
                     <Box textAlign="left">
-                      <Text fontWeight="bold">{occasion.name} <Badge ml={2}>{occasion.type}</Badge></Text>
+                      <Text fontWeight="bold">
+                        {occasion.name} 
+                        <Badge ml={2} colorScheme="blue">{occasion.type}</Badge>
+                        {occasion.recurring && (
+                          <Tooltip label="Recurring annually" fontSize="sm">
+                            <Icon as={FaRedo} color="gray.500" ml={2} boxSize="3" />
+                          </Tooltip>
+                        )}
+                        {occasion.giftWrap && (
+                          <Tooltip label="Gift wrap included" fontSize="sm">
+                            <Icon as={FaGift} color="gray.500" ml={2} boxSize="3" />
+                          </Tooltip>
+                        )}
+                        {occasion.personalizedNote && (
+                          <Tooltip label="Personalized note included" fontSize="sm">
+                            <Icon as={FaEdit} color="gray.500" ml={2} boxSize="3" />
+                          </Tooltip>
+                        )}
+                      </Text>
                       <Text fontSize="sm">{new Date(occasion.date).toLocaleDateString()}</Text>
                       {occasion.notes && <Text fontSize="sm" color="gray.500">{occasion.notes}</Text>}
                     </Box>
@@ -269,12 +319,11 @@ const RecipientDetail = () => {
                 />
                 <select
                   value={newOccasion.type}
-                  onChange={e => setNewOccasion({ ...newOccasion, type: e.target.value as 'birthday' | 'anniversary' | 'custom' })}
+                  onChange={e => setNewOccasion({ ...newOccasion, type: e.target.value as 'birthday' | 'custom' })}
                   className="border rounded p-2"
                   disabled={!recipient.deliveryAddress}
                 >
                   <option value="birthday">Birthday</option>
-                  <option value="anniversary">Anniversary</option>
                   <option value="custom">Custom</option>
                 </select>
                 <input
@@ -286,6 +335,58 @@ const RecipientDetail = () => {
                   disabled={!recipient.deliveryAddress}
                 />
               </SimpleGrid>
+              
+              {/* Options with symbols */}
+              <HStack spacing={6} mb={4} fontSize="sm">
+                <HStack>
+                  <input
+                    type="checkbox"
+                    id="recurring-checkbox"
+                    checked={newOccasion.recurring}
+                    onChange={e => setNewOccasion({ ...newOccasion, recurring: e.target.checked })}
+                    disabled={!recipient.deliveryAddress}
+                  />
+                  <Text as="label" htmlFor="recurring-checkbox" cursor="pointer">
+                    Recurring 
+                    <Tooltip label="Automatically repeat this occasion every year" fontSize="sm">
+                      <Icon as={FaRedo} color="gray.500" ml={1} boxSize="3" />
+                    </Tooltip>
+                  </Text>
+                </HStack>
+                
+                <HStack>
+                  <input
+                    type="checkbox"
+                    id="giftwrap-checkbox"
+                    checked={newOccasion.giftWrap}
+                    onChange={e => setNewOccasion({ ...newOccasion, giftWrap: e.target.checked })}
+                    disabled={!recipient.deliveryAddress}
+                  />
+                  <Text as="label" htmlFor="giftwrap-checkbox" cursor="pointer">
+                    Gift Wrap 
+                    <Tooltip label="Include beautiful gift wrapping" fontSize="sm">
+                      <Icon as={FaGift} color="gray.500" ml={1} boxSize="3" />
+                    </Tooltip>
+                  </Text>
+                </HStack>
+                
+                <HStack>
+                  <input
+                    type="checkbox"
+                    id="note-checkbox"
+                    checked={newOccasion.personalizedNote}
+                    onChange={e => setNewOccasion({ ...newOccasion, personalizedNote: e.target.checked })}
+                    disabled={!recipient.deliveryAddress}
+                  />
+                  <Text as="label" htmlFor="note-checkbox" cursor="pointer">
+                    Personal Note 
+                    <Tooltip label="Add a custom message with the gift" fontSize="sm">
+                      <Icon as={FaEdit} color="gray.500" ml={1} boxSize="3" />
+                    </Tooltip>
+                  </Text>
+                </HStack>
+              </HStack>
+              
               <Button 
                 colorScheme="blue" 
                 size="sm" 
@@ -314,7 +415,7 @@ const RecipientDetail = () => {
             </AlertDialogHeader>
 
             <AlertDialogBody>
-              Are you sure you want to delete {recipient.name}? This action cannot be undone.
+              Are you sure you want to delete {recipient?.name}? This action cannot be undone.
             </AlertDialogBody>
 
             <AlertDialogFooter>

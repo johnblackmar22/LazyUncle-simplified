@@ -85,12 +85,13 @@ export const getNextOccurrence = (monthDay: string, referenceYear?: number): str
     // Create this year's occurrence in local timezone
     const thisYearDate = new Date(currentYear, month - 1, day);
     
-    // If this year's date has already passed, use next year
-    if (isBefore(thisYearDate, today) || (thisYearDate.toDateString() === today.toDateString())) {
+    // If this year's date has already passed (but not if it's today), use next year
+    if (isBefore(thisYearDate, today)) {
       const nextYearDate = new Date(currentYear + 1, month - 1, day);
       return format(nextYearDate, 'yyyy-MM-dd');
     }
     
+    // If it's today or in the future this year, use this year's date
     return format(thisYearDate, 'yyyy-MM-dd');
   } catch (error) {
     console.error('Error calculating next occurrence:', error);

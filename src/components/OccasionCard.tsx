@@ -45,7 +45,8 @@ import {
   FaHeart,
   FaExternalLinkAlt,
   FaCheckCircle,
-  FaUndo
+  FaUndo,
+  FaEdit
 } from 'react-icons/fa';
 import { EditIcon, DeleteIcon } from '@chakra-ui/icons';
 import type { Occasion, Recipient, GiftSuggestion, Gift } from '../types';
@@ -275,7 +276,24 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
         <Flex justify="space-between" align="center">
           <Flex align="center" gap={2}>
             <Icon as={FaGift} color="purple.500" />
-            <Text fontWeight="bold" fontSize="lg">{occasion.name}</Text>
+            <Text fontWeight="bold" fontSize="lg">
+              {occasion.name}
+              {occasion.recurring && (
+                <Tooltip label="This occasion repeats every year" fontSize="sm">
+                  <Icon as={FaRedo} color="gray.500" ml={2} boxSize="3" />
+                </Tooltip>
+              )}
+              {occasion.giftWrap && (
+                <Tooltip label="Gift wrap included" fontSize="sm">
+                  <Icon as={FaGift} color="gray.500" ml={2} boxSize="3" />
+                </Tooltip>
+              )}
+              {occasion.personalizedNote && (
+                <Tooltip label="Personalized note included" fontSize="sm">
+                  <Icon as={FaEdit} color="gray.500" ml={2} boxSize="3" />
+                </Tooltip>
+              )}
+            </Text>
           </Flex>
           <HStack>
             {getStatusBadge()}
@@ -317,6 +335,35 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
               </Text>
             </HStack>
           )}
+
+          {/* Delivery Date Warning */}
+          {occasion.deliveryDate && (() => {
+            const today = new Date();
+            const deliveryDate = new Date(occasion.deliveryDate);
+            const daysUntilDelivery = Math.ceil((deliveryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            
+            if (daysUntilDelivery <= 10 && daysUntilDelivery >= 0) {
+              return (
+                <Alert status="warning" size="sm" borderRadius="md">
+                  <AlertIcon />
+                  <AlertDescription fontSize="xs">
+                    <strong>Delivery Warning:</strong> Only {daysUntilDelivery} day{daysUntilDelivery !== 1 ? 's' : ''} until delivery date. 
+                    We may not be able to deliver on time.
+                  </AlertDescription>
+                </Alert>
+              );
+            } else if (daysUntilDelivery < 0) {
+              return (
+                <Alert status="error" size="sm" borderRadius="md">
+                  <AlertIcon />
+                  <AlertDescription fontSize="xs">
+                    <strong>Delivery Overdue:</strong> The delivery date has passed. Please update or reschedule.
+                  </AlertDescription>
+                </Alert>
+              );
+            }
+            return null;
+          })()}
 
           <HStack>
             <Icon as={FaDollarSign} color="green.500" />

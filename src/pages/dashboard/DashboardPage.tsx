@@ -56,7 +56,9 @@ import {
   FaCompress, 
   FaPlus,
   FaChevronLeft,
-  FaChevronRight
+  FaChevronRight,
+  FaRedo,
+  FaEdit
 } from 'react-icons/fa';
 import { AddIcon, CheckIcon } from '@chakra-ui/icons';
 import { 
@@ -389,6 +391,21 @@ const DashboardPage: React.FC = () => {
                             </Text>
                             <Text fontSize="xs" color="gray.500">
                               {occasion.name}
+                              {occasion.recurring && (
+                                <Tooltip label="Recurring annually" fontSize="sm">
+                                  <Icon as={FaRedo} color="gray.400" ml={1} boxSize="2.5" />
+                                </Tooltip>
+                              )}
+                              {occasion.giftWrap && (
+                                <Tooltip label="Gift wrap included" fontSize="sm">
+                                  <Icon as={FaGift} color="gray.400" ml={1} boxSize="2.5" />
+                                </Tooltip>
+                              )}
+                              {occasion.personalizedNote && (
+                                <Tooltip label="Personalized note included" fontSize="sm">
+                                  <Icon as={FaEdit} color="gray.400" ml={1} boxSize="2.5" />
+                                </Tooltip>
+                              )}
                             </Text>
                           </VStack>
                         </Flex>
@@ -507,6 +524,21 @@ const DashboardPage: React.FC = () => {
                             {monthOccasions.slice(0, 3).map(occasion => (
                               <Text key={occasion.id} fontSize="xs" color="gray.600">
                                 {occasion.recipient?.name}: {occasion.name}
+                                {occasion.recurring && (
+                                  <Tooltip label="Recurring annually" fontSize="sm">
+                                    <Icon as={FaRedo} color="gray.400" ml={1} boxSize="2.5" />
+                                  </Tooltip>
+                                )}
+                                {occasion.giftWrap && (
+                                  <Tooltip label="Gift wrap included" fontSize="sm">
+                                    <Icon as={FaGift} color="gray.400" ml={1} boxSize="2.5" />
+                                  </Tooltip>
+                                )}
+                                {occasion.personalizedNote && (
+                                  <Tooltip label="Personalized note included" fontSize="sm">
+                                    <Icon as={FaEdit} color="gray.400" ml={1} boxSize="2.5" />
+                                  </Tooltip>
+                                )}
                               </Text>
                             ))}
                             {monthOccasions.length > 3 && (
@@ -579,6 +611,21 @@ const DashboardPage: React.FC = () => {
                                   textAlign="center"
                                 >
                                   {occasion.recipient?.name}: {occasion.name}
+                                  {occasion.recurring && (
+                                    <Tooltip label="Recurring annually" fontSize="sm">
+                                      <Icon as={FaRedo} color="gray.400" ml={1} boxSize="2.5" />
+                                    </Tooltip>
+                                  )}
+                                  {occasion.giftWrap && (
+                                    <Tooltip label="Gift wrap included" fontSize="sm">
+                                      <Icon as={FaGift} color="gray.400" ml={1} boxSize="2.5" />
+                                    </Tooltip>
+                                  )}
+                                  {occasion.personalizedNote && (
+                                    <Tooltip label="Personalized note included" fontSize="sm">
+                                      <Icon as={FaEdit} color="gray.400" ml={1} boxSize="2.5" />
+                                    </Tooltip>
+                                  )}
                                 </Badge>
                               ))}
                               {dayOccasions.length > 2 && (
@@ -698,6 +745,21 @@ const DashboardPage: React.FC = () => {
                                 >
                                   <Text fontSize="xs" fontWeight="medium">
                                     {occasion.name}
+                                    {occasion.recurring && (
+                                      <Tooltip label="Recurring annually" fontSize="sm">
+                                        <Icon as={FaRedo} color="gray.400" ml={1} boxSize="2.5" />
+                                      </Tooltip>
+                                    )}
+                                    {occasion.giftWrap && (
+                                      <Tooltip label="Gift wrap included" fontSize="sm">
+                                        <Icon as={FaGift} color="gray.400" ml={1} boxSize="2.5" />
+                                      </Tooltip>
+                                    )}
+                                    {occasion.personalizedNote && (
+                                      <Tooltip label="Personalized note included" fontSize="sm">
+                                        <Icon as={FaEdit} color="gray.400" ml={1} boxSize="2.5" />
+                                      </Tooltip>
+                                    )}
                                   </Text>
                                   <Text fontSize="xs" color={index === 0 ? "purple.600" : "gray.600"}>
                                     {format(occasion.displayDate, 'MMM dd, yyyy')}

@@ -182,8 +182,34 @@ class GiftRecommendationEngine {
         }));
         
         // Filter out recommendations that exceed total budget
+        console.log('💰 Budget filtering - Before:', {
+          totalRecommendations: data.recommendations.length,
+          budgetBreakdown,
+          recommendations: data.recommendations.map((r: any) => ({
+            name: r.name,
+            price: r.price,
+            costBreakdown: r.costBreakdown
+          }))
+        });
+        
         data.recommendations = data.recommendations.filter((rec: GiftRecommendation) => {
-          return rec.costBreakdown!.total <= budgetBreakdown.totalBudget;
+          const withinBudget = rec.costBreakdown!.total <= budgetBreakdown.totalBudget;
+          if (!withinBudget) {
+            console.log('❌ Removed recommendation (over budget):', {
+              name: rec.name,
+              totalCost: rec.costBreakdown!.total,
+              budgetLimit: budgetBreakdown.totalBudget
+            });
+          }
+          return withinBudget;
+        });
+        
+        console.log('💰 Budget filtering - After:', {
+          totalRecommendations: data.recommendations.length,
+          recommendations: data.recommendations.map((r: any) => ({
+            name: r.name,
+            costBreakdown: r.costBreakdown
+          }))
         });
       }
       

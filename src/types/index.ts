@@ -87,6 +87,20 @@ export interface GiftSuggestion {
   asin?: string; // Amazon ASIN for easy ordering
 }
 
+// Gift feedback for improving recommendations
+export interface GiftFeedback {
+  id: string;
+  userId: string;
+  recipientId: string;
+  occasionId?: string;
+  giftName: string;
+  giftCategory: string;
+  feedback: 'thumbs_up' | 'thumbs_down';
+  reason?: string; // Optional: "too expensive", "not their style", "perfect fit", etc.
+  giftPrice?: number;
+  createdAt: number;
+}
+
 // Admin order interface for gift selection workflow
 export interface AdminOrder {
   id: string;

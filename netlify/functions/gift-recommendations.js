@@ -40,8 +40,29 @@ const handler = async (event) => {
     });
     console.log('✅ OpenAI client initialized');
 
-    // Build a thoughtful prompt for gift ideas (without ASINs)
-    const prompt = `\nYou are a creative gift recommendation expert. Generate thoughtful, specific gift recommendations that can be found on Amazon.\n\nTHE MOST IMPORTANT RULES:\n- Consider the recipient's AGE: ${recipient.age} years old\n- Consider the RELATIONSHIP: ${recipient.relationship}\n- Budget range: $${budget.giftBudget - 10} - $${budget.giftBudget}\n- Do NOT recommend any of these previous gifts: ${previousGiftNames && previousGiftNames.length > 0 ? previousGiftNames.join(', ') : 'none'}\n- Be CREATIVE and UNIQUE! Think outside the box.\n- Focus on gifts that would be meaningful for this specific person\n\nPRODUCT NAMING GUIDELINES:\n- Use SPECIFIC but FLEXIBLE descriptions\n- Include brand names when there's a clear market leader\n- Include key distinguishing features (size, type, etc.)\n- Avoid overly generic names like "premium headphones"\n- Avoid full Amazon product titles with all specs\n\nEXAMPLES OF GOOD PRODUCT NAMES:\n✅ "Sony Noise-Canceling Headphones"\n✅ "Instant Pot 6-Quart Pressure Cooker"\n✅ "Apple AirPods Pro"\n✅ "Kindle Paperwhite E-Reader"\n✅ "Weighted Blanket 15-20 lbs"\n✅ "Atomic Habits by James Clear"\n✅ "Lodge Cast Iron Skillet 10-inch"\n\nEXAMPLES TO AVOID:\n❌ "Premium wireless headphones" (too generic)\n❌ "Sony WH-1000XM4 Wireless Premium Noise Canceling Overhead Headphones with 30 Hour Battery Life" (too specific)\n\nRecipient info:\n${JSON.stringify(recipient, null, 2)}\nOccasion info:\n${JSON.stringify({ ...occasion, budget: budget.total, instructions: instructions || '' }, null, 2)}\n\nProvide 2 creative, thoughtful gift recommendations. For each gift:\n- Give it a specific but flexible name that includes brand/key features\n- Explain why it's perfect for this person\n- Include an estimated price within budget\n- Suggest what category to search for on Amazon\n\nNote: These will be manually verified and potentially refined before showing to customers.\n\nRespond with ONLY valid JSON:\n{\n  "recommendations": [\n    {\n      "name": "Sony Noise-Canceling Headphones",\n      "description": "what makes this gift special and perfect for them",\n      "price": estimated_price_number,\n      "category": "Electronics",\n      "reasoning": "why this is perfect for them (age, relationship, interests)"\n    }\n  ]\n}\n`;
+    // Build a simple, focused prompt for gift ideas
+    const prompt = `Generate exactly 2 gift recommendations for Amazon.
+
+Recipient: ${recipient.age}-year-old ${recipient.relationship}${recipient.description ? `
+About them: ${recipient.description}` : ''}${recipient.interests && recipient.interests.length > 0 ? `
+Interests: ${recipient.interests.join(', ')}` : ''}
+
+Occasion: ${occasion.name}
+TOTAL BUDGET: $${budget.total} (includes ALL costs - gift + shipping + fees)
+
+CRITICAL PRICING RULES:
+- Maximum gift price: $${Math.round(budget.total * 0.9)} (to allow for shipping/fees)
+- Recommend gifts in the $${Math.round(budget.total * 0.5)}-$${Math.round(budget.total * 0.9)} range
+- Consider shipping costs will add $5-15 to each item
+
+Requirements:
+- Exactly 2 recommendations  
+- Real products available on Amazon
+- Include brand names when helpful
+- STAY WELL UNDER the total budget of $${budget.total}
+
+Respond in JSON format:
+{"recommendations": [{"name": "Product Name", "description": "Why it's perfect", "price": 45, "category": "Books", "reasoning": "Explanation"}, {"name": "Second Product", "description": "Why it's great", "price": 38, "category": "Home", "reasoning": "Why this fits"}]}`;
 
     console.log('🤖 Getting gift ideas from AI...');
     const completion = await openai.chat.completions.create({
@@ -56,15 +77,31 @@ const handler = async (event) => {
 
     const aiResponse = completion.choices[0]?.message?.content;
     console.log('📋 AI Response length:', aiResponse?.length || 0);
+    console.log('📋 Full AI Response:', aiResponse);
 
     // Try to parse AI response
     let recommendations = [];
     try {
       const parsed = JSON.parse(aiResponse || '{}');
+      console.log('🔍 Parsed JSON from AI:', JSON.stringify(parsed, null, 2));
       recommendations = parsed.recommendations || [];
-      console.log('✅ AI response parsed, recommendations:', recommendations.length);
+      console.log('✅ AI response parsed successfully');
+      console.log('📊 Number of recommendations from AI:', recommendations.length);
+      console.log('📝 Raw recommendations:', JSON.stringify(recommendations, null, 2));
+      
+      // Debug each recommendation
+      recommendations.forEach((rec, index) => {
+        console.log(`🎁 Recommendation ${index + 1}:`, {
+          name: rec.name,
+          price: rec.price,
+          category: rec.category
+        });
+      });
+      
     } catch (parseError) {
       console.log('⚠️ Failed to parse AI response, using fallback');
+      console.log('💥 Parse error:', parseError.message);
+      console.log('📋 Attempted to parse:', aiResponse);
       recommendations = [
         {
           name: 'Amazon Gift Card $25-50',
@@ -76,8 +113,11 @@ const handler = async (event) => {
       ];
     }
 
+    console.log('🔢 Recommendations before ensuring 2:', recommendations.length);
+
     // Ensure at least two recommendations
     while (recommendations.length < 2) {
+      console.log('🔄 Adding fallback recommendation, current count:', recommendations.length);
       recommendations.push({
         name: 'Thoughtful Gift Selection',
         description: 'A carefully chosen gift for this special person',
@@ -87,8 +127,14 @@ const handler = async (event) => {
       });
     }
 
+    // Force exactly 2 recommendations (never more, never less)
+    recommendations = recommendations.slice(0, 2);
+
+    console.log('🔢 Final recommendations count:', recommendations.length);
+    console.log('🎁 Final recommendations:', recommendations.map(r => ({ name: r.name, price: r.price })));
+
     // Only keep a maximum of 2 recommendations and add standard fields
-    const finalRecommendations = recommendations.slice(0, 2).map((rec, index) => ({
+    const finalRecommendations = recommendations.map((rec, index) => ({
       id: `ai-generated-${index + 1}`,
       name: rec.name,
       description: rec.description,
@@ -104,6 +150,11 @@ const handler = async (event) => {
       imageUrl: null, // Will be filled in manually
       needsManualReview: true // Flag for admin to review and add real product links
     }));
+
+    console.log('🚀 FINAL DEBUG - About to return:', {
+      recommendationsCount: finalRecommendations.length,
+      recommendations: finalRecommendations.map(r => ({ id: r.id, name: r.name, price: r.price }))
+    });
 
     console.log('🎉 Returning gift ideas for manual review');
     return {
