@@ -121,14 +121,20 @@ export const addGift = async (data: Omit<Gift, 'id' | 'userId' | 'createdAt' | '
 
   try {
     const now = Date.now();
-    const newGift = {
+    let newGift = {
       ...data,
       userId: user.id,
       createdAt: now,
       updatedAt: now
     };
-    
-    const docRef = await addDoc(collection(db, COLLECTION), newGift);
+    // Remove undefined fields (especially imageUrl) in a type-safe way
+    const sanitizedGift: Record<string, any> = { ...newGift };
+    Object.keys(sanitizedGift).forEach(key => {
+      if (sanitizedGift[key] === undefined) {
+        delete sanitizedGift[key];
+      }
+    });
+    const docRef = await addDoc(collection(db, COLLECTION), sanitizedGift);
     
     return {
       id: docRef.id,
