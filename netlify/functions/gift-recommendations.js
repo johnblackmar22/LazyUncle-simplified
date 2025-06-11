@@ -111,10 +111,14 @@ Respond in JSON format:
       });
     }
 
+    // Force exactly 2 recommendations (never more, never less)
+    recommendations = recommendations.slice(0, 2);
+
     console.log('🔢 Final recommendations count:', recommendations.length);
+    console.log('🎁 Final recommendations:', recommendations.map(r => ({ name: r.name, price: r.price })));
 
     // Only keep a maximum of 2 recommendations and add standard fields
-    const finalRecommendations = recommendations.slice(0, 2).map((rec, index) => ({
+    const finalRecommendations = recommendations.map((rec, index) => ({
       id: `ai-generated-${index + 1}`,
       name: rec.name,
       description: rec.description,

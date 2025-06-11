@@ -513,7 +513,8 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
                       {/* Action Buttons */}
                       <VStack spacing={2} minW="120px" maxW="140px" align="stretch">
                         {/* Feedback Buttons */}
-                        <HStack spacing={1} justify="center">
+                        <Text fontSize="xs" color="gray.600" textAlign="center">Rate this idea:</Text>
+                        <HStack spacing={2} justify="center">
                           <Tooltip label="Great suggestion!">
                             <IconButton
                               aria-label="Thumbs up"
@@ -521,7 +522,10 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
                               size="sm"
                               variant={feedback[gift.id] === 'thumbs_up' ? 'solid' : 'outline'}
                               colorScheme={feedback[gift.id] === 'thumbs_up' ? 'green' : 'gray'}
-                              onClick={() => handleFeedback(gift, 'thumbs_up')}
+                              onClick={() => {
+                                console.log('👍 Thumbs up clicked for:', gift.name);
+                                handleFeedback(gift, 'thumbs_up');
+                              }}
                             />
                           </Tooltip>
                           <Tooltip label="Not a good fit">
@@ -531,7 +535,10 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
                               size="sm"
                               variant={feedback[gift.id] === 'thumbs_down' ? 'solid' : 'outline'}
                               colorScheme={feedback[gift.id] === 'thumbs_down' ? 'red' : 'gray'}
-                              onClick={() => handleFeedback(gift, 'thumbs_down')}
+                              onClick={() => {
+                                console.log('👎 Thumbs down clicked for:', gift.name);
+                                handleFeedback(gift, 'thumbs_down');
+                              }}
                             />
                           </Tooltip>
                         </HStack>
