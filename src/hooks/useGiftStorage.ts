@@ -160,34 +160,37 @@ export function useGiftStorage() {
       // 2. THEN: Create AdminOrder that references the Gift
       const adminOrder: Omit<AdminOrder, 'id' | 'createdAt' | 'updatedAt'> = {
         userId: user.id,
-        userEmail: user.email || '',
-        userName: user.displayName || user.email?.split('@')[0] || 'Unknown User',
-        recipientName: recipient?.name || `Recipient ${recipientId}`,
+        userEmail: user.email,
+        userName: user.displayName || user.email,
+        recipientName: recipient?.name || 'Unknown Recipient',
         recipientRelationship: recipient?.relationship || 'Unknown',
-        occasion: occasion?.name || `Occasion ${occasionId}`,
+        recipientAddress: recipient?.deliveryAddress ? 
+          `${recipient.deliveryAddress.line1}, ${recipient.deliveryAddress.city}, ${recipient.deliveryAddress.state} ${recipient.deliveryAddress.postalCode}` : 
+          'Address not provided',
+        occasion: occasion?.name || 'Unknown Occasion',
         occasionId: occasionId,
-        giftId: createdGift.id,
+        occasionDate: occasion?.date || new Date().toISOString().split('T')[0],
         giftTitle: gift.name,
         giftDescription: gift.description || '',
         giftPrice: gift.price,
         giftImageUrl: gift.imageUrl || '',
-        asin: gift.asin,
+        giftUrl: gift.purchaseUrl,
+        asin: gift.asin || '',
         status: 'pending',
         priority: 'normal',
-        notes: `Gift ID: ${createdGift.id} | ${gift.reasoning || 'User selected gift'}`,
+        notes: `Gift ID: ${gift.id} | User selected this gift for ${recipient?.name || 'recipient'}`,
         shippingAddress: {
-          name: recipient?.name || 'Unknown',
-          street: recipient?.deliveryAddress?.line1 || 'Address TBD',
-          city: recipient?.deliveryAddress?.city || 'City TBD',
-          state: recipient?.deliveryAddress?.state || 'State TBD',
-          zipCode: recipient?.deliveryAddress?.postalCode || 'ZIP TBD',
-          country: recipient?.deliveryAddress?.country || 'US'
+          name: recipient?.name || 'Unknown Recipient',
+          street: recipient?.deliveryAddress?.line1 || '',
+          city: recipient?.deliveryAddress?.city || '',
+          state: recipient?.deliveryAddress?.state || '',
+          zipCode: recipient?.deliveryAddress?.postalCode || '',
+          country: recipient?.deliveryAddress?.country || 'US',
         },
-        giftUrl: gift.purchaseUrl,
-        occasionDate: occasion?.date,
         source: 'gift_selection',
         giftWrap: occasion?.giftWrap || false,
-        personalNote: occasion?.noteText
+        personalNote: occasion?.noteText || '',
+        giftId: gift.id,
       };
 
       console.log('🟡 About to create AdminOrder for user gift selection...', adminOrder);
