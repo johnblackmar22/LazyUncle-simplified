@@ -46,7 +46,8 @@ import {
   FaExternalLinkAlt,
   FaCheckCircle,
   FaUndo,
-  FaEdit
+  FaEdit,
+  FaLightbulb
 } from 'react-icons/fa';
 import { EditIcon, DeleteIcon } from '@chakra-ui/icons';
 import type { Occasion, Recipient, GiftSuggestion, Gift } from '../types';
@@ -490,7 +491,8 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
                       {/* Notes at bottom */}
                       {gift.notes && (
                         <Text fontSize="xs" color="gray.500" fontStyle="italic" pl={6}>
-                          <Text as="span" mr={1}>💡</Text>{gift.notes}
+                          <Icon as={FaLightbulb} color="gray.400" boxSize="3" mr={2} />
+                          {gift.notes}
                         </Text>
                       )}
                     </VStack>
@@ -619,7 +621,8 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
                           {/* Reasoning at bottom */}
                           {gift.reasoning && (
                             <Text fontSize="xs" color="gray.500" fontStyle="italic" pl={isSelected ? 6 : 0}>
-                              <Text as="span" mr={1}>💡</Text>{gift.reasoning}
+                              <Icon as={FaLightbulb} color="gray.400" boxSize="3" mr={2} />
+                              {gift.reasoning}
                             </Text>
                           )}
                         </VStack>

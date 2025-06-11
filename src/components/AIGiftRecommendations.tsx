@@ -17,14 +17,15 @@ import {
   Divider,
   IconButton,
   Tooltip,
-  Flex
+  Flex,
+  Icon
 } from '@chakra-ui/react';
 import { FiRefreshCw, FiHeart, FiShoppingCart, FiInfo, FiThumbsUp, FiThumbsDown } from 'react-icons/fi';
 import { giftRecommendationEngine, type GiftRecommendationRequest, type GiftRecommendation } from '../services/giftRecommendationEngine';
 import { useGiftStorage } from '../hooks/useGiftStorage';
 import { useAuthStore } from '../store/authStore';
 import type { Recipient, Occasion } from '../types';
-import { FaCheck, FaHeart } from 'react-icons/fa';
+import { FaCheck, FaHeart, FaLightbulb } from 'react-icons/fa';
 import AdminService from '../services/adminService';
 
 interface AIGiftRecommendationsProps {
@@ -493,7 +494,7 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
                       {/* Why this gift */}
                       <Box p={3} bg="gray.50" borderRadius="md">
                         <HStack spacing={2} mb={2}>
-                          <Text as="span" mr={1}>💡</Text>
+                          <Icon as={FaLightbulb} color="gray.400" boxSize="3" />
                           <Text fontSize="xs" fontWeight="semibold" color="gray.700">
                             Why this gift:
                           </Text>
