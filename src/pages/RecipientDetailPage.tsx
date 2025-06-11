@@ -264,9 +264,15 @@ export const RecipientDetailPage: React.FC = () => {
   }
 
   return (
-    <Container maxW="container.xl" mt={4}>
+    <Container maxW="container.xl" mt={4} px={{ base: 2, md: 4 }}>
       {/* Header */}
-      <Flex justify="space-between" align="center" mb={6}>
+      <Flex 
+        direction={{ base: "column", sm: "row" }}
+        justify="space-between" 
+        align={{ base: "stretch", sm: "center" }} 
+        mb={6}
+        gap={{ base: 3, sm: 0 }}
+      >
         <HStack>
           <IconButton
             as={RouterLink}
@@ -275,35 +281,37 @@ export const RecipientDetailPage: React.FC = () => {
             icon={<ArrowBackIcon />}
             variant="ghost"
           />
-          <Heading size="lg">{currentRecipient.name}</Heading>
+          <Heading size={{ base: "md", md: "lg" }}>{currentRecipient.name}</Heading>
         </HStack>
-        <HStack>
+        <HStack width={{ base: "full", sm: "auto" }}>
           <Button
             as={RouterLink}
             to={`/recipients/${id}/edit`}
             leftIcon={<EditIcon />}
             colorScheme="teal"
             variant="outline"
+            size={{ base: "sm", md: "md" }}
+            width={{ base: "full", sm: "auto" }}
           >
             Edit Recipient
           </Button>
         </HStack>
       </Flex>
 
-      <Stack spacing={6}>
+      <Stack spacing={{ base: 4, md: 6 }}>
         {/* Recipient Info Card */}
         <Card bg={bgColor} shadow="md" borderRadius="lg" borderColor={borderColor} borderWidth="1px">
           <CardHeader>
-            <Flex gap={4}>
-              <Avatar name={currentRecipient.name} size="lg" />
-              <Box>
-                <Heading size="md">{currentRecipient.name}</Heading>
+            <Flex gap={4} direction={{ base: "column", sm: "row" }} align={{ base: "center", sm: "start" }}>
+              <Avatar name={currentRecipient.name} size={{ base: "xl", md: "lg" }} />
+              <Box textAlign={{ base: "center", sm: "left" }}>
+                <Heading size={{ base: "sm", md: "md" }}>{currentRecipient.name}</Heading>
                 <Badge colorScheme="blue" mt={1}>{currentRecipient.relationship}</Badge>
               </Box>
             </Flex>
           </CardHeader>
           <CardBody>
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+            <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={{ base: 3, md: 4 }}>
               {currentRecipient.birthdate && (() => {
                 const birthdayInfo = formatBirthdayWithAge(currentRecipient.birthdate);
                 return birthdayInfo && (

@@ -455,20 +455,21 @@ const AddRecipientPage: React.FC = () => {
                 <Divider />
 
                 {/* Address Section */}
-                <FormControl isRequired isInvalid={isDeliveryAddressInvalid} width="100%">
-                  <Box
-                    onBlur={() => setTouched({ ...touched, deliveryAddress: true })}
-                  >
-                    <AddressForm
-                      address={deliveryAddress}
-                      onChange={setDeliveryAddress}
-                      isRequired={true}
-                    />
-                  </Box>
+                <Box
+                  width="100%"
+                  onBlur={() => setTouched({ ...touched, deliveryAddress: true })}
+                >
+                  <AddressForm
+                    address={deliveryAddress}
+                    onChange={setDeliveryAddress}
+                    isRequired={true}
+                  />
                   {isDeliveryAddressInvalid && (
-                    <FormErrorMessage fontSize="xs">Delivery address is required</FormErrorMessage>
+                    <Text color="red.500" fontSize="xs" mt={2}>
+                      Delivery address is required
+                    </Text>
                   )}
-                </FormControl>
+                </Box>
               </VStack>
             </CardBody>
             <CardFooter>
