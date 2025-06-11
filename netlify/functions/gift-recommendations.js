@@ -48,19 +48,21 @@ About them: ${recipient.description}` : ''}${recipient.interests && recipient.in
 Interests: ${recipient.interests.join(', ')}` : ''}
 
 Occasion: ${occasion.name}
-Total Budget: $${budget.total} (this MUST include gift price + shipping + any fees)
-Max Gift Price: $${budget.giftBudget} (before shipping)
+TOTAL BUDGET: $${budget.total} (includes ALL costs - gift + shipping + fees)
 
-CRITICAL: Stay well under the total budget of $${budget.total}. Consider shipping costs.
+CRITICAL PRICING RULES:
+- Maximum gift price: $${Math.round(budget.total * 0.6)} (to allow for shipping/fees)
+- Recommend gifts in the $${Math.round(budget.total * 0.3)}-$${Math.round(budget.total * 0.6)} range
+- Consider shipping costs will add $5-15 to each item
 
 Requirements:
-- Exactly 2 recommendations
+- Exactly 2 recommendations  
 - Real products available on Amazon
-- Include brand names (e.g. "Sony Headphones", "Instant Pot")
-- Gift prices should be $${Math.round(budget.giftBudget * 0.8)} or less to allow for shipping
+- Include brand names when helpful
+- STAY WELL UNDER the total budget of $${budget.total}
 
 Respond in JSON format:
-{"recommendations": [{"name": "Product Name", "description": "Why it's perfect", "price": 99, "category": "Electronics", "reasoning": "Explanation"}, {"name": "Second Product", "description": "Why it's great", "price": 45, "category": "Books", "reasoning": "Why this fits"}]}`;
+{"recommendations": [{"name": "Product Name", "description": "Why it's perfect", "price": 25, "category": "Books", "reasoning": "Explanation"}, {"name": "Second Product", "description": "Why it's great", "price": 18, "category": "Home", "reasoning": "Why this fits"}]}`;
 
     console.log('🤖 Getting gift ideas from AI...');
     const completion = await openai.chat.completions.create({
