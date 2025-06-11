@@ -493,7 +493,7 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
                       {/* Why this gift */}
                       <Box p={3} bg="gray.50" borderRadius="md">
                         <HStack spacing={2} mb={2}>
-                          <FiInfo size={14} />
+                          <Text as="span" mr={1}>💡</Text>
                           <Text fontSize="xs" fontWeight="semibold" color="gray.700">
                             Why this gift:
                           </Text>

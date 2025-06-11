@@ -272,9 +272,9 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
       _hover={{ bg: hoverBgColor, shadow: "lg" }}
       transition="all 0.2s"
     >
-      <CardHeader p={{ base: 4, md: 6 }}>
+      <CardHeader p={{ base: 4, md: 4 }}>
         {/* Mobile-First Header: Stack everything vertically */}
-        <VStack spacing={3} align="stretch">
+        <VStack spacing={{ base: 3, md: 2 }} align="stretch">
           
           {/* Title Row */}
           <HStack spacing={2}>
@@ -287,7 +287,7 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
           {/* Status and Actions Row */}
           <Flex 
             direction={{ base: 'column', sm: 'row' }} 
-            gap={3} 
+            gap={{ base: 3, md: 2 }} 
             align={{ base: 'stretch', sm: 'center' }}
             justify={{ base: 'stretch', sm: 'space-between' }}
           >
@@ -348,11 +348,11 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
         </VStack>
       </CardHeader>
 
-      <CardBody p={{ base: 4, md: 6 }} pt={0}>
-        <VStack align="stretch" spacing={4}>
+      <CardBody p={{ base: 4, md: 4 }} pt={0}>
+        <VStack align="stretch" spacing={{ base: 4, md: 3 }}>
           
           {/* Occasion Details */}
-          <VStack align="stretch" spacing={3}>
+          <VStack align="stretch" spacing={{ base: 3, md: 2 }}>
             <HStack spacing={2}>
               <Icon as={FaCalendarAlt} color="blue.500" flexShrink={0} />
               <Text fontSize="sm" flex={1}>
@@ -425,10 +425,7 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
           {/* Show existing selected gifts */}
           {selectedGiftsForOccasion.length > 0 && (
             <Box>
-              <Divider mb={4} />
-              <Text fontWeight="bold" fontSize="md" color="green.600" mb={3}>
-                🎁 Selected Gift
-              </Text>
+              <Divider mb={{ base: 4, md: 3 }} />
               
               <VStack spacing={3} align="stretch">
                 {selectedGiftsForOccasion.map((gift) => (
@@ -493,7 +490,7 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
                       {/* Notes at bottom */}
                       {gift.notes && (
                         <Text fontSize="xs" color="gray.500" fontStyle="italic" pl={6}>
-                          💡 {gift.notes}
+                          <Text as="span" mr={1}>💡</Text>{gift.notes}
                         </Text>
                       )}
                     </VStack>
@@ -507,7 +504,7 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
           {selectedGiftsForOccasion.length === 0 && (
             <Collapse in={showSuggestions} animateOpacity>
               <Box>
-                <Divider mb={4} />
+                <Divider mb={{ base: 4, md: 3 }} />
                 <Flex justify="space-between" align="center" mb={3}>
                   <Text fontWeight="bold" fontSize="md" color="purple.600">
                     🤖 AI Gift Suggestions
@@ -622,7 +619,7 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
                           {/* Reasoning at bottom */}
                           {gift.reasoning && (
                             <Text fontSize="xs" color="gray.500" fontStyle="italic" pl={isSelected ? 6 : 0}>
-                              💡 {gift.reasoning}
+                              <Text as="span" mr={1}>💡</Text>{gift.reasoning}
                             </Text>
                           )}
                         </VStack>
@@ -636,10 +633,10 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
         </VStack>
       </CardBody>
 
-      <CardFooter p={{ base: 4, md: 6 }} pt={0}>
+      <CardFooter p={{ base: 4, md: 4 }} pt={0}>
         {/* Only show generate button if no gift is selected */}
         {selectedGiftsForOccasion.length === 0 && (
-          <VStack w="full" spacing={3}>
+          <VStack w="full" spacing={{ base: 3, md: 2 }}>
             <Button
               size="md"
               colorScheme="purple"
