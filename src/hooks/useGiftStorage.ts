@@ -1,4 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useRecipientStore } from '../store/recipientStore';
+import { useOccasionStore } from '../store/occasionStore';
+import { useAuthStore } from '../store/authStore';
+import AdminService from '../services/adminService';
+import type { AdminOrder } from '../types';
 
 export interface StoredGift {
   id: string;
@@ -24,7 +29,7 @@ export interface GiftStorage {
   recentRecommendations: Record<string, any[]>; // Keyed by recipient+occasion
 }
 
-const STORAGE_KEY = 'lazyuncle_gifts';
+const STORAGE_KEY = 'lazyuncle_gift_storage';
 
 export function useGiftStorage() {
   const [storage, setStorage] = useState<GiftStorage>({
@@ -35,57 +40,51 @@ export function useGiftStorage() {
   
   const [isLoaded, setIsLoaded] = useState(false);
 
+  // Access to stores for getting real data
+  const { recipients } = useRecipientStore();
+  const { occasions } = useOccasionStore();
+
   // Load from localStorage on mount
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      console.log('Loading gift storage from localStorage:', saved ? 'found data' : 'no data');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const loadedStorage = {
-          selectedGifts: parsed.selectedGifts || [],
-          savedGifts: parsed.savedGifts || [],
-          recentRecommendations: parsed.recentRecommendations || {}
-        };
-        console.log('Loaded storage:', {
-          selectedGiftsCount: loadedStorage.selectedGifts.length,
-          savedGiftsCount: loadedStorage.savedGifts.length,
-          recommendationsCount: Object.keys(loadedStorage.recentRecommendations).length
-        });
-        setStorage(loadedStorage);
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setStorage(parsed);
+      } catch (error) {
+        console.error('Error parsing stored gift data:', error);
       }
-    } catch (error) {
-      console.error('Error loading gift storage:', error);
-    } finally {
-      setIsLoaded(true);
     }
+    setIsLoaded(true);
   }, []);
 
-  // Save to localStorage whenever storage changes, but only after initial load
+  // Save to localStorage whenever storage changes
   useEffect(() => {
-    // Don't save during initial load to prevent overwriting existing data
-    if (!isLoaded) return;
-    
-    try {
-      const jsonString = JSON.stringify(storage);
-      localStorage.setItem(STORAGE_KEY, jsonString);
-      console.log('Saved gift storage to localStorage:', {
-        selectedGiftsCount: storage.selectedGifts.length,
-        savedGiftsCount: storage.savedGifts.length,
-        storageSize: jsonString.length
-      });
-    } catch (error) {
-      console.error('Error saving gift storage:', error);
+    if (isLoaded) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(storage));
     }
-  }, [storage, isLoaded]); // Add isLoaded as dependency
+  }, [storage, isLoaded]);
 
-  const selectGift = (gift: any, recipientId: string, occasionId: string) => {
-    console.log('selectGift called with:', {
+  // Helper function to format address for admin orders
+  const formatAddress = (address: any): string => {
+    if (!address) return 'No address provided';
+    const parts = [
+      address.line1,
+      address.line2,
+      address.city,
+      address.state,
+      address.postalCode,
+      address.country
+    ].filter(Boolean);
+    return parts.join(', ');
+  };
+
+  const selectGift = async (gift: any, recipientId: string, occasionId: string) => {
+    console.log('🎁 Gift selected:', {
       giftId: gift.id,
       giftName: gift.name,
       recipientId,
-      occasionId,
-      currentSelectedCount: storage.selectedGifts.length
+      occasionId
     });
     
     const storedGift: StoredGift = {
@@ -106,21 +105,61 @@ export function useGiftStorage() {
       }
     };
 
-    console.log('Creating stored gift:', storedGift);
+    setStorage(prev => ({
+      ...prev,
+      selectedGifts: [...prev.selectedGifts.filter(g => g.id !== gift.id), storedGift]
+    }));
 
-    setStorage(prev => {
-      const newSelectedGifts = [...prev.selectedGifts.filter(g => g.id !== gift.id), storedGift];
-      console.log('Updating selected gifts:', {
-        previousCount: prev.selectedGifts.length,
-        newCount: newSelectedGifts.length,
-        removedExisting: prev.selectedGifts.some(g => g.id === gift.id)
-      });
+    // Create admin order for the selected gift
+    try {
+      const { user } = useAuthStore.getState();
       
-      return {
-        ...prev,
-        selectedGifts: newSelectedGifts
-      };
-    });
+      if (user) {
+        // Find real recipient and occasion data
+        const recipient = recipients.find(r => r.id === recipientId);
+        const recipientOccasions = occasions[recipientId] || [];
+        const occasion = recipientOccasions.find(o => o.id === occasionId);
+
+        // Create admin order with all required fields
+        const adminOrder: Omit<AdminOrder, 'id' | 'createdAt' | 'updatedAt'> = {
+          userId: user.id,
+          userEmail: user.email || '',
+          userName: user.displayName || user.email?.split('@')[0] || 'Unknown User',
+          recipientName: recipient?.name || `Recipient ${recipientId}`,
+          recipientRelationship: recipient?.relationship || 'Unknown',
+          occasion: occasion?.name || `Occasion ${occasionId}`,
+          giftTitle: gift.name,
+          giftDescription: gift.description || '',
+          giftPrice: gift.price,
+          giftImageUrl: gift.imageUrl || '',
+          asin: gift.asin,
+          status: 'pending',
+          priority: 'normal',
+          notes: gift.reasoning || 'User selected gift',
+          shippingAddress: {
+            name: recipient?.name || 'Unknown',
+            street: recipient?.deliveryAddress?.line1 || 'Address TBD',
+            city: recipient?.deliveryAddress?.city || 'City TBD',
+            state: recipient?.deliveryAddress?.state || 'State TBD',
+            zipCode: recipient?.deliveryAddress?.postalCode || 'ZIP TBD',
+            country: recipient?.deliveryAddress?.country || 'US'
+          },
+          giftUrl: gift.purchaseUrl,
+          occasionDate: occasion?.date,
+          source: 'gift_selection',
+          giftWrap: occasion?.giftWrap || false,
+          personalNote: occasion?.noteText
+        };
+
+        // Add to admin orders via AdminService
+        await AdminService.addOrder(adminOrder);
+        console.log('✅ Admin order created for selected gift');
+      } else {
+        console.warn('⚠️ No authenticated user - cannot create admin order');
+      }
+    } catch (error) {
+      console.error('❌ Error creating admin order:', error);
+    }
 
     return storedGift;
   };
@@ -164,13 +203,13 @@ export function useGiftStorage() {
     setStorage(prev => ({
       ...prev,
       selectedGifts: prev.selectedGifts.map(gift => 
-        gift.id === giftId ? { ...gift, status: 'purchased' } : gift
+        gift.id === giftId ? { ...gift, status: 'purchased' as const } : gift
       )
     }));
   };
 
   const saveRecommendations = (recommendations: any[], recipientId: string, occasionId: string) => {
-    const key = `${recipientId}_${occasionId}`;
+    const key = `${recipientId}-${occasionId}`;
     setStorage(prev => ({
       ...prev,
       recentRecommendations: {
@@ -181,13 +220,13 @@ export function useGiftStorage() {
   };
 
   const getRecommendations = (recipientId: string, occasionId: string) => {
-    const key = `${recipientId}_${occasionId}`;
+    const key = `${recipientId}-${occasionId}`;
     return storage.recentRecommendations[key] || [];
   };
 
   const getSelectedGiftsForOccasion = (recipientId: string, occasionId: string) => {
-    return storage.selectedGifts.filter(
-      gift => gift.recipientId === recipientId && gift.occasionId === occasionId
+    return storage.selectedGifts.filter(gift => 
+      gift.recipientId === recipientId && gift.occasionId === occasionId
     );
   };
 
@@ -201,41 +240,19 @@ export function useGiftStorage() {
       savedGifts: [],
       recentRecommendations: {}
     });
-    localStorage.removeItem(STORAGE_KEY);
-  };
-
-  const updateGiftWithFirebaseId = (localId: string, firebaseId: string) => {
-    setStorage(prev => {
-      const updatedSelectedGifts = prev.selectedGifts.map(gift =>
-        gift.id === localId ? { ...gift, id: firebaseId } : gift
-      );
-      return {
-        ...prev,
-        selectedGifts: updatedSelectedGifts
-      };
-    });
   };
 
   return {
-    // State
-    selectedGifts: storage.selectedGifts,
-    savedGifts: storage.savedGifts,
-    isLoaded,
-    
-    // Actions
+    storage,
     selectGift,
     saveForLater,
     removeGift,
     markAsPurchased,
     saveRecommendations,
-    updateGiftWithFirebaseId,
-    
-    // Getters
     getRecommendations,
     getSelectedGiftsForOccasion,
     getSavedGiftsForRecipient,
-    
-    // Utils
-    clearStorage
+    clearStorage,
+    isLoaded
   };
 } 

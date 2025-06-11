@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { Box, Spinner, ChakraProvider } from '@chakra-ui/react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './services/firebase';
@@ -8,6 +8,7 @@ import { initializeDemoData } from './services/demoData';
 import { authLogger } from './utils/logger';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
+import { AdminRoute } from './components/AdminRoute';
 import theme from './theme';
 
 // Pages
@@ -17,10 +18,10 @@ import RecipientsListPage from './pages/RecipientsListPage';
 import AddRecipientPage from './pages/AddRecipientPage';
 import EditRecipientPage from './pages/EditRecipientPage';
 import { RecipientDetailPage } from './pages/RecipientDetailPage';
-import DebugRecipientPage from './pages/DebugRecipientPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import SettingsPage from './pages/SettingsPage';
+import AdminOrderDashboard from './pages/AdminOrderDashboard';
 
 function App() {
   const { initialized, user, demoMode, initializeAuth } = useAuthStore();
@@ -128,13 +129,25 @@ function App() {
         {/* Protected Routes with Layout */}
         <Route element={<ProtectedRoute />}>
           <Route element={<Layout />}>
+            {/* Regular user routes */}
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/recipients" element={<RecipientsListPage />} />
             <Route path="/recipients/add" element={<AddRecipientPage />} />
             <Route path="/recipients/:id" element={<RecipientDetailPage />} />
             <Route path="/recipients/:id/edit" element={<EditRecipientPage />} />
-            <Route path="/recipients/:id/debug" element={<DebugRecipientPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            
+            {/* Admin-only routes */}
+            <Route path="/admin" element={
+              <AdminRoute>
+                <Navigate to="/admin/orders" replace />
+              </AdminRoute>
+            } />
+            <Route path="/admin/orders" element={
+              <AdminRoute>
+                <AdminOrderDashboard />
+              </AdminRoute>
+            } />
           </Route>
         </Route>
       </Routes>

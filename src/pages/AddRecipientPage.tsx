@@ -26,11 +26,9 @@ import {
   Icon,
   IconButton,
   SimpleGrid,
-  Alert,
-  AlertIcon,
 } from '@chakra-ui/react';
 import { AddIcon, ArrowBackIcon } from '@chakra-ui/icons';
-import { FaUser, FaHeart, FaMapMarkerAlt, FaBirthdayCake, FaVenusMars } from 'react-icons/fa';
+import { FaUser, FaHeart, FaBirthdayCake, FaVenusMars } from 'react-icons/fa';
 import { useRecipientStore } from '../store/recipientStore';
 import { months, days, years } from '../utils/dateUtils';
 import { showErrorToast } from '../utils/toastUtils';

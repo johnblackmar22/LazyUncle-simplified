@@ -93,6 +93,39 @@ const LoginPage: React.FC = () => {
     
     try {
       await signIn(email, password);
+      
+      // Check if this is admin account and update role if needed
+      if (email === 'admin@lazyuncle.com') {
+        console.log('🔧 Regular login: Admin account detected, checking/updating role...');
+        try {
+          const { doc, getDoc, updateDoc } = await import('firebase/firestore');
+          const { db } = await import('../../services/firebase');
+          const { COLLECTIONS } = await import('../../utils/constants');
+          const { useAuthStore } = await import('../../store/authStore');
+          
+          const { user } = useAuthStore.getState();
+          if (user) {
+            const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, user.id));
+            
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              if (!userData?.role) {
+                console.log('🔧 Regular login: Updating admin role...');
+                await updateDoc(doc(db, COLLECTIONS.USERS, user.id), {
+                  role: 'admin',
+                  permissions: ['view_orders', 'manage_orders', 'view_analytics'],
+                  updatedAt: Date.now(),
+                  planId: 'admin'
+                });
+                console.log('✅ Regular login: Admin role updated');
+              }
+            }
+          }
+        } catch (roleError) {
+          console.error('❌ Error updating admin role:', roleError);
+        }
+      }
+      
       navigate('/dashboard');
     } catch (err) {
       console.error('Login error:', err);

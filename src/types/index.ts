@@ -2,9 +2,10 @@
 export interface User {
   id: string;
   email: string;
-  displayName?: string;
+  displayName: string;
   photoURL?: string;
   planId: string; // 'free' | 'pro' | etc.
+  role?: 'user' | 'admin' | 'super_admin';
   createdAt: number;
   updatedAt: number;
 }
@@ -67,6 +68,7 @@ export interface Gift {
   status: 'idea' | 'selected' | 'ordered' | 'shipped' | 'delivered';
   imageUrl?: string;
   purchaseUrl?: string;
+  asin?: string; // Amazon ASIN for easy ordering
   notes?: string;
   recurring?: boolean;
   createdAt: number;
@@ -82,4 +84,45 @@ export interface GiftSuggestion {
   category: string;
   imageUrl?: string;
   purchaseUrl?: string;
+  asin?: string; // Amazon ASIN for easy ordering
+}
+
+// Admin order interface for gift selection workflow
+export interface AdminOrder {
+  id: string;
+  userId: string;
+  userEmail: string;
+  userName: string;
+  userPlan?: string;
+  recipientName: string;
+  recipientRelationship: string;
+  recipientAddress?: string;
+  occasion: string;
+  occasionDate?: string;
+  giftTitle: string;
+  giftDescription: string;
+  giftPrice: number;
+  giftImageUrl: string;
+  giftUrl?: string;  // Generic product URL
+  asin?: string;
+  status: 'pending' | 'processing' | 'ordered' | 'shipped' | 'delivered' | 'cancelled';
+  priority: 'low' | 'normal' | 'high' | 'urgent';
+  notes: string;
+  createdAt: number;
+  updatedAt: number;
+  shippingAddress: {
+    name: string;
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+  };
+  trackingNumber?: string;
+  amazonOrderId?: string;
+  billingStatus?: 'pending' | 'charged' | 'refunded';
+  chargeAmount?: number;
+  source?: 'gift_selection' | 'auto_send' | 'manual';
+  giftWrap?: boolean;
+  personalNote?: string;
 }

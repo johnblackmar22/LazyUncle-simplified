@@ -13,6 +13,7 @@ export const COLLECTIONS = {
   OCCASIONS: 'occasions',
   GIFTS: 'gifts',
   USERS: 'users',
+  ADMIN_ORDERS: 'admin_orders', // Global admin orders for gift selection workflow
 } as const;
 
 // Demo user ID constant

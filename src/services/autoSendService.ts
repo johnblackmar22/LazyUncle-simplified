@@ -2,6 +2,7 @@ import { giftRecommendationEngine, type GiftRecommendationRequest } from './gift
 import type { Recipient, Occasion, Gift } from '../types';
 import { useGiftStore } from '../store/giftStore';
 import { useRecipientStore } from '../store/recipientStore';
+import { useAuthStore } from '../store/authStore';
 
 export interface AutoSendSettings {
   enabled: boolean;
@@ -142,6 +143,7 @@ class AutoSendService {
         date: new Date(occasion.date).getTime(),
         imageUrl: bestRecommendation.imageUrl,
         purchaseUrl: bestRecommendation.purchaseUrl,
+        asin: bestRecommendation.asin,
         notes: `Auto-selected: ${bestRecommendation.reasoning}`,
         createdAt: Date.now(),
         updatedAt: Date.now()
@@ -212,77 +214,221 @@ class AutoSendService {
   }
 
   /**
-   * Auto-approve a pending send that has reached its deadline
+   * Auto-approve a pending send and create order for admin
    */
   private async autoApprovePendingSend(pending: PendingAutoSend): Promise<void> {
-    console.log(`⏰ Auto-approving gift for pending send: ${pending.id}`);
-
     try {
-      // Validate gift is still available
-      const validation = await giftRecommendationEngine.validateGift(pending.recommendedGift.id);
+      console.log('🎁 Auto-approving pending send:', pending.id);
       
-      if (!validation.available) {
-        console.warn('Gift no longer available, seeking alternative...');
-        // Here you would get alternative recommendations
-        pending.status = 'expired';
-        this.savePendingAutoSend(pending);
-        return;
-      }
-
-      // Add gift to user's selected gifts
-      const giftStore = useGiftStore.getState();
-      await giftStore.createGift({
-        ...pending.recommendedGift,
-        status: 'selected',
-        notes: (pending.recommendedGift.notes || '') + ' [Auto-approved]'
-      });
-
+      // Create order for admin dashboard
+      await this.createAdminOrder(pending);
+      
       // Update pending status
-      pending.status = 'approved';
-      this.savePendingAutoSend(pending);
-
-      console.log(`✅ Auto-approved and ordered: ${pending.recommendedGift.name}`);
+      const pendingAutoSends = this.getAllPendingAutoSends();
+      const updated = pendingAutoSends.map(p => 
+        p.id === pending.id 
+          ? { ...p, status: 'approved' as const }
+          : p
+      );
+      
+      localStorage.setItem('pending_auto_sends', JSON.stringify(updated));
+      
+      // Send final confirmation to user
+      await this.sendOrderConfirmation(pending);
+      
+      console.log('✅ Auto-approval completed');
     } catch (error) {
-      console.error('Error auto-approving pending send:', error);
-      pending.status = 'expired';
-      this.savePendingAutoSend(pending);
+      console.error('❌ Error auto-approving pending send:', error);
     }
   }
 
   /**
-   * User manually approves a pending auto-send
+   * User manually approves a pending send
    */
   async approvePendingSend(pendingId: string): Promise<boolean> {
-    const pending = this.getPendingAutoSend(pendingId);
-    if (!pending || pending.status !== 'pending_approval') {
+    try {
+      const pending = this.getPendingAutoSend(pendingId);
+      if (!pending || pending.status !== 'pending_approval') {
+        return false;
+      }
+
+      console.log('✅ User approved pending send:', pendingId);
+      
+      // Create order for admin dashboard
+      await this.createAdminOrder(pending);
+      
+      // Update status
+      const pendingAutoSends = this.getAllPendingAutoSends();
+      const updated = pendingAutoSends.map(p => 
+        p.id === pendingId 
+          ? { ...p, status: 'approved' as const }
+          : p
+      );
+      
+      localStorage.setItem('pending_auto_sends', JSON.stringify(updated));
+      
+      // Send order confirmation
+      await this.sendOrderConfirmation(pending);
+      
+      return true;
+    } catch (error) {
+      console.error('❌ Error approving pending send:', error);
       return false;
     }
-
-    pending.status = 'approved';
-    this.savePendingAutoSend(pending);
-
-    // Add to selected gifts
-    const giftStore = useGiftStore.getState();
-    await giftStore.createGift({
-      ...pending.recommendedGift,
-      status: 'selected'
-    });
-
-    return true;
   }
 
   /**
-   * User rejects a pending auto-send
+   * Create order in admin dashboard (Wizard of Oz)
    */
-  rejectPendingSend(pendingId: string): boolean {
-    const pending = this.getPendingAutoSend(pendingId);
-    if (!pending || pending.status !== 'pending_approval') {
-      return false;
+  private async createAdminOrder(pending: PendingAutoSend): Promise<void> {
+    try {
+      // Get recipient and occasion data
+      const recipients = useRecipientStore.getState().recipients;
+      const recipient = recipients.find(r => r.id === pending.recipientId);
+      
+      if (!recipient) {
+        throw new Error('Recipient not found');
+      }
+
+      // Get occasion data (mock for now - would come from occasion store)
+      const occasions = this.getUpcomingOccasions(recipients);
+      const occasion = occasions.find(o => o.id === pending.occasionId);
+      
+      if (!occasion) {
+        throw new Error('Occasion not found');
+      }
+
+      // Get customer info from auth store
+      const user = useAuthStore.getState().user;
+      if (!user) {
+        throw new Error('Customer not found');
+      }
+
+      // Use ASIN from AI recommendation (preferred) or extract from URL as fallback
+      const asin = pending.recommendedGift.asin || this.extractASINFromUrl(pending.recommendedGift.purchaseUrl);
+
+      // Create admin order with enhanced customer and ASIN info
+      const adminOrder = {
+        id: `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        // Customer Info (who pays)
+        customerId: user.id,
+        customerName: user.displayName || user.email.split('@')[0],
+        customerEmail: user.email,
+        customerPlan: user.planId || 'free',
+        // Recipient Info (who receives)
+        recipientName: recipient.name,
+        recipientAddress: this.formatAddress(recipient.deliveryAddress),
+        // Order Details
+        occasionName: occasion.name,
+        occasionDate: occasion.date,
+        giftName: pending.recommendedGift.name,
+        giftPrice: pending.recommendedGift.price,
+        giftUrl: pending.recommendedGift.purchaseUrl,
+        giftASIN: asin,
+        status: 'pending' as const,
+        orderDate: Date.now(),
+        amazonOrderId: undefined,
+        trackingNumber: undefined,
+        notes: `Auto-approved: ${pending.recommendedGift.notes}`,
+        giftWrap: occasion.giftWrap || false,
+        personalNote: occasion.noteText,
+        // Billing
+        billingStatus: 'pending' as const,
+        chargeAmount: pending.recommendedGift.price,
+      };
+
+      // Save to admin orders
+      const existingOrders = localStorage.getItem('admin_pending_orders');
+      const orders = existingOrders ? JSON.parse(existingOrders) : [];
+      orders.push(adminOrder);
+      localStorage.setItem('admin_pending_orders', JSON.stringify(orders));
+
+      console.log('📋 Created admin order:', adminOrder.id);
+      
+      // TODO: Send notification to admin (email/Slack)
+      this.notifyAdmin(adminOrder);
+      
+    } catch (error) {
+      console.error('❌ Error creating admin order:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Extract ASIN from Amazon URL
+   */
+  private extractASINFromUrl(url?: string): string | undefined {
+    if (!url) return undefined;
+    
+    // Common Amazon URL patterns:
+    // https://amazon.com/dp/B08EXAMPLE
+    // https://amazon.com/gp/product/B08EXAMPLE
+    // https://www.amazon.com/product-name/dp/B08EXAMPLE/
+    const asinPatterns = [
+      /\/dp\/([A-Z0-9]{10})/i,
+      /\/gp\/product\/([A-Z0-9]{10})/i,
+      /\/([A-Z0-9]{10})(?:\/|\?|$)/i
+    ];
+
+    for (const pattern of asinPatterns) {
+      const match = url.match(pattern);
+      if (match && match[1]) {
+        return match[1];
+      }
     }
 
-    pending.status = 'rejected';
-    this.savePendingAutoSend(pending);
-    return true;
+    return undefined;
+  }
+
+  /**
+   * Send order confirmation to user
+   */
+  private async sendOrderConfirmation(pending: PendingAutoSend): Promise<void> {
+    const recipients = useRecipientStore.getState().recipients;
+    const recipient = recipients.find(r => r.id === pending.recipientId);
+    
+    if (!recipient) return;
+
+    // Mock order confirmation email
+    const confirmation = {
+      title: `Order Confirmed - Gift for ${recipient.name}!`,
+      message: `Great news! Your gift "${pending.recommendedGift.name}" ($${pending.recommendedGift.price}) has been ordered and will be delivered to ${recipient.name}. You'll receive tracking information once it ships.`,
+      orderNumber: `LU-${Date.now()}`,
+      estimatedDelivery: this.calculateEstimatedDelivery(pending.occasionId),
+    };
+
+    console.log('📧 Order confirmation would be sent:', confirmation);
+    
+    // In production: send actual email via SendGrid/AWS SES
+  }
+
+  /**
+   * Notify admin of new order
+   */
+  private notifyAdmin(order: any): void {
+    console.log('🔔 Admin notification: New order requires processing', order);
+    
+    // In production, send notification via:
+    // - Email to admin
+    // - Slack webhook
+    // - Push notification
+    // - SMS alert
+  }
+
+  /**
+   * Helper functions
+   */
+  private formatAddress(address: any): string {
+    if (!address) return 'No address provided';
+    return `${address.line1}${address.line2 ? ', ' + address.line2 : ''}, ${address.city}, ${address.state} ${address.postalCode}`;
+  }
+
+  private calculateEstimatedDelivery(occasionId: string): string {
+    // Calculate delivery date based on occasion
+    // For now, return a mock date
+    const deliveryDate = new Date();
+    deliveryDate.setDate(deliveryDate.getDate() + 3); // 3 days from now
+    return deliveryDate.toLocaleDateString();
   }
 
   // Utility methods

@@ -14,7 +14,7 @@ import {
 import { db } from '../services/firebase';
 import type { Recipient } from '../types';
 import { useAuthStore } from './authStore';
-import { STORAGE_KEYS, COLLECTIONS, DEMO_USER_ID, DEFAULTS } from '../utils/constants';
+import { STORAGE_KEYS, COLLECTIONS, DEMO_USER_ID } from '../utils/constants';
 
 interface RecipientState {
   recipients: Recipient[];
@@ -54,7 +54,7 @@ const deepCleanUndefined = (obj: any): any => {
   return obj;
 };
 
-export const useRecipientStore = create<RecipientState>((set, get) => ({
+export const useRecipientStore = create<RecipientState>((set) => ({
   recipients: [],
   loading: false,
   error: null,

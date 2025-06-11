@@ -22,7 +22,9 @@ import {
 import { FiRefreshCw, FiHeart, FiShoppingCart, FiInfo } from 'react-icons/fi';
 import { giftRecommendationEngine, type GiftRecommendationRequest, type GiftRecommendation } from '../services/giftRecommendationEngine';
 import { useGiftStorage } from '../hooks/useGiftStorage';
+import { useAuthStore } from '../store/authStore';
 import type { Recipient, Occasion } from '../types';
+import { FaCheck, FaHeart } from 'react-icons/fa';
 
 interface AIGiftRecommendationsProps {
   recipient: Recipient;
@@ -42,8 +44,13 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [excludedIds, setExcludedIds] = useState<string[]>([]);
   
-  const { selectGift, saveForLater, getRecommendations } = useGiftStorage();
+  const { selectGift, saveForLater, getRecommendations, getSelectedGiftsForOccasion } = useGiftStorage();
+  const { user } = useAuthStore();
   const toast = useToast();
+
+  // Get selected gifts for this recipient/occasion to check button state
+  const selectedGifts = getSelectedGiftsForOccasion(recipient.id, occasion.id);
+  const selectedGiftIds = selectedGifts.map(g => g.id);
 
   const generateRecommendations = async (excludeIds: string[] = []) => {
     setLoading(true);
@@ -155,6 +162,84 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
         isClosable: true,
       });
     }
+  };
+
+  const handleOrderGift = async (gift: GiftRecommendation) => {
+    try {
+      if (!user) {
+        toast({
+          title: 'Error',
+          description: 'You must be logged in to order gifts',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      // Create admin order directly for testing wizard of oz workflow
+      const adminOrder = {
+        id: `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        // Customer Info (who pays)
+        customerId: user.id,
+        customerName: user.displayName || user.email.split('@')[0],
+        customerEmail: user.email,
+        customerPlan: user.planId || 'free',
+        // Recipient Info (who receives)
+        recipientName: recipient.name,
+        recipientAddress: formatAddress(recipient.deliveryAddress),
+        // Order Details
+        occasionName: occasion.name,
+        occasionDate: occasion.date,
+        giftName: gift.name,
+        giftPrice: gift.price,
+        giftUrl: gift.purchaseUrl,
+        giftASIN: gift.asin, // Use ASIN from AI recommendation
+        status: 'pending' as const,
+        orderDate: Date.now(),
+        amazonOrderId: undefined,
+        trackingNumber: undefined,
+        notes: `User selected: ${gift.reasoning}`,
+        giftWrap: occasion.giftWrap || false,
+        personalNote: occasion.noteText,
+        // Billing
+        billingStatus: 'pending' as const,
+        chargeAmount: gift.price,
+      };
+
+      // Save to admin orders for wizard of oz processing
+      const existingOrders = localStorage.getItem('admin_pending_orders');
+      const orders = existingOrders ? JSON.parse(existingOrders) : [];
+      orders.push(adminOrder);
+      localStorage.setItem('admin_pending_orders', JSON.stringify(orders));
+
+      console.log('📋 Created admin order from gift recommendation:', adminOrder.id);
+
+      toast({
+        title: 'Order Created! 🎁',
+        description: `"${gift.name}" has been ordered for ${recipient.name}! Check the admin dashboard to process it.`,
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
+
+      onGiftSelected?.(gift);
+    } catch (error) {
+      console.error('Error creating order:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to create order',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  // Helper function to format address
+  const formatAddress = (address: any): string => {
+    if (!address) return 'No address provided';
+    return `${address.line1}${address.line2 ? ', ' + address.line2 : ''}, ${address.city}, ${address.state} ${address.postalCode}`;
   };
 
   const getConfidenceColor = (confidence: number) => {
@@ -320,6 +405,25 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
                             <Badge colorScheme="blue" variant="subtle">
                               {gift.category}
                             </Badge>
+                            <Badge 
+                              colorScheme={getAvailabilityColor(gift.availability)}
+                              variant="subtle"
+                            >
+                              {gift.availability}
+                            </Badge>
+                            {gift.confidence && (
+                              <Badge 
+                                colorScheme={getConfidenceColor(gift.confidence)}
+                                variant="subtle"
+                              >
+                                {Math.round(gift.confidence * 100)}% match
+                              </Badge>
+                            )}
+                            {gift.asin && (
+                              <Badge colorScheme="orange" variant="subtle">
+                                ASIN: {gift.asin}
+                              </Badge>
+                            )}
                           </HStack>
                         </VStack>
 
@@ -356,24 +460,26 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
 
                       {/* Action Buttons */}
                       <VStack spacing={2} minW="120px" maxW="140px" align="stretch">
-                        <Button
-                          colorScheme="green"
-                          leftIcon={<FiShoppingCart />}
-                          size="sm"
-                          onClick={() => handleSelectGift(gift)}
-                        >
-                          Select Gift
-                        </Button>
-                        
-                        <Tooltip label="Save for later consideration">
-                          <IconButton
-                            aria-label="Save for later"
-                            icon={<FiHeart />}
+                        <HStack spacing={2} mt={3}>
+                          <Button
+                            size="sm"
+                            colorScheme="green"
+                            variant="outline"
+                            leftIcon={<FaCheck />}
+                            onClick={() => handleSelectGift(gift)}
+                            isDisabled={selectedGiftIds.includes(gift.id)}
+                          >
+                            {selectedGiftIds.includes(gift.id) ? 'Selected' : 'Select Gift'}
+                          </Button>
+                          <Button
                             size="sm"
                             variant="outline"
+                            leftIcon={<FaHeart />}
                             onClick={() => handleSaveForLater(gift)}
-                          />
-                        </Tooltip>
+                          >
+                            Save for Later
+                          </Button>
+                        </HStack>
                       </VStack>
                     </Flex>
                   </CardBody>

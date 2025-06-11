@@ -12,24 +12,35 @@ import {
 import { 
   MdDashboard, 
   MdPeople, 
-  MdCardGiftcard,
-  MdSettings
+  MdSettings,
+  MdShoppingCart
 } from 'react-icons/md';
+import { useAdminRole } from '../hooks/useAdminRole';
 
 export const Sidebar: React.FC = () => {
   const location = useLocation();
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const { isAdmin } = useAdminRole();
 
   const isActive = (path: string) => {
     return location.pathname === path;
   };
 
-  const navItems = [
+  // Admin-only navigation (simplified)
+  const adminNavItems = [
+    { path: '/admin/orders', label: '📋 Order Management', icon: MdShoppingCart },
+  ];
+
+  // Regular user navigation
+  const userNavItems = [
     { path: '/dashboard', label: 'Dashboard', icon: MdDashboard },
     { path: '/recipients', label: 'Recipients', icon: MdPeople },
     { path: '/settings', label: 'Settings', icon: MdSettings },
   ];
+
+  // Use completely different navigation based on user role
+  const navItems = isAdmin ? adminNavItems : userNavItems;
 
   return (
     <Box 
@@ -44,6 +55,15 @@ export const Sidebar: React.FC = () => {
       className="sidebar"
     >
       <VStack spacing={1} align="stretch" px={3}>
+        {/* Header for admin users */}
+        {isAdmin && (
+          <Box mb={4} px={2}>
+            <Text fontSize="xs" color="purple.600" fontWeight="bold" textTransform="uppercase" letterSpacing="wide">
+              Admin Portal
+            </Text>
+          </Box>
+        )}
+        
         {navItems.map((item) => (
           <Link
             key={item.path}
@@ -57,11 +77,11 @@ export const Sidebar: React.FC = () => {
               p={2.5}
               borderRadius="md"
               transition="all 0.2s"
-              bg={isActive(item.path) ? 'brand.50' : 'transparent'}
-              color={isActive(item.path) ? 'brand.500' : 'gray.600'}
+              bg={isActive(item.path) ? (isAdmin ? 'purple.50' : 'brand.50') : 'transparent'}
+              color={isActive(item.path) ? (isAdmin ? 'purple.600' : 'brand.500') : 'gray.600'}
               _hover={{
-                bg: isActive(item.path) ? 'brand.50' : 'gray.100',
-                color: isActive(item.path) ? 'brand.600' : 'gray.800',
+                bg: isActive(item.path) ? (isAdmin ? 'purple.50' : 'brand.50') : 'gray.100',
+                color: isActive(item.path) ? (isAdmin ? 'purple.700' : 'brand.600') : 'gray.800',
               }}
             >
               <Icon as={item.icon} mr={3} boxSize={5} />
