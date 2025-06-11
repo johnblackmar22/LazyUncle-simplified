@@ -227,6 +227,29 @@ export const OccasionForm: React.FC<OccasionFormProps> = ({
           <Text fontSize="xs" color="blue.500" mt={1}>
             <strong>Automatically set to 1 week before the occasion</strong> - you can adjust if needed
           </Text>
+          
+          {/* Delivery Date Warning */}
+          {deliveryDate && (() => {
+            const today = new Date();
+            const delivery = new Date(deliveryDate);
+            const daysUntilDelivery = Math.ceil((delivery.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            
+            if (daysUntilDelivery <= 10 && daysUntilDelivery >= 0) {
+              return (
+                <Text fontSize="xs" color="orange.600" mt={1}>
+                  ⚠️ <strong>Warning:</strong> Only {daysUntilDelivery} day{daysUntilDelivery !== 1 ? 's' : ''} until delivery date. 
+                  We may not be able to deliver on time.
+                </Text>
+              );
+            } else if (daysUntilDelivery < 0) {
+              return (
+                <Text fontSize="xs" color="red.600" mt={1}>
+                  ❌ <strong>Error:</strong> The delivery date has already passed. Please choose a future date.
+                </Text>
+              );
+            }
+            return null;
+          })()}
         </FormControl>
 
         <FormControl>
@@ -245,7 +268,7 @@ export const OccasionForm: React.FC<OccasionFormProps> = ({
 
         <FormControl display="flex" alignItems="center">
           <FormLabel htmlFor="recurring" mb="0">
-            Annual Recurring
+            Recurring
           </FormLabel>
           <Switch 
             id="recurring" 

@@ -277,8 +277,8 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
             <Icon as={FaGift} color="purple.500" />
             <Text fontWeight="bold" fontSize="lg">{occasion.name}</Text>
             {occasion.recurring && (
-              <Badge colorScheme="purple" variant="subtle">
-                🔄 Annual
+              <Badge colorScheme="gray" variant="outline" size="sm">
+                Recurring
               </Badge>
             )}
           </Flex>
@@ -323,6 +323,35 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
             </HStack>
           )}
 
+          {/* Delivery Date Warning */}
+          {occasion.deliveryDate && (() => {
+            const today = new Date();
+            const deliveryDate = new Date(occasion.deliveryDate);
+            const daysUntilDelivery = Math.ceil((deliveryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            
+            if (daysUntilDelivery <= 10 && daysUntilDelivery >= 0) {
+              return (
+                <Alert status="warning" size="sm" borderRadius="md">
+                  <AlertIcon />
+                  <AlertDescription fontSize="xs">
+                    <strong>Delivery Warning:</strong> Only {daysUntilDelivery} day{daysUntilDelivery !== 1 ? 's' : ''} until delivery date. 
+                    We may not be able to deliver on time.
+                  </AlertDescription>
+                </Alert>
+              );
+            } else if (daysUntilDelivery < 0) {
+              return (
+                <Alert status="error" size="sm" borderRadius="md">
+                  <AlertIcon />
+                  <AlertDescription fontSize="xs">
+                    <strong>Delivery Overdue:</strong> The delivery date has passed. Please update or reschedule.
+                  </AlertDescription>
+                </Alert>
+              );
+            }
+            return null;
+          })()}
+
           <HStack>
             <Icon as={FaDollarSign} color="green.500" />
             <Text fontSize="sm">
@@ -343,9 +372,9 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
 
           {occasion.recurring && (
             <HStack>
-              <Icon as={FaCalendarAlt} color="purple.500" />
-              <Text fontSize="sm" color="purple.600">
-                <strong>Recurring:</strong> This occasion repeats annually
+              <Icon as={FaCalendarAlt} color="gray.500" />
+              <Text fontSize="sm" color="gray.600">
+                <strong>Recurring:</strong> This occasion repeats every year
               </Text>
             </HStack>
           )}
