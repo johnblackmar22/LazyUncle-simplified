@@ -276,7 +276,7 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
         <Flex justify="space-between" align="center" gap={2}>
           <Flex align="center" gap={2} flex={1} minW={0}>
             <Icon as={FaGift} color="purple.500" />
-            <Text fontWeight="bold" fontSize={{ base: "md", md: "lg" }} noOfLines={1}>
+            <Text fontWeight="bold" fontSize={{ base: "md", md: "lg" }}>
               {occasion.name}
               {occasion.recurring && (
                 <Tooltip label="This occasion repeats every year" fontSize="sm">
@@ -403,12 +403,12 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
                     <VStack align="start" spacing={1} flex={1} minW={0}>
                       <HStack>
                         <Icon as={FaCheckCircle} color="green.500" />
-                        <Text fontWeight="semibold" fontSize="sm" noOfLines={1}>
+                        <Text fontWeight="semibold" fontSize="sm">
                           {gift.name}
                         </Text>
                       </HStack>
                       {gift.description && (
-                        <Text fontSize="xs" color="gray.600" noOfLines={2}>
+                        <Text fontSize="xs" color="gray.600">
                           {gift.description}
                         </Text>
                       )}
@@ -508,11 +508,11 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
                         <VStack align="start" spacing={1} flex={1} minW={0}>
                           <HStack>
                             {isSelected && <Icon as={FaCheckCircle} color="green.500" />}
-                            <Text fontWeight="semibold" fontSize="sm" noOfLines={1}>
+                            <Text fontWeight="semibold" fontSize="sm">
                               {gift.name}
                             </Text>
                           </HStack>
-                          <Text fontSize="xs" color="gray.600" noOfLines={2}>
+                          <Text fontSize="xs" color="gray.600">
                             {gift.description}
                           </Text>
                           <HStack spacing={2} wrap="wrap">

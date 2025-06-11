@@ -457,7 +457,7 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
                       <VStack align="start" spacing={3} flex={1} minW={0}>
                         <VStack align="start" spacing={1}>
                           <HStack justify="space-between" w="100%">
-                            <Text fontSize="lg" fontWeight="bold">
+                            <Text fontSize="lg" fontWeight="bold" noOfLines={{ base: 2, md: 1 }}>
                               {gift.name}
                             </Text>
                             <Text fontSize="lg" fontWeight="bold" color="blue.600">
@@ -486,7 +486,7 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
                           </HStack>
                         </VStack>
 
-                        <Text fontSize="sm" color="gray.600">
+                        <Text fontSize="sm" color="gray.600" noOfLines={{ base: 4, md: 2 }}>
                           {gift.description}
                         </Text>
 
@@ -568,6 +568,7 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
                               onClick={() => handleSelectGift(gift)}
                               isDisabled={selectedGiftIds.includes(gift.id)}
                               flex={1}
+                              fontSize="sm"
                             >
                               {selectedGiftIds.includes(gift.id) ? 'Selected' : 'Select Gift'}
                             </Button>
@@ -577,6 +578,7 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
                               leftIcon={<FaHeart />}
                               onClick={() => handleSaveForLater(gift)}
                               flex={1}
+                              fontSize="sm"
                             >
                               Save for Later
                             </Button>
