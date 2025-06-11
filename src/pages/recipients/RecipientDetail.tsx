@@ -261,17 +261,17 @@ const RecipientDetail = () => {
                         <Badge ml={2} colorScheme="blue">{occasion.type}</Badge>
                         {occasion.recurring && (
                           <Tooltip label="Recurring annually" fontSize="sm">
-                            <Icon as={FaRedo} color="gray.500" ml={2} boxSize="3" cursor="help" />
+                            <Icon as={FaRedo} color="gray.500" ml={2} boxSize="3" />
                           </Tooltip>
                         )}
                         {occasion.giftWrap && (
                           <Tooltip label="Gift wrap included" fontSize="sm">
-                            <Icon as={FaGift} color="gray.500" ml={2} boxSize="3" cursor="help" />
+                            <Icon as={FaGift} color="gray.500" ml={2} boxSize="3" />
                           </Tooltip>
                         )}
                         {occasion.personalizedNote && (
                           <Tooltip label="Personalized note included" fontSize="sm">
-                            <Icon as={FaEdit} color="gray.500" ml={2} boxSize="3" cursor="help" />
+                            <Icon as={FaEdit} color="gray.500" ml={2} boxSize="3" />
                           </Tooltip>
                         )}
                       </Text>
@@ -349,7 +349,7 @@ const RecipientDetail = () => {
                   <Text as="label" htmlFor="recurring-checkbox" cursor="pointer">
                     Recurring 
                     <Tooltip label="Automatically repeat this occasion every year" fontSize="sm">
-                      <Icon as={FaRedo} color="gray.500" ml={1} boxSize="3" cursor="help" />
+                      <Icon as={FaRedo} color="gray.500" ml={1} boxSize="3" />
                     </Tooltip>
                   </Text>
                 </HStack>
@@ -365,7 +365,7 @@ const RecipientDetail = () => {
                   <Text as="label" htmlFor="giftwrap-checkbox" cursor="pointer">
                     Gift Wrap 
                     <Tooltip label="Include beautiful gift wrapping" fontSize="sm">
-                      <Icon as={FaGift} color="gray.500" ml={1} boxSize="3" cursor="help" />
+                      <Icon as={FaGift} color="gray.500" ml={1} boxSize="3" />
                     </Tooltip>
                   </Text>
                 </HStack>
@@ -381,7 +381,7 @@ const RecipientDetail = () => {
                   <Text as="label" htmlFor="note-checkbox" cursor="pointer">
                     Personal Note 
                     <Tooltip label="Add a custom message with the gift" fontSize="sm">
-                      <Icon as={FaEdit} color="gray.500" ml={1} boxSize="3" cursor="help" />
+                      <Icon as={FaEdit} color="gray.500" ml={1} boxSize="3" />
                     </Tooltip>
                   </Text>
                 </HStack>

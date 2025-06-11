@@ -271,7 +271,7 @@ export const OccasionForm: React.FC<OccasionFormProps> = ({
           <FormLabel htmlFor="recurring" mb="0">
             Recurring
             <Tooltip label="Automatically repeat this occasion every year" fontSize="sm">
-              <Icon as={FaRedo} color="gray.500" ml={1} boxSize="3" cursor="help" />
+              <Icon as={FaRedo} color="gray.500" ml={1} boxSize="3" />
             </Tooltip>
           </FormLabel>
           <Switch 
@@ -289,7 +289,7 @@ export const OccasionForm: React.FC<OccasionFormProps> = ({
           <FormLabel htmlFor="gift-wrap" mb="0">
             Gift Wrap
             <Tooltip label="Include beautiful gift wrapping with your order" fontSize="sm">
-              <Icon as={FaGift} color="gray.500" ml={1} boxSize="3" cursor="help" />
+              <Icon as={FaGift} color="gray.500" ml={1} boxSize="3" />
             </Tooltip>
           </FormLabel>
           <Switch 
@@ -304,7 +304,7 @@ export const OccasionForm: React.FC<OccasionFormProps> = ({
           <FormLabel htmlFor="personalized-note" mb="0">
             Include Personalized Note
             <Tooltip label="Add a custom message to be included with the gift" fontSize="sm">
-              <Icon as={FaEdit} color="gray.500" ml={1} boxSize="3" cursor="help" />
+              <Icon as={FaEdit} color="gray.500" ml={1} boxSize="3" />
             </Tooltip>
           </FormLabel>
           <Switch 

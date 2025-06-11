@@ -280,17 +280,17 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
               {occasion.name}
               {occasion.recurring && (
                 <Tooltip label="This occasion repeats every year" fontSize="sm">
-                  <Icon as={FaRedo} color="gray.500" ml={2} boxSize="3" cursor="help" />
+                  <Icon as={FaRedo} color="gray.500" ml={2} boxSize="3" />
                 </Tooltip>
               )}
               {occasion.giftWrap && (
                 <Tooltip label="Gift wrap included" fontSize="sm">
-                  <Icon as={FaGift} color="gray.500" ml={2} boxSize="3" cursor="help" />
+                  <Icon as={FaGift} color="gray.500" ml={2} boxSize="3" />
                 </Tooltip>
               )}
               {occasion.personalizedNote && (
                 <Tooltip label="Personalized note included" fontSize="sm">
-                  <Icon as={FaEdit} color="gray.500" ml={2} boxSize="3" cursor="help" />
+                  <Icon as={FaEdit} color="gray.500" ml={2} boxSize="3" />
                 </Tooltip>
               )}
             </Text>
