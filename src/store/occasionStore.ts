@@ -267,8 +267,8 @@ export const useOccasionStore = create<OccasionState>((set, get) => ({
         if (user && deletedOccasion) {
           try {
             const AdminService = (await import('../services/adminService')).default;
-            await AdminService.deleteOrdersByOccasion(user.id, deletedOccasion.name);
-            console.log('🗑️ Deleted related admin orders for occasion:', deletedOccasion.name);
+            await AdminService.deleteOrdersByOccasion(user.id, deletedOccasion.id, deletedOccasion.name);
+            console.log('🗑️ Deleted related admin orders for occasion:', deletedOccasion.id, deletedOccasion.name);
           } catch (error) {
             console.error('❌ Error deleting related admin orders:', error);
           }

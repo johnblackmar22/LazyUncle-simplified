@@ -157,6 +157,7 @@ export function useGiftStorage() {
         recipientName: recipient?.name || `Recipient ${recipientId}`,
         recipientRelationship: recipient?.relationship || 'Unknown',
         occasion: occasion?.name || `Occasion ${occasionId}`,
+        occasionId: occasionId,
         giftTitle: gift.name,
         giftDescription: gift.description || '',
         giftPrice: gift.price,

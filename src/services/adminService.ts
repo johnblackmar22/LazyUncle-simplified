@@ -272,13 +272,23 @@ class AdminService {
   }
 
   // Delete all orders for a given user and occasion (used when deleting an occasion)
-  static async deleteOrdersByOccasion(userId: string, occasion: string): Promise<void> {
+  static async deleteOrdersByOccasion(userId: string, occasionId: string, occasionName?: string): Promise<void> {
     const ordersRef = collection(db, COLLECTIONS.ADMIN_ORDERS);
-    const q = query(ordersRef, where('userId', '==', userId), where('occasion', '==', occasion));
-    const querySnapshot = await getDocs(q);
+    // Try to delete by occasionId (new orders)
+    let q = query(ordersRef, where('userId', '==', userId), where('occasionId', '==', occasionId));
+    let querySnapshot = await getDocs(q);
     for (const docSnap of querySnapshot.docs) {
       await deleteDoc(docSnap.ref);
-      console.log(`🗑️ Deleted admin order for occasion: ${occasion}`);
+      console.log(`🗑️ Deleted admin order for occasionId: ${occasionId}`);
+    }
+    // Fallback: also delete by occasion name (legacy orders)
+    if (occasionName) {
+      q = query(ordersRef, where('userId', '==', userId), where('occasion', '==', occasionName));
+      querySnapshot = await getDocs(q);
+      for (const docSnap of querySnapshot.docs) {
+        await deleteDoc(docSnap.ref);
+        console.log(`🗑️ Deleted admin order for occasion name: ${occasionName}`);
+      }
     }
   }
 }
