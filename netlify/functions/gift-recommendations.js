@@ -43,7 +43,7 @@ const handler = async (event) => {
     // Build a simple, focused prompt for gift ideas
     const prompt = `Generate 2 thoughtful gift recommendations for Amazon.
 
-RECIPIENT: ${recipient.age}-year-old ${recipient.relationship}, interests: ${recipient.interests.join(', ') || 'general'}
+RECIPIENT: ${recipient.age}-year-old ${recipient.relationship}, interests: ${recipient.interests.join(', ') || 'general'}${recipient.description ? `\nAbout them: ${recipient.description}` : ''}
 OCCASION: ${occasion.name}
 BUDGET: $${budget.giftBudget - 10} - $${budget.giftBudget}
 
