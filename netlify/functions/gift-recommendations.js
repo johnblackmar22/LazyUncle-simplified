@@ -40,72 +40,131 @@ const handler = async (event) => {
     });
     console.log('✅ OpenAI client initialized');
 
-    // Build a dynamic prompt for the AI
-    const prompt = `\nYou are a creative gift recommendation expert with a knack for finding unique, thoughtful, and surprisingly perfect gifts. Think outside the box and be creative while staying practical.\n\nTHE MOST IMPORTANT RULES:\n- Do not exceed the budget for any gift. The goal is to get as close as possible to the budget for each gift. If a gift is much cheaper than the budget, do NOT recommend it unless there is no better option. At least one gift must be within $1 of the budget, if possible.\n- CRITICALLY IMPORTANT: Pay close attention to the recipient's AGE. This should heavily influence your recommendations:\n  * Consider their generation, life stage, and age-appropriate interests\n  * Think about what someone of THIS SPECIFIC AGE would actually use and appreciate\n  * Factor in generational preferences (Gen Z vs Millennials vs Gen X vs Boomers)\n  * Consider their likely lifestyle, responsibilities, and priorities at this age\n- RELATIONSHIP CONTEXT IS CRUCIAL: The relationship between sender and recipient should determine the appropriateness and intimacy level of gifts:\n  * FAMILY (spouse/partner, children, parents, siblings): More personal, intimate, and meaningful gifts are appropriate\n  * CLOSE FRIENDS: Personal but respectful, fun and memorable gifts work well\n  * COLLEAGUES/PROFESSIONAL: Keep it professional, appropriate for workplace, avoid anything too personal\n  * ACQUAINTANCES/CASUAL FRIENDS: Safe, universally appreciated, not too intimate\n  * ROMANTIC PARTNERS: Can be more intimate, thoughtful, and relationship-building\n- Read and use all recipient information, interests, and instructions. Each recommendation must feel personal and directly relevant.\n- Do NOT recommend any of the following previous gifts: ${previousGiftNames && previousGiftNames.length > 0 ? previousGiftNames.join(', ') : 'none'}\n- Be CREATIVE and UNIQUE! Avoid generic gifts like basic gift cards unless they're truly the best option.\n- Think about the recipient's personality, hobbies, and lifestyle to find unexpected gems.\n\nRequirements:\n- Recommend up to 2 creative, unique, and thoughtful gifts that are real products available on Amazon.com\n- Use the exact product name as listed on Amazon\n- MUST provide the Amazon ASIN (10-character product identifier) for each recommendation\n- Think creatively about how the recipient's interests, AGE, and RELATIONSHIP could translate into unexpected gift categories\n- Consider trending, innovative, or niche products that align with their interests, age group, AND relationship context\n- For each gift, include:\n  * name (exact Amazon product name)\n  * description (what makes this gift special and creative)\n  * price (USD)\n  * asin (10-character Amazon ASIN - REQUIRED for ordering)\n  * why this gift is a perfect creative fit for the recipient, specifically referencing their AGE, RELATIONSHIP to sender, interests, and personality\n- Gifts must be appropriate for the relationship level and age\n- Prioritize unique, memorable, and conversation-starting gifts over obvious choices\n- Only use information provided\n- Respond with ONLY valid JSON, no extra text\n\nRecipient info:\n${JSON.stringify(recipient, null, 2)}\nOccasion info:\n${JSON.stringify({ ...occasion, budget: budget.total, instructions: instructions || '' }, null, 2)}\n\nJSON response format:\n{\n  "recommendations": [\n    {\n      "name": "...",\n      "description": "...",\n      "price": ...,\n      "asin": "B0XXXXXXXXX",\n      "reasoning": "... (explain the creative connection to their AGE, RELATIONSHIP to sender, interests and why this is unexpectedly perfect for someone their age in this relationship context)"\n    },\n    ...\n  ]\n}\n`;
+    // STEP 1: Get gift ideas from AI (without ASINs)
+    const ideaPrompt = `\nYou are a creative gift recommendation expert. Your job is to suggest SEARCH TERMS for finding real products on Amazon.\n\nTHE MOST IMPORTANT RULES:\n- Consider the recipient's AGE: ${recipient.age} years old\n- Consider the RELATIONSHIP: ${recipient.relationship}\n- Budget range: $${budget.giftBudget - 5} - $${budget.giftBudget}\n- Do NOT recommend any of these previous gifts: ${previousGiftNames && previousGiftNames.length > 0 ? previousGiftNames.join(', ') : 'none'}\n- Be CREATIVE and UNIQUE! Think outside the box.\n\nRecipient info:\n${JSON.stringify(recipient, null, 2)}\nOccasion info:\n${JSON.stringify({ ...occasion, budget: budget.total, instructions: instructions || '' }, null, 2)}\n\nProvide 3-5 SEARCH TERMS that would find great gifts on Amazon. Each search term should be:\n- Specific enough to find real products\n- Creative and thoughtful for this person\n- Age and relationship appropriate\n- Within the budget range\n\nExamples:\n- "wireless noise canceling headphones under 100"\n- "funny coffee mug for dad"\n- "beginner yoga mat set"\n- "vintage style watch for men"\n\nRespond with ONLY valid JSON:\n{\n  "searchTerms": [\n    {\n      "query": "search term here",\n      "reason": "why this is perfect for them",\n      "category": "Electronics|Books|Sports|Home|Fashion|etc"\n    }\n  ]\n}\n`;
 
-    // OpenAI API call using GPT-3.5-turbo (known working model)
-    console.log('🤖 Using GPT-3.5-turbo...');
-    const completion = await openai.chat.completions.create({
+    console.log('🤖 Getting gift ideas from AI...');
+    const ideaCompletion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [
-        { role: 'system', content: 'You are a creative gift recommendation assistant who thinks outside the box. Find unique, memorable gifts that perfectly match the recipient. Respond only with valid JSON.' },
-        { role: 'user', content: prompt }
+        { role: 'system', content: 'You are a creative gift recommendation assistant. Generate thoughtful search terms for finding real products on Amazon. Respond only with valid JSON.' },
+        { role: 'user', content: ideaPrompt }
       ],
-      max_tokens: 800,
+      max_tokens: 500,
       temperature: 0.9,
     });
-    console.log('✅ GPT-3.5-turbo API call successful');
 
-    const aiResponse = completion.choices[0]?.message?.content;
-    console.log('📋 AI Response length:', aiResponse?.length || 0);
+    const aiIdeasResponse = ideaCompletion.choices[0]?.message?.content;
+    console.log('📋 AI Ideas Response length:', aiIdeasResponse?.length || 0);
 
-    // Try to parse AI response
-    let recommendations = [];
+    let searchTerms = [];
     try {
-      const parsed = JSON.parse(aiResponse || '{}');
-      recommendations = parsed.recommendations || [];
-      console.log('✅ AI response parsed, recommendations:', recommendations.length);
+      const parsed = JSON.parse(aiIdeasResponse || '{}');
+      searchTerms = parsed.searchTerms || [];
+      console.log('✅ AI ideas parsed, search terms:', searchTerms.length);
     } catch (parseError) {
-      console.log('⚠️ Failed to parse AI response, using fallback');
-      recommendations = [
-        {
-          id: 'fallback-1',
-          name: 'Amazon Gift Card',
-          description: 'Let them choose what they want',
-          price: 25,
-          asin: 'B004LLIKVU', // Amazon Gift Card ASIN
-          category: 'gift_cards',
-          confidence: 0.8
-        }
+      console.log('⚠️ Failed to parse AI ideas, using fallback search terms');
+      searchTerms = [
+        { query: "gift card", reason: "Safe fallback option", category: "Gift Cards" }
       ];
     }
 
+    // STEP 2: Search Amazon for real products using the AI-generated search terms
+    console.log('🔍 Searching Amazon for real products...');
+    const recommendations = [];
+    
+    for (const term of searchTerms.slice(0, 3)) { // Limit to 3 searches to avoid rate limits
+      try {
+        // Try Amazon PA-API first
+        let amazonResponse = await fetch('/.netlify/functions/amazon-product-search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            searchTerms: term.query,
+            category: term.category,
+            maxPrice: budget.giftBudget,
+            minPrice: Math.max(5, budget.giftBudget * 0.3)
+          })
+        });
+
+        // If PA-API fails, try curated ASINs
+        if (!amazonResponse.ok) {
+          console.log('⚠️ Amazon PA-API failed, trying curated ASINs...');
+          amazonResponse = await fetch('/.netlify/functions/curated-asins', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              searchTerms: term.query,
+              category: term.category,
+              budget: budget.giftBudget,
+              interests: recipient.interests
+            })
+          });
+        }
+
+        if (amazonResponse.ok) {
+          const amazonData = await amazonResponse.json();
+          if (amazonData.products && amazonData.products.length > 0) {
+            const product = amazonData.products[0]; // Take the best match
+            recommendations.push({
+              id: `${amazonData.source === 'curated_database' ? 'curated' : 'amazon'}-${product.asin}`,
+              name: product.title,
+              description: product.features?.join('. ') || `Great ${term.category.toLowerCase()} option`,
+              price: product.price,
+              asin: product.asin, // REAL AMAZON ASIN!
+              category: term.category.toLowerCase(),
+              confidence: amazonData.source === 'curated_database' ? 0.9 : 0.8,
+              reasoning: term.reason,
+              availability: product.availability === 'Now' ? 'in_stock' : 'limited',
+              estimatedDelivery: amazonData.source === 'curated_database' ? '1-2 business days' : '2-3 business days',
+              imageUrl: product.imageUrl,
+              purchaseUrl: product.detailPageURL,
+              source: amazonData.source || 'amazon'
+            });
+          }
+        }
+      } catch (searchError) {
+        console.error('Product search error for term:', term.query, searchError);
+      }
+    }
+
+    // STEP 3: Fallback if no Amazon products found
+    if (recommendations.length === 0) {
+      console.log('⚠️ No Amazon products found, using fallback recommendations');
+      recommendations.push({
+        id: 'fallback-1',
+        name: 'Amazon Gift Card',
+        description: 'Let them choose what they want',
+        price: Math.min(budget.giftBudget, 50),
+        asin: 'B004LLIKVU', // Real Amazon Gift Card ASIN
+        category: 'gift_cards',
+        confidence: 0.8,
+        reasoning: 'A safe choice that allows the recipient to select their preferred gift',
+        availability: 'in_stock',
+        estimatedDelivery: 'Digital delivery - instant'
+      });
+    }
+
     // Ensure at least two recommendations
-    const fallbackGifts = [
-      {
+    while (recommendations.length < 2 && recommendations.length < searchTerms.length) {
+      recommendations.push({
         id: 'fallback-2',
         name: 'Starbucks Gift Card',
         description: 'Perfect for coffee lovers',
         price: 25,
-        asin: 'B07C61C8RH', // Starbucks Gift Card ASIN
+        asin: 'B07C61C8RH', // Real Starbucks Gift Card ASIN
         category: 'gift_cards',
-        confidence: 0.7
-      }
-    ];
-    while (recommendations.length < 2) {
-      recommendations.push(fallbackGifts[recommendations.length - 1] || fallbackGifts[0]);
+        confidence: 0.7,
+        reasoning: 'A thoughtful choice for someone who enjoys coffee',
+        availability: 'in_stock',
+        estimatedDelivery: 'Digital delivery - instant'
+      });
     }
+
     // Only keep a maximum of 2 recommendations
-    recommendations = recommendations.slice(0, 2);
+    const finalRecommendations = recommendations.slice(0, 2);
 
-    // Ensure every recommendation has a category
-    recommendations = recommendations.map((gift) => ({
-      ...gift,
-      category: gift.category || 'other'
-    }));
-
-    // Simple success response
-    console.log('🎉 Returning success response');
+    console.log('🎉 Returning recommendations with REAL ASINs');
     return {
       statusCode: 200,
       headers: {
@@ -115,11 +174,16 @@ const handler = async (event) => {
       },
       body: JSON.stringify({
         success: true,
-        recommendations: recommendations,
+        recommendations: finalRecommendations,
         debug: {
           functionWorking: true,
           openaiConnected: true,
-          modelUsed: 'gpt-3.5-turbo',
+          amazonSearchUsed: recommendations.some(r => r.id.startsWith('amazon-')),
+          curatedSearchUsed: recommendations.some(r => r.id.startsWith('curated-')),
+          modelUsed: 'gpt-3.5-turbo + product-search',
+          searchTermsGenerated: searchTerms.length,
+          realProductsFound: recommendations.filter(r => r.id.startsWith('amazon-') || r.id.startsWith('curated-')).length,
+          asinSources: recommendations.map(r => ({ id: r.id, source: r.source || 'unknown' })),
           timestamp: new Date().toISOString()
         }
       }),
@@ -145,7 +209,7 @@ const handler = async (event) => {
             name: 'Amazon Gift Card',
             description: 'A safe choice when AI is unavailable',
             price: 25,
-            asin: 'B004LLIKVU', // Amazon Gift Card ASIN
+            asin: 'B004LLIKVU', // Real Amazon Gift Card ASIN
             category: 'gift_cards',
             confidence: 0.8,
             availability: 'in_stock',
@@ -162,7 +226,7 @@ const handler = async (event) => {
             name: 'Starbucks Gift Card',
             description: 'Perfect for coffee lovers',
             price: 25,
-            asin: 'B07C61C8RH', // Starbucks Gift Card ASIN
+            asin: 'B07C61C8RH', // Real Starbucks Gift Card ASIN
             category: 'gift_cards',
             confidence: 0.7,
             availability: 'in_stock',
