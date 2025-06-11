@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   VStack,
@@ -49,6 +49,13 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
   const { selectGift, saveForLater, getRecommendations, getSelectedGiftsForOccasion } = useGiftStorage();
   const { user } = useAuthStore();
   const toast = useToast();
+
+  // Debug recommendations when they change
+  useEffect(() => {
+    if (recommendations.length > 0) {
+      console.log('🎨 Rendering recommendations in component:', recommendations.map(r => ({ id: r.id, name: r.name })));
+    }
+  }, [recommendations]);
 
   // Get selected gifts for this recipient/occasion to check button state
   const selectedGifts = getSelectedGiftsForOccasion(recipient.id, occasion.id);
@@ -518,7 +525,7 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
                           <Tooltip label="Great suggestion!">
                             <IconButton
                               aria-label="Thumbs up"
-                              icon={<FiThumbsUp />}
+                              icon={<span>👍</span>}
                               size="sm"
                               variant={feedback[gift.id] === 'thumbs_up' ? 'solid' : 'outline'}
                               colorScheme={feedback[gift.id] === 'thumbs_up' ? 'green' : 'gray'}
@@ -531,7 +538,7 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
                           <Tooltip label="Not a good fit">
                             <IconButton
                               aria-label="Thumbs down"
-                              icon={<FiThumbsDown />}
+                              icon={<span>👎</span>}
                               size="sm"
                               variant={feedback[gift.id] === 'thumbs_down' ? 'solid' : 'outline'}
                               colorScheme={feedback[gift.id] === 'thumbs_down' ? 'red' : 'gray'}
