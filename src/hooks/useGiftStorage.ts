@@ -84,6 +84,7 @@ export function useGiftStorage() {
   };
 
   const selectGift = async (gift: any, recipientId: string, occasionId: string) => {
+    console.log('🟢 selectGift called:', { gift, recipientId, occasionId });
     console.log('🎁 Gift selected - Creating proper Gift entity first:', {
       giftId: gift.id,
       giftName: gift.name,
@@ -177,7 +178,7 @@ export function useGiftStorage() {
         personalNote: occasion?.noteText
       };
 
-      console.log('📋 Attempting to create AdminOrder for user gift selection...', adminOrder);
+      console.log('🟡 About to create AdminOrder for user gift selection...', adminOrder);
       try {
         const orderId = await AdminService.addOrder(adminOrder);
         console.log('✅ AdminOrder.addOrder returned orderId:', orderId);
@@ -224,13 +225,7 @@ export function useGiftStorage() {
         selectedGifts: [...prev.selectedGifts.filter(g => g.id !== gift.id), storedGift]
       }));
 
-      console.log('🎉 COMPLETE GIFT SELECTION SUCCESS!', {
-        giftId: createdGift.id,
-        giftName: gift.name,
-        recipientName: recipient?.name,
-        occasionName: occasion?.name
-      });
-
+      console.log('🔵 selectGift returning storedGift:', storedGift);
       return storedGift;
     } catch (error) {
       console.error('❌ CRITICAL ERROR in complete gift selection workflow:', error);
