@@ -149,6 +149,14 @@ export function useGiftStorage() {
       const createdGift = await addGift(giftData);
       console.log('✅ Gift entity created successfully with ID:', createdGift.id);
 
+      // Refresh Zustand store so UI updates
+      try {
+        const useGiftStore = (await import('../store/giftStore')).useGiftStore;
+        await useGiftStore.getState().fetchGiftsByRecipient(recipientId);
+      } catch (err) {
+        console.error('❌ Failed to refresh Zustand gift store after selectGift:', err);
+      }
+
       // 2. THEN: Create AdminOrder that references the Gift
       const adminOrder: Omit<AdminOrder, 'id' | 'createdAt' | 'updatedAt'> = {
         userId: user.id,
