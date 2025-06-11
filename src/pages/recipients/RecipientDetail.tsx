@@ -27,11 +27,13 @@ import {
   AlertDialogContent,
   AlertDialogOverlay,
   useDisclosure,
+  Icon,
 } from '@chakra-ui/react';
 import { useRecipientStore } from '../../store/recipientStore';
 import { useOccasionStore } from '../../store/occasionStore';
 import { getNextBirthday, getCurrentDateISO } from '../../utils/dateUtils';
 import { useAuthStore } from '../../store/authStore';
+import { FaRedo, FaGift, FaEdit } from 'react-icons/fa';
 
 const RecipientDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -257,19 +259,13 @@ const RecipientDetail = () => {
                         {occasion.name} 
                         <Badge ml={2} colorScheme="blue">{occasion.type}</Badge>
                         {occasion.recurring && (
-                          <Text as="span" color="gray.500" ml={2} title="Recurring annually">
-                            ↻
-                          </Text>
+                          <Icon as={FaRedo} color="gray.500" ml={2} boxSize="3" title="Recurring annually" />
                         )}
                         {occasion.giftWrap && (
-                          <Text as="span" color="gray.500" ml={2} title="Gift wrap included">
-                            🎁
-                          </Text>
+                          <Icon as={FaGift} color="gray.500" ml={2} boxSize="3" title="Gift wrap included" />
                         )}
                         {occasion.personalizedNote && (
-                          <Text as="span" color="gray.500" ml={2} title="Personalized note included">
-                            ✏️
-                          </Text>
+                          <Icon as={FaEdit} color="gray.500" ml={2} boxSize="3" title="Personalized note included" />
                         )}
                       </Text>
                       <Text fontSize="sm">{new Date(occasion.date).toLocaleDateString()}</Text>
@@ -345,9 +341,7 @@ const RecipientDetail = () => {
                   />
                   <Text as="label" htmlFor="recurring-checkbox" cursor="pointer">
                     Recurring 
-                    <Text as="span" color="gray.500" ml={1} fontSize="sm" title="Automatically repeat this occasion every year">
-                      ↻
-                    </Text>
+                    <Icon as={FaRedo} color="gray.500" ml={1} boxSize="3" title="Automatically repeat this occasion every year" />
                   </Text>
                 </HStack>
                 
@@ -361,9 +355,7 @@ const RecipientDetail = () => {
                   />
                   <Text as="label" htmlFor="giftwrap-checkbox" cursor="pointer">
                     Gift Wrap 
-                    <Text as="span" color="gray.500" ml={1} fontSize="sm" title="Include beautiful gift wrapping">
-                      🎁
-                    </Text>
+                    <Icon as={FaGift} color="gray.500" ml={1} boxSize="3" title="Include beautiful gift wrapping" />
                   </Text>
                 </HStack>
                 
@@ -377,9 +369,7 @@ const RecipientDetail = () => {
                   />
                   <Text as="label" htmlFor="note-checkbox" cursor="pointer">
                     Personal Note 
-                    <Text as="span" color="gray.500" ml={1} fontSize="sm" title="Add a custom message with the gift">
-                      ✏️
-                    </Text>
+                    <Icon as={FaEdit} color="gray.500" ml={1} boxSize="3" title="Add a custom message with the gift" />
                   </Text>
                 </HStack>
               </HStack>
@@ -412,7 +402,7 @@ const RecipientDetail = () => {
             </AlertDialogHeader>
 
             <AlertDialogBody>
-              Are you sure you want to delete {recipient.name}? This action cannot be undone.
+              Are you sure you want to delete {recipient?.name}? This action cannot be undone.
             </AlertDialogBody>
 
             <AlertDialogFooter>

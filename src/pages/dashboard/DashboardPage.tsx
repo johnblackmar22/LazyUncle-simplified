@@ -56,7 +56,9 @@ import {
   FaCompress, 
   FaPlus,
   FaChevronLeft,
-  FaChevronRight
+  FaChevronRight,
+  FaRedo,
+  FaEdit
 } from 'react-icons/fa';
 import { AddIcon, CheckIcon } from '@chakra-ui/icons';
 import { 
@@ -390,9 +392,13 @@ const DashboardPage: React.FC = () => {
                             <Text fontSize="xs" color="gray.500">
                               {occasion.name}
                               {occasion.recurring && (
-                                <Text as="span" color="gray.400" ml={1}>
-                                  ↻
-                                </Text>
+                                <Icon as={FaRedo} color="gray.400" ml={1} boxSize="2.5" />
+                              )}
+                              {occasion.giftWrap && (
+                                <Icon as={FaGift} color="gray.400" ml={1} boxSize="2.5" />
+                              )}
+                              {occasion.personalizedNote && (
+                                <Icon as={FaEdit} color="gray.400" ml={1} boxSize="2.5" />
                               )}
                             </Text>
                           </VStack>
@@ -513,9 +519,13 @@ const DashboardPage: React.FC = () => {
                               <Text key={occasion.id} fontSize="xs" color="gray.600">
                                 {occasion.recipient?.name}: {occasion.name}
                                 {occasion.recurring && (
-                                  <Text as="span" color="gray.400" ml={1}>
-                                    ↻
-                                  </Text>
+                                  <Icon as={FaRedo} color="gray.400" ml={1} boxSize="2.5" />
+                                )}
+                                {occasion.giftWrap && (
+                                  <Icon as={FaGift} color="gray.400" ml={1} boxSize="2.5" />
+                                )}
+                                {occasion.personalizedNote && (
+                                  <Icon as={FaEdit} color="gray.400" ml={1} boxSize="2.5" />
                                 )}
                               </Text>
                             ))}
@@ -590,9 +600,13 @@ const DashboardPage: React.FC = () => {
                                 >
                                   {occasion.recipient?.name}: {occasion.name}
                                   {occasion.recurring && (
-                                    <Text as="span" color="gray.400" ml={1}>
-                                      ↻
-                                    </Text>
+                                    <Icon as={FaRedo} color="gray.400" ml={1} boxSize="2.5" />
+                                  )}
+                                  {occasion.giftWrap && (
+                                    <Icon as={FaGift} color="gray.400" ml={1} boxSize="2.5" />
+                                  )}
+                                  {occasion.personalizedNote && (
+                                    <Icon as={FaEdit} color="gray.400" ml={1} boxSize="2.5" />
                                   )}
                                 </Badge>
                               ))}
@@ -714,9 +728,13 @@ const DashboardPage: React.FC = () => {
                                   <Text fontSize="xs" fontWeight="medium">
                                     {occasion.name}
                                     {occasion.recurring && (
-                                      <Text as="span" color="gray.400" ml={1}>
-                                        ↻
-                                      </Text>
+                                      <Icon as={FaRedo} color="gray.400" ml={1} boxSize="2.5" />
+                                    )}
+                                    {occasion.giftWrap && (
+                                      <Icon as={FaGift} color="gray.400" ml={1} boxSize="2.5" />
+                                    )}
+                                    {occasion.personalizedNote && (
+                                      <Icon as={FaEdit} color="gray.400" ml={1} boxSize="2.5" />
                                     )}
                                   </Text>
                                   <Text fontSize="xs" color={index === 0 ? "purple.600" : "gray.600"}>

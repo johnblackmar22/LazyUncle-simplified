@@ -45,7 +45,8 @@ import {
   FaHeart,
   FaExternalLinkAlt,
   FaCheckCircle,
-  FaUndo
+  FaUndo,
+  FaEdit
 } from 'react-icons/fa';
 import { EditIcon, DeleteIcon } from '@chakra-ui/icons';
 import type { Occasion, Recipient, GiftSuggestion, Gift } from '../types';
@@ -279,9 +280,17 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
               {occasion.name}
               {occasion.recurring && (
                 <Tooltip label="This occasion repeats every year" fontSize="sm">
-                  <Text as="span" color="gray.500" ml={2} fontSize="sm" cursor="help">
-                    ↻
-                  </Text>
+                  <Icon as={FaRedo} color="gray.500" ml={2} boxSize="3" cursor="help" />
+                </Tooltip>
+              )}
+              {occasion.giftWrap && (
+                <Tooltip label="Gift wrap included" fontSize="sm">
+                  <Icon as={FaGift} color="gray.500" ml={2} boxSize="3" cursor="help" />
+                </Tooltip>
+              )}
+              {occasion.personalizedNote && (
+                <Tooltip label="Personalized note included" fontSize="sm">
+                  <Icon as={FaEdit} color="gray.500" ml={2} boxSize="3" cursor="help" />
                 </Tooltip>
               )}
             </Text>
