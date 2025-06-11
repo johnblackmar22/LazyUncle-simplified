@@ -40,8 +40,36 @@ const handler = async (event) => {
     });
     console.log('✅ OpenAI client initialized');
 
-    // Build a thoughtful prompt for gift ideas (without ASINs)
-    const prompt = `\nYou are a creative gift recommendation expert. Generate thoughtful, specific gift recommendations that can be found on Amazon.\n\nTHE MOST IMPORTANT RULES:\n- Consider the recipient's AGE: ${recipient.age} years old\n- Consider the RELATIONSHIP: ${recipient.relationship}\n- Budget range: $${budget.giftBudget - 10} - $${budget.giftBudget}\n- Do NOT recommend any of these previous gifts: ${previousGiftNames && previousGiftNames.length > 0 ? previousGiftNames.join(', ') : 'none'}\n- Be CREATIVE and UNIQUE! Think outside the box.\n- Focus on gifts that would be meaningful for this specific person\n\nPRODUCT NAMING GUIDELINES:\n- Use SPECIFIC but FLEXIBLE descriptions\n- Include brand names when there's a clear market leader\n- Include key distinguishing features (size, type, etc.)\n- Avoid overly generic names like "premium headphones"\n- Avoid full Amazon product titles with all specs\n\nEXAMPLES OF GOOD PRODUCT NAMES:\n✅ "Sony Noise-Canceling Headphones"\n✅ "Instant Pot 6-Quart Pressure Cooker"\n✅ "Apple AirPods Pro"\n✅ "Kindle Paperwhite E-Reader"\n✅ "Weighted Blanket 15-20 lbs"\n✅ "Atomic Habits by James Clear"\n✅ "Lodge Cast Iron Skillet 10-inch"\n\nEXAMPLES TO AVOID:\n❌ "Premium wireless headphones" (too generic)\n❌ "Sony WH-1000XM4 Wireless Premium Noise Canceling Overhead Headphones with 30 Hour Battery Life" (too specific)\n\nRecipient info:\n${JSON.stringify(recipient, null, 2)}\nOccasion info:\n${JSON.stringify({ ...occasion, budget: budget.total, instructions: instructions || '' }, null, 2)}\n\nProvide 2 creative, thoughtful gift recommendations. For each gift:\n- Give it a specific but flexible name that includes brand/key features\n- Explain why it's perfect for this person\n- Include an estimated price within budget\n- Suggest what category to search for on Amazon\n\nNote: These will be manually verified and potentially refined before showing to customers.\n\nRespond with ONLY valid JSON:\n{\n  "recommendations": [\n    {\n      "name": "Sony Noise-Canceling Headphones",\n      "description": "what makes this gift special and perfect for them",\n      "price": estimated_price_number,\n      "category": "Electronics",\n      "reasoning": "why this is perfect for them (age, relationship, interests)"\n    }\n  ]\n}\n`;
+    // Build a simple, focused prompt for gift ideas
+    const prompt = `Generate 2 thoughtful gift recommendations for Amazon.
+
+RECIPIENT: ${recipient.age}-year-old ${recipient.relationship}, interests: ${recipient.interests.join(', ') || 'general'}
+OCCASION: ${occasion.name}
+BUDGET: $${budget.giftBudget - 10} - $${budget.giftBudget}
+
+NAMING STYLE: Be specific but flexible
+✅ Good: "Sony Noise-Canceling Headphones", "Instant Pot 6-Quart", "Atomic Habits by James Clear"
+❌ Avoid: "premium headphones" (too generic) or full product titles with all specs
+
+JSON format:
+{
+  "recommendations": [
+    {
+      "name": "Sony Noise-Canceling Headphones",
+      "description": "Perfect for their daily commute and love of music",
+      "price": 250,
+      "category": "Electronics",
+      "reasoning": "Great for a tech-savvy person who values quality audio"
+    },
+    {
+      "name": "Lodge Cast Iron Skillet 10-inch", 
+      "description": "Essential for home cooking enthusiasts",
+      "price": 35,
+      "category": "Kitchen",
+      "reasoning": "Perfect for someone getting into cooking"
+    }
+  ]
+}`;
 
     console.log('🤖 Getting gift ideas from AI...');
     const completion = await openai.chat.completions.create({
@@ -50,7 +78,7 @@ const handler = async (event) => {
         { role: 'system', content: 'You are a creative gift recommendation assistant. Generate thoughtful gift ideas that can be found on Amazon. Respond only with valid JSON.' },
         { role: 'user', content: prompt }
       ],
-      max_tokens: 600,
+      max_tokens: 400,
       temperature: 0.9,
     });
 
