@@ -64,7 +64,7 @@ import {
 import { format, parseISO } from 'date-fns';
 import AdminService from '../services/adminService';
 import { useAuthStore } from '../store/authStore';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { COLLECTIONS } from '../utils/constants';
 import type { AdminOrder, User, Recipient, Occasion, Gift } from '../types';
@@ -286,6 +286,85 @@ const AdminOrderDashboard: React.FC = () => {
     }
   };
 
+  // Cleanup orphaned records
+  const cleanupOrphanedRecords = async () => {
+    if (!user?.role || !['admin', 'super_admin'].includes(user.role)) {
+      toast({
+        title: 'Permission Denied',
+        description: 'Only admins can perform cleanup operations.',
+        status: 'error',
+        duration: 4000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    const confirmed = window.confirm(
+      'This will permanently delete orphaned occasions and gifts that reference deleted recipients. Continue?'
+    );
+    
+    if (!confirmed) return;
+
+    try {
+      console.log('🧹 Starting cleanup of orphaned records...');
+      
+      // Find orphaned occasions (occasions without valid recipients)
+      const orphanedOccasions = occasions.filter(occasion => 
+        !recipients.some(recipient => recipient.id === occasion.recipientId)
+      );
+
+      // Find orphaned gifts (gifts without valid occasions or recipients)
+      const orphanedGifts = gifts.filter(gift => {
+        const occasionExists = occasions.some(occasion => occasion.id === gift.occasionId);
+        const recipientExists = recipients.some(recipient => recipient.id === gift.recipientId);
+        return !occasionExists || !recipientExists;
+      });
+
+      console.log(`🧹 Found ${orphanedOccasions.length} orphaned occasions and ${orphanedGifts.length} orphaned gifts`);
+
+      // Delete orphaned occasions
+      for (const occasion of orphanedOccasions) {
+        try {
+          await deleteDoc(doc(db, COLLECTIONS.OCCASIONS, occasion.id));
+          console.log(`🗑️ Deleted orphaned occasion: ${occasion.id} (${occasion.name})`);
+        } catch (error) {
+          console.error(`❌ Failed to delete occasion ${occasion.id}:`, error);
+        }
+      }
+
+      // Delete orphaned gifts
+      for (const gift of orphanedGifts) {
+        try {
+          await deleteDoc(doc(db, COLLECTIONS.GIFTS, gift.id));
+          console.log(`🗑️ Deleted orphaned gift: ${gift.id} (${gift.name})`);
+        } catch (error) {
+          console.error(`❌ Failed to delete gift ${gift.id}:`, error);
+        }
+      }
+
+      toast({
+        title: 'Cleanup Complete',
+        description: `Removed ${orphanedOccasions.length} orphaned occasions and ${orphanedGifts.length} orphaned gifts.`,
+        status: 'success',
+        duration: 6000,
+        isClosable: true,
+      });
+
+      // Refresh data after cleanup
+      await refreshAllData();
+
+    } catch (error) {
+      console.error('❌ Error during cleanup:', error);
+      toast({
+        title: 'Cleanup Failed',
+        description: error instanceof Error ? error.message : 'Unknown error occurred during cleanup.',
+        status: 'error',
+        duration: 6000,
+        isClosable: true,
+      });
+    }
+  };
+
   // Filter orders
   const filteredOrders = orders.filter(order => {
     if (searchTerm) {
@@ -373,22 +452,36 @@ const AdminOrderDashboard: React.FC = () => {
     onOpen();
   };
 
-  // Calculate stats - removed revenue counter
+  // Calculate stats - removed revenue counter and filter orphaned records
   const stats = {
     totalUsers: users.length,
     totalRecipients: recipients.length,
-    totalOccasions: occasions.length,
-    totalGifts: gifts.length,
+    // Only count occasions that belong to existing recipients
+    totalOccasions: occasions.filter(occasion => 
+      recipients.some(recipient => recipient.id === occasion.recipientId)
+    ).length,
+    // Only count gifts that belong to existing occasions AND recipients
+    totalGifts: gifts.filter(gift => {
+      const occasionExists = occasions.some(occasion => occasion.id === gift.occasionId);
+      const recipientExists = recipients.some(recipient => recipient.id === gift.recipientId);
+      return occasionExists && recipientExists;
+    }).length,
     totalOrders: orders.length,
     pendingOrders: orders.filter(o => o.status === 'pending').length,
     orderedItems: orders.filter(o => o.status === 'ordered').length,
     shippedItems: orders.filter(o => o.status === 'shipped').length,
   };
 
-  // Get user by ID helper
+  // Get user by ID helper - with orphan filtering
   const getRecipientsByUserId = (userId: string) => recipients.filter(r => r.userId === userId);
-  const getOccasionsByRecipientId = (recipientId: string) => occasions.filter(o => o.recipientId === recipientId);
-  const getGiftsByOccasionId = (occasionId: string) => gifts.filter(g => g.occasionId === occasionId);
+  const getOccasionsByRecipientId = (recipientId: string) => occasions.filter(o => 
+    o.recipientId === recipientId && recipients.some(r => r.id === recipientId)
+  );
+  const getGiftsByOccasionId = (occasionId: string) => gifts.filter(g => {
+    const occasionExists = occasions.some(o => o.id === occasionId);
+    const recipientExists = recipients.some(r => r.id === g.recipientId);
+    return g.occasionId === occasionId && occasionExists && recipientExists;
+  });
 
   return (
     <Container maxW="full" p={4}>
@@ -416,55 +509,65 @@ const AdminOrderDashboard: React.FC = () => {
             Refresh
           </Button>
           {user?.role === 'admin' && (
-            <Button
-              colorScheme="red"
-              size="sm"
-              onClick={async () => {
-                try {
-                  await AdminService.addOrder({
-                    userId: user.id,
-                    userEmail: user.email,
-                    userName: user.displayName || user.email,
-                    recipientName: 'Test Recipient',
-                    recipientRelationship: 'Friend',
-                    occasion: 'Test Occasion',
-                    giftTitle: 'Test Gift',
-                    giftDescription: 'A test gift for debugging',
-                    giftPrice: 42.0,
-                    giftImageUrl: '',
-                    status: 'pending',
-                    priority: 'normal',
-                    notes: 'Test order created by admin',
-                    shippingAddress: {
-                      name: 'Test Recipient',
-                      street: '123 Test St',
-                      city: 'Testville',
-                      state: 'TS',
-                      zipCode: '12345',
-                      country: 'US',
-                    },
-                  });
-                  toast({
-                    title: 'Test Order Created',
-                    description: 'A test order has been added to Firestore.',
-                    status: 'success',
-                    duration: 4000,
-                    isClosable: true,
-                  });
-                  await refreshAllData();
-                } catch (err) {
-                  toast({
-                    title: 'Error Creating Test Order',
-                    description: err instanceof Error ? err.message : String(err),
-                    status: 'error',
-                    duration: 6000,
-                    isClosable: true,
-                  });
-                }
-              }}
-            >
-              Create Test Order
-            </Button>
+            <>
+              <Button
+                colorScheme="orange"
+                size="sm"
+                onClick={cleanupOrphanedRecords}
+                variant="outline"
+              >
+                🧹 Clean Orphans
+              </Button>
+              <Button
+                colorScheme="red"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    await AdminService.addOrder({
+                      userId: user.id,
+                      userEmail: user.email,
+                      userName: user.displayName || user.email,
+                      recipientName: 'Test Recipient',
+                      recipientRelationship: 'Friend',
+                      occasion: 'Test Occasion',
+                      giftTitle: 'Test Gift',
+                      giftDescription: 'A test gift for debugging',
+                      giftPrice: 42.0,
+                      giftImageUrl: '',
+                      status: 'pending',
+                      priority: 'normal',
+                      notes: 'Test order created by admin',
+                      shippingAddress: {
+                        name: 'Test Recipient',
+                        street: '123 Test St',
+                        city: 'Testville',
+                        state: 'TS',
+                        zipCode: '12345',
+                        country: 'US',
+                      },
+                    });
+                    toast({
+                      title: 'Test Order Created',
+                      description: 'A test order has been added to Firestore.',
+                      status: 'success',
+                      duration: 4000,
+                      isClosable: true,
+                    });
+                    await refreshAllData();
+                  } catch (err) {
+                    toast({
+                      title: 'Error Creating Test Order',
+                      description: err instanceof Error ? err.message : String(err),
+                      status: 'error',
+                      duration: 6000,
+                      isClosable: true,
+                    });
+                  }
+                }}
+              >
+                Create Test Order
+              </Button>
+            </>
           )}
         </HStack>
       </Flex>
