@@ -12,10 +12,7 @@ import {
 import { 
   MdDashboard, 
   MdPeople, 
-  MdCardGiftcard,
   MdSettings,
-  MdAdminPanelSettings,
-  MdAnalytics,
   MdShoppingCart
 } from 'react-icons/md';
 import { useAdminRole } from '../hooks/useAdminRole';
@@ -30,11 +27,9 @@ export const Sidebar: React.FC = () => {
     return location.pathname === path;
   };
 
-  // Admin-only navigation (pure admin interface)
+  // Admin-only navigation (simplified)
   const adminNavItems = [
     { path: '/admin/orders', label: '📋 Order Management', icon: MdShoppingCart },
-    { path: '/admin/analytics', label: '📊 Analytics', icon: MdAnalytics },
-    { path: '/admin/settings', label: '⚙️ Admin Settings', icon: MdSettings },
   ];
 
   // Regular user navigation

@@ -1,4 +1,4 @@
-// Admin Service - Firebase-based admin order management with proper authentication
+// Admin Service - Firebase-based admin order management
 import { 
   collection, 
   addDoc, 
@@ -6,24 +6,42 @@ import {
   doc, 
   updateDoc, 
   deleteDoc,
+  getDoc,
   query,
   orderBy,
   where,
   Timestamp 
 } from 'firebase/firestore';
-import { db } from './firebase';
+import { auth, db } from './firebase';
 import { COLLECTIONS } from '../utils/constants';
-import AdminAuthService from './adminAuthService';
 import type { AdminOrder } from '../types';
 
 class AdminService {
+  // Check if current user is admin
+  private static async requireAdmin(): Promise<void> {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error('Admin access required - not authenticated');
+    }
+
+    const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, currentUser.uid));
+    if (!userDoc.exists()) {
+      throw new Error('Admin access required - user not found');
+    }
+
+    const userData = userDoc.data();
+    if (!userData?.role || !['admin', 'super_admin'].includes(userData.role)) {
+      throw new Error('Admin access required - insufficient permissions');
+    }
+  }
+
   // Get all orders (admin only)
   static async getAllOrders(): Promise<AdminOrder[]> {
     console.log('📊 Admin fetching all orders...');
     
     try {
       // Require admin access
-      AdminAuthService.requireAdmin();
+      await this.requireAdmin();
       
       // Fetch from Firebase
       const ordersRef = collection(db, COLLECTIONS.ADMIN_ORDERS);
@@ -80,7 +98,7 @@ class AdminService {
     
     try {
       // Require admin access
-      AdminAuthService.requireAdmin();
+      await this.requireAdmin();
 
       const updateData = {
         ...updates,
@@ -105,7 +123,7 @@ class AdminService {
     
     try {
       // Require admin access
-      AdminAuthService.requireAdmin();
+      await this.requireAdmin();
 
       // Delete from Firebase
       const orderRef = doc(db, COLLECTIONS.ADMIN_ORDERS, orderId);
@@ -125,7 +143,7 @@ class AdminService {
     
     try {
       // Require admin access
-      AdminAuthService.requireAdmin();
+      await this.requireAdmin();
 
       const ordersRef = collection(db, COLLECTIONS.ADMIN_ORDERS);
       const q = query(
@@ -166,7 +184,7 @@ class AdminService {
   }> {
     try {
       // Require admin access
-      AdminAuthService.requireAdmin();
+      await this.requireAdmin();
 
       const orders = await this.getAllOrders();
       

@@ -87,27 +87,6 @@ export interface GiftSuggestion {
   asin?: string; // Amazon ASIN for easy ordering
 }
 
-// Admin-specific types
-export interface AdminUser extends User {
-  role: 'admin' | 'super_admin';
-  permissions: AdminPermission[];
-  lastAdminLogin?: number;
-}
-
-export type AdminPermission = 
-  | 'view_orders' 
-  | 'manage_orders' 
-  | 'view_users' 
-  | 'manage_users' 
-  | 'view_analytics' 
-  | 'system_admin';
-
-export interface AdminSession {
-  user: AdminUser;
-  loginTime: number;
-  permissions: AdminPermission[];
-}
-
 // Admin order interface for gift selection workflow
 export interface AdminOrder {
   id: string;

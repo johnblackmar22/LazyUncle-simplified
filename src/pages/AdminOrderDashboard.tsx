@@ -47,19 +47,15 @@ import {
   FaEye, 
   FaCopy, 
   FaSearch,
-  FaSignOutAlt,
   FaSync
 } from 'react-icons/fa';
 import { format } from 'date-fns';
 import AdminService from '../services/adminService';
-import AdminAuthService from '../services/adminAuthService';
-import AdminLogin from '../components/AdminLogin';
-import type { AdminOrder, AdminSession } from '../types';
+import { useAuthStore } from '../store/authStore';
+import type { AdminOrder } from '../types';
 
 const AdminOrderDashboard: React.FC = () => {
-  // Admin authentication state
-  const [adminSession, setAdminSession] = useState<AdminSession | null>(null);
-  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+  const { user } = useAuthStore();
   
   // Order management state
   const [orders, setOrders] = useState<AdminOrder[]>([]);
@@ -74,27 +70,8 @@ const AdminOrderDashboard: React.FC = () => {
   
   const { isOpen, onOpen, onClose } = useDisclosure();
 
-  // Initialize admin authentication
+  // Load orders when component mounts
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        await AdminAuthService.initializeAdminSession();
-        const session = AdminAuthService.getCurrentAdminSession();
-        setAdminSession(session);
-      } catch (error) {
-        console.error('Admin auth initialization error:', error);
-      } finally {
-        setIsLoadingAuth(false);
-      }
-    };
-
-    initAuth();
-  }, []);
-
-  // Load orders when admin is authenticated
-  useEffect(() => {
-    if (!adminSession) return;
-
     const fetchOrders = async () => {
       try {
         const orders = await AdminService.getAllOrders();
@@ -111,7 +88,7 @@ const AdminOrderDashboard: React.FC = () => {
     const interval = setInterval(fetchOrders, 30000);
     
     return () => clearInterval(interval);
-  }, [adminSession]);
+  }, []);
 
   const refreshOrders = async () => {
     try {
@@ -120,22 +97,6 @@ const AdminOrderDashboard: React.FC = () => {
       setOrders(orders);
     } catch (error) {
       console.error('❌ Error refreshing admin orders:', error);
-    }
-  };
-
-  const handleAdminLogin = (session: AdminSession) => {
-    setAdminSession(session);
-    console.log('✅ Admin logged in:', session.user.email);
-  };
-
-  const handleAdminLogout = async () => {
-    try {
-      await AdminAuthService.logoutAdmin();
-      setAdminSession(null);
-      setOrders([]);
-      console.log('✅ Admin logged out');
-    } catch (error) {
-      console.error('❌ Admin logout error:', error);
     }
   };
 
@@ -226,20 +187,6 @@ const AdminOrderDashboard: React.FC = () => {
     onOpen();
   };
 
-  // Loading state
-  if (isLoadingAuth) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minH="100vh">
-        <Text>Loading admin authentication...</Text>
-      </Box>
-    );
-  }
-
-  // Show login if not authenticated
-  if (!adminSession) {
-    return <AdminLogin onLoginSuccess={handleAdminLogin} />;
-  }
-
   // Calculate stats
   const stats = {
     total: orders.length,
@@ -261,7 +208,7 @@ const AdminOrderDashboard: React.FC = () => {
             🎁 Admin Order Dashboard
           </Heading>
           <Text color="gray.600">
-            Welcome back, {adminSession.user.displayName}
+            Welcome back, {user?.displayName}
           </Text>
           <Badge colorScheme="purple" size="sm">
             {stats.uniqueCustomers} Customers • {stats.total} Orders
@@ -276,15 +223,6 @@ const AdminOrderDashboard: React.FC = () => {
             variant="outline"
           >
             Refresh
-          </Button>
-          <Button
-            leftIcon={<FaSignOutAlt />}
-            onClick={handleAdminLogout}
-            size="sm"
-            colorScheme="red"
-            variant="outline"
-          >
-            Logout
           </Button>
         </HStack>
       </Flex>
