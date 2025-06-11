@@ -118,9 +118,11 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
     generateRecommendations(newExcludedIds);
   };
 
-  const handleSelectGift = (gift: GiftRecommendation) => {
+  const handleSelectGift = async (gift: GiftRecommendation) => {
     try {
-      const selectedGift = selectGift(gift, recipient.id, occasion.id);
+      console.log('🖱️ Select Gift button clicked for:', gift.name);
+      const selectedGift = await selectGift(gift, recipient.id, occasion.id);
+      console.log('✅ Gift selection completed successfully:', selectedGift);
       
       toast({
         title: 'Gift Selected!',
@@ -132,11 +134,12 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
 
       onGiftSelected?.(gift);
     } catch (error) {
+      console.error('❌ Error in handleSelectGift:', error);
       toast({
         title: 'Error',
-        description: 'Failed to select gift',
+        description: `Failed to select gift: ${error instanceof Error ? error.message : 'Unknown error'}`,
         status: 'error',
-        duration: 3000,
+        duration: 5000,
         isClosable: true,
       });
     }
