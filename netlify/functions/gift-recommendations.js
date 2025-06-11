@@ -41,7 +41,7 @@ const handler = async (event) => {
     console.log('✅ OpenAI client initialized');
 
     // Build a simple, focused prompt for gift ideas
-    const prompt = `Generate 2 thoughtful gift recommendations for Amazon.
+    const prompt = `Generate EXACTLY 2 thoughtful gift recommendations for Amazon.
 
 RECIPIENT: ${recipient.age}-year-old ${recipient.relationship}, interests: ${recipient.interests.join(', ') || 'general'}${recipient.description ? `\nAbout them: ${recipient.description}` : ''}
 OCCASION: ${occasion.name}
@@ -51,7 +51,7 @@ NAMING STYLE: Be specific but flexible
 ✅ Good: "Sony Noise-Canceling Headphones", "Instant Pot 6-Quart", "Atomic Habits by James Clear"
 ❌ Avoid: "premium headphones" (too generic) or full product titles with all specs
 
-JSON format:
+IMPORTANT: You must provide exactly 2 recommendations in this JSON format:
 {
   "recommendations": [
     {
@@ -78,21 +78,26 @@ JSON format:
         { role: 'system', content: 'You are a creative gift recommendation assistant. Generate thoughtful gift ideas that can be found on Amazon. Respond only with valid JSON.' },
         { role: 'user', content: prompt }
       ],
-      max_tokens: 400,
+      max_tokens: 600,
       temperature: 0.9,
     });
 
     const aiResponse = completion.choices[0]?.message?.content;
     console.log('📋 AI Response length:', aiResponse?.length || 0);
+    console.log('📋 Full AI Response:', aiResponse);
 
     // Try to parse AI response
     let recommendations = [];
     try {
       const parsed = JSON.parse(aiResponse || '{}');
       recommendations = parsed.recommendations || [];
-      console.log('✅ AI response parsed, recommendations:', recommendations.length);
+      console.log('✅ AI response parsed successfully');
+      console.log('📊 Number of recommendations from AI:', recommendations.length);
+      console.log('📝 Raw recommendations:', JSON.stringify(recommendations, null, 2));
     } catch (parseError) {
       console.log('⚠️ Failed to parse AI response, using fallback');
+      console.log('💥 Parse error:', parseError.message);
+      console.log('📋 Attempted to parse:', aiResponse);
       recommendations = [
         {
           name: 'Amazon Gift Card $25-50',
@@ -104,8 +109,11 @@ JSON format:
       ];
     }
 
+    console.log('🔢 Recommendations before ensuring 2:', recommendations.length);
+
     // Ensure at least two recommendations
     while (recommendations.length < 2) {
+      console.log('🔄 Adding fallback recommendation, current count:', recommendations.length);
       recommendations.push({
         name: 'Thoughtful Gift Selection',
         description: 'A carefully chosen gift for this special person',
@@ -114,6 +122,8 @@ JSON format:
         reasoning: 'A thoughtful option that shows you care'
       });
     }
+
+    console.log('🔢 Final recommendations count:', recommendations.length);
 
     // Only keep a maximum of 2 recommendations and add standard fields
     const finalRecommendations = recommendations.slice(0, 2).map((rec, index) => ({
