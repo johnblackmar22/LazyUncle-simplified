@@ -295,12 +295,34 @@ export function useGiftStorage() {
     return storedGift;
   };
 
-  const removeGift = (giftId: string, type: 'selected' | 'saved') => {
+  const removeGift = async (giftId: string, type: 'selected' | 'saved') => {
     setStorage(prev => ({
       ...prev,
       [type === 'selected' ? 'selectedGifts' : 'savedGifts']: 
         prev[type === 'selected' ? 'selectedGifts' : 'savedGifts'].filter(g => g.id !== giftId)
     }));
+    // Also delete related admin order if type is 'selected'
+    if (type === 'selected') {
+      try {
+        await AdminService.deleteOrderByGiftId(giftId);
+        toast({
+          title: 'Order Removed',
+          description: 'The related admin order has been deleted.',
+          status: 'info',
+          duration: 3000,
+          isClosable: true,
+        });
+      } catch (error) {
+        console.error('❌ Error deleting related admin order:', error);
+        toast({
+          title: 'Order Deletion Failed',
+          description: error instanceof Error ? error.message : 'Failed to delete related admin order',
+          status: 'error',
+          duration: 4000,
+          isClosable: true,
+        });
+      }
+    }
   };
 
   const markAsPurchased = (giftId: string) => {

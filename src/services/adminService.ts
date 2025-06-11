@@ -259,6 +259,28 @@ class AdminService {
       throw error;
     }
   }
+
+  // Delete order(s) by Gift ID (used when undoing a gift selection)
+  static async deleteOrderByGiftId(giftId: string): Promise<void> {
+    const ordersRef = collection(db, COLLECTIONS.ADMIN_ORDERS);
+    const q = query(ordersRef, where('notes', '>=', `Gift ID: ${giftId}`), where('notes', '<=', `Gift ID: ${giftId}\uf8ff`));
+    const querySnapshot = await getDocs(q);
+    for (const docSnap of querySnapshot.docs) {
+      await deleteDoc(docSnap.ref);
+      console.log(`🗑️ Deleted admin order for Gift ID: ${giftId}`);
+    }
+  }
+
+  // Delete all orders for a given user and occasion (used when deleting an occasion)
+  static async deleteOrdersByOccasion(userId: string, occasion: string): Promise<void> {
+    const ordersRef = collection(db, COLLECTIONS.ADMIN_ORDERS);
+    const q = query(ordersRef, where('userId', '==', userId), where('occasion', '==', occasion));
+    const querySnapshot = await getDocs(q);
+    for (const docSnap of querySnapshot.docs) {
+      await deleteDoc(docSnap.ref);
+      console.log(`🗑️ Deleted admin order for occasion: ${occasion}`);
+    }
+  }
 }
 
 export default AdminService; 
