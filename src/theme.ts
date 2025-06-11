@@ -91,6 +91,29 @@ const theme = extendTheme({
         },
       },
     },
+    Tooltip: {
+      baseStyle: {
+        bg: 'gray.700',
+        color: 'white',
+        fontSize: 'sm',
+        px: 2,
+        py: 1,
+        borderRadius: 'md',
+        fontWeight: 'medium',
+        maxW: '320px',
+        zIndex: 'tooltip',
+      },
+      defaultProps: {
+        placement: 'top',
+        hasArrow: true,
+        openDelay: 500,
+        closeDelay: 0,
+      },
+    },
+  },
+  config: {
+    initialColorMode: 'light',
+    useSystemColorMode: false,
   },
 });
 

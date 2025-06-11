@@ -17,14 +17,15 @@ import {
   Divider,
   IconButton,
   Tooltip,
-  Flex
+  Flex,
+  Icon
 } from '@chakra-ui/react';
 import { FiRefreshCw, FiHeart, FiShoppingCart, FiInfo, FiThumbsUp, FiThumbsDown } from 'react-icons/fi';
 import { giftRecommendationEngine, type GiftRecommendationRequest, type GiftRecommendation } from '../services/giftRecommendationEngine';
 import { useGiftStorage } from '../hooks/useGiftStorage';
 import { useAuthStore } from '../store/authStore';
 import type { Recipient, Occasion } from '../types';
-import { FaCheck, FaHeart } from 'react-icons/fa';
+import { FaCheck, FaHeart, FaLightbulb } from 'react-icons/fa';
 import AdminService from '../services/adminService';
 
 interface AIGiftRecommendationsProps {
@@ -407,64 +408,62 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
             <VStack spacing={4}>
               {recommendations.map((gift, index) => (
                 <Card key={gift.id} size="md" variant="outline" w="100%">
-                  <CardBody>
-                    <Flex
-                      direction={{ base: 'column', md: 'row' }}
-                      align={{ base: 'stretch', md: 'start' }}
-                      gap={4}
-                    >
-                      {/* Gift Image */}
-                      <Box flexShrink={0}>
-                        {gift.imageUrl ? (
-                          <Image
-                            src={gift.imageUrl}
-                            alt={gift.name}
-                            boxSize="120px"
-                            objectFit="cover"
-                            borderRadius="md"
-                            fallback={
-                              <Box
-                                boxSize="120px"
-                                bg="gray.100"
-                                borderRadius="md"
-                                display="flex"
-                                alignItems="center"
-                                justifyContent="center"
-                              >
-                                <Text fontSize="xs" color="gray.500" textAlign="center">
-                                  No Image
-                                </Text>
-                              </Box>
-                            }
-                          />
-                        ) : (
-                          <Box
-                            boxSize="120px"
-                            bg="gray.100"
-                            borderRadius="md"
-                            display="flex"
-                            alignItems="center"
-                            justifyContent="center"
-                          >
-                            <Text fontSize="xs" color="gray.500" textAlign="center">
-                              No Image
-                            </Text>
-                          </Box>
-                        )}
-                      </Box>
+                  <CardBody p={{ base: 4, md: 6 }}>
+                    {/* Mobile-First Layout: Everything stacks vertically */}
+                    <VStack spacing={4} align="stretch">
+                      
+                      {/* Header: Image + Title + Price */}
+                      <Flex direction={{ base: 'column', sm: 'row' }} gap={4}>
+                        {/* Gift Image */}
+                        <Box flexShrink={0} alignSelf={{ base: 'center', sm: 'flex-start' }}>
+                          {gift.imageUrl ? (
+                            <Image
+                              src={gift.imageUrl}
+                              alt={gift.name}
+                              boxSize={{ base: "100px", md: "120px" }}
+                              objectFit="cover"
+                              borderRadius="md"
+                              fallback={
+                                <Box
+                                  boxSize={{ base: "100px", md: "120px" }}
+                                  bg="gray.100"
+                                  borderRadius="md"
+                                  display="flex"
+                                  alignItems="center"
+                                  justifyContent="center"
+                                >
+                                  <Text fontSize="xs" color="gray.500" textAlign="center">
+                                    No Image
+                                  </Text>
+                                </Box>
+                              }
+                            />
+                          ) : (
+                            <Box
+                              boxSize={{ base: "100px", md: "120px" }}
+                              bg="gray.100"
+                              borderRadius="md"
+                              display="flex"
+                              alignItems="center"
+                              justifyContent="center"
+                            >
+                              <Text fontSize="xs" color="gray.500" textAlign="center">
+                                No Image
+                              </Text>
+                            </Box>
+                          )}
+                        </Box>
 
-                      {/* Gift Details */}
-                      <VStack align="start" spacing={3} flex={1} minW={0}>
-                        <VStack align="start" spacing={1}>
-                          <HStack justify="space-between" w="100%">
-                            <Text fontSize="lg" fontWeight="bold">
-                              {gift.name}
-                            </Text>
-                            <Text fontSize="lg" fontWeight="bold" color="blue.600">
-                              ${gift.price.toFixed(2)}
-                            </Text>
-                          </HStack>
+                        {/* Title and Price */}
+                        <VStack align="stretch" spacing={2} flex={1}>
+                          <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="bold" lineHeight="short">
+                            {gift.name}
+                          </Text>
+                          <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold" color="blue.600">
+                            ${gift.price.toFixed(2)}
+                          </Text>
                           
+                          {/* Badges */}
                           <HStack spacing={2} wrap="wrap">
                             <Badge colorScheme="blue" variant="subtle">
                               {gift.category}
@@ -485,103 +484,107 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
                             )}
                           </HStack>
                         </VStack>
+                      </Flex>
 
-                        <Text fontSize="sm" color="gray.600">
-                          {gift.description}
-                        </Text>
+                      {/* Description */}
+                      <Text fontSize="sm" color="gray.600" lineHeight="base">
+                        {gift.description}
+                      </Text>
 
-                        <Box>
-                          <HStack spacing={1} mb={2}>
-                            <FiInfo size={14} />
-                            <Text fontSize="xs" fontWeight="semibold" color="gray.700">
-                              Why this gift:
-                            </Text>
-                          </HStack>
-                          <Text fontSize="xs" color="gray.600" fontStyle="italic">
-                            {gift.reasoning}
+                      {/* Why this gift */}
+                      <Box p={3} bg="gray.50" borderRadius="md">
+                        <HStack spacing={2} mb={2}>
+                          <Icon as={FaLightbulb} color="gray.400" boxSize="3" />
+                          <Text fontSize="xs" fontWeight="semibold" color="gray.700">
+                            Why this gift:
                           </Text>
-                        </Box>
-
-                        {gift.tags && gift.tags.length > 0 && (
-                          <HStack spacing={1} wrap="wrap">
-                            {gift.tags.map(tag => (
-                              <Badge key={tag} size="sm" variant="outline" colorScheme="gray">
-                                {tag}
-                              </Badge>
-                            ))}
-                          </HStack>
-                        )}
-
-                        <Text fontSize="xs" color="gray.500">
-                          Estimated delivery: {gift.estimatedDelivery}
-                        </Text>
-                      </VStack>
-
-                      {/* Action Buttons */}
-                      <VStack spacing={2} minW="120px" maxW="140px" align="stretch">
-                        {/* Feedback Buttons */}
-                        <Box 
-                          p={2} 
-                          border="2px solid" 
-                          borderColor="blue.200" 
-                          borderRadius="md" 
-                          bg="blue.50"
-                        >
-                          <Text fontSize="xs" color="blue.800" textAlign="center" fontWeight="bold">
-                            Rate this idea:
-                          </Text>
-                          <HStack spacing={2} justify="center" mt={1}>
-                            <Tooltip label="Great suggestion!">
-                              <IconButton
-                                aria-label="Thumbs up"
-                                icon={<span>👍</span>}
-                                size="sm"
-                                variant={feedback[gift.id] === 'thumbs_up' ? 'solid' : 'outline'}
-                                colorScheme={feedback[gift.id] === 'thumbs_up' ? 'green' : 'gray'}
-                                onClick={() => {
-                                  console.log('👍 Thumbs up clicked for:', gift.name);
-                                  handleFeedback(gift, 'thumbs_up');
-                                }}
-                              />
-                            </Tooltip>
-                            <Tooltip label="Not a good fit">
-                              <IconButton
-                                aria-label="Thumbs down"
-                                icon={<span>👎</span>}
-                                size="sm"
-                                variant={feedback[gift.id] === 'thumbs_down' ? 'solid' : 'outline'}
-                                colorScheme={feedback[gift.id] === 'thumbs_down' ? 'red' : 'gray'}
-                                onClick={() => {
-                                  console.log('👎 Thumbs down clicked for:', gift.name);
-                                  handleFeedback(gift, 'thumbs_down');
-                                }}
-                              />
-                            </Tooltip>
-                          </HStack>
-                        </Box>
-                        
-                        <HStack spacing={2} mt={3}>
-                          <Button
-                            size="sm"
-                            colorScheme="green"
-                            variant="outline"
-                            leftIcon={<FaCheck />}
-                            onClick={() => handleSelectGift(gift)}
-                            isDisabled={selectedGiftIds.includes(gift.id)}
-                          >
-                            {selectedGiftIds.includes(gift.id) ? 'Selected' : 'Select Gift'}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            leftIcon={<FaHeart />}
-                            onClick={() => handleSaveForLater(gift)}
-                          >
-                            Save for Later
-                          </Button>
                         </HStack>
+                        <Text fontSize="xs" color="gray.600" fontStyle="italic">
+                          {gift.reasoning}
+                        </Text>
+                      </Box>
+
+                      {/* Tags */}
+                      {gift.tags && gift.tags.length > 0 && (
+                        <HStack spacing={1} wrap="wrap">
+                          {gift.tags.map(tag => (
+                            <Badge key={tag} size="sm" variant="outline" colorScheme="gray">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </HStack>
+                      )}
+
+                      {/* Delivery Info */}
+                      <Text fontSize="xs" color="gray.500">
+                        Estimated delivery: {gift.estimatedDelivery}
+                      </Text>
+
+                      {/* Feedback Section */}
+                      <Box 
+                        p={3} 
+                        border="2px solid" 
+                        borderColor="blue.200" 
+                        borderRadius="md" 
+                        bg="blue.50"
+                      >
+                        <Text fontSize="sm" color="blue.800" textAlign="center" fontWeight="bold" mb={3}>
+                          Rate this idea:
+                        </Text>
+                        <HStack spacing={3} justify="center">
+                          <Tooltip label="Great suggestion!" placement="top" hasArrow>
+                            <IconButton
+                              aria-label="Thumbs up"
+                              icon={<span>👍</span>}
+                              size="md"
+                              variant={feedback[gift.id] === 'thumbs_up' ? 'solid' : 'outline'}
+                              colorScheme={feedback[gift.id] === 'thumbs_up' ? 'green' : 'gray'}
+                              onClick={() => {
+                                console.log('👍 Thumbs up clicked for:', gift.name);
+                                handleFeedback(gift, 'thumbs_up');
+                              }}
+                            />
+                          </Tooltip>
+                          <Tooltip label="Not a good fit" placement="top" hasArrow>
+                            <IconButton
+                              aria-label="Thumbs down"
+                              icon={<span>👎</span>}
+                              size="md"
+                              variant={feedback[gift.id] === 'thumbs_down' ? 'solid' : 'outline'}
+                              colorScheme={feedback[gift.id] === 'thumbs_down' ? 'red' : 'gray'}
+                              onClick={() => {
+                                console.log('👎 Thumbs down clicked for:', gift.name);
+                                handleFeedback(gift, 'thumbs_down');
+                              }}
+                            />
+                          </Tooltip>
+                        </HStack>
+                      </Box>
+                      
+                      {/* Action Buttons - Full Width on Mobile */}
+                      <VStack spacing={3} w="100%">
+                        <Button
+                          size="lg"
+                          colorScheme="green"
+                          leftIcon={<FaCheck />}
+                          onClick={() => handleSelectGift(gift)}
+                          isDisabled={selectedGiftIds.includes(gift.id)}
+                          w="100%"
+                          h="50px"
+                        >
+                          {selectedGiftIds.includes(gift.id) ? 'Selected' : 'Select This Gift'}
+                        </Button>
+                        <Button
+                          size="md"
+                          variant="outline"
+                          leftIcon={<FaHeart />}
+                          onClick={() => handleSaveForLater(gift)}
+                          w="100%"
+                        >
+                          Save for Later
+                        </Button>
                       </VStack>
-                    </Flex>
+                    </VStack>
                   </CardBody>
                 </Card>
               ))}

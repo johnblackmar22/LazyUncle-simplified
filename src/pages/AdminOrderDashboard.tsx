@@ -777,76 +777,78 @@ const AdminOrderDashboard: React.FC = () => {
                     No orders found. Users need to select gifts to create orders.
                   </Alert>
                 ) : (
-                  <Table variant="simple">
-                    <Thead>
-                      <Tr>
-                        <Th>Date</Th>
-                        <Th>Customer → Recipient</Th>
-                        <Th>Gift & ASIN</Th>
-                        <Th>Price</Th>
-                        <Th>Occasion</Th>
-                        <Th>Status</Th>
-                        <Th>Actions</Th>
-                      </Tr>
-                    </Thead>
-                    <Tbody>
-                      {filteredOrders.map((order) => (
-                        <Tr key={order.id}>
-                          <Td>{format(new Date(order.createdAt), 'MMM dd, yyyy')}</Td>
-                          <Td>
-                            <VStack align="start" spacing={1}>
-                              <Text fontWeight="bold" fontSize="sm">{order.userName}</Text>
-                              <Text fontSize="xs" color="gray.600">{order.userEmail}</Text>
-                              <Text fontSize="sm">→ {order.recipientName}</Text>
-                            </VStack>
-                          </Td>
-                          <Td>
-                            <VStack align="start" spacing={1}>
-                              <Text fontWeight="medium" fontSize="sm">{order.giftTitle}</Text>
-                              {order.asin && (
-                                <HStack spacing={2}>
-                                  <Badge colorScheme="orange" size="sm">ASIN: {order.asin}</Badge>
-                                  <Button
-                                    as="a"
-                                    href={`https://amazon.com/dp/${order.asin}`}
-                                    target="_blank"
-                                    size="xs"
-                                    colorScheme="orange"
-                                  >
-                                    View on Amazon
-                                  </Button>
-                                </HStack>
-                              )}
-                            </VStack>
-                          </Td>
-                          <Td>${order.giftPrice.toFixed(2)}</Td>
-                          <Td>{order.occasion}</Td>
-                          <Td>
-                            <Badge colorScheme={getStatusColor(order.status)}>
-                              {order.status}
-                            </Badge>
-                          </Td>
-                          <Td>
-                            <HStack spacing={2}>
-                              <IconButton
-                                aria-label="View details"
-                                icon={<FaEye />}
-                                size="sm"
-                                onClick={() => openOrderModal(order)}
-                              />
-                              <Button
-                                size="xs"
-                                colorScheme="red"
-                                onClick={() => deleteOrder(order.id)}
-                              >
-                                Delete
-                              </Button>
-                            </HStack>
-                          </Td>
+                  <Box overflowX="auto">
+                    <Table variant="simple" size={{ base: "sm", md: "md" }}>
+                      <Thead>
+                        <Tr>
+                          <Th minW="100px">Date</Th>
+                          <Th minW="200px">Customer → Recipient</Th>
+                          <Th minW="200px">Gift & ASIN</Th>
+                          <Th minW="80px">Price</Th>
+                          <Th minW="120px">Occasion</Th>
+                          <Th minW="100px">Status</Th>
+                          <Th minW="120px">Actions</Th>
                         </Tr>
-                      ))}
-                    </Tbody>
-                  </Table>
+                      </Thead>
+                      <Tbody>
+                        {filteredOrders.map((order) => (
+                          <Tr key={order.id}>
+                            <Td>{format(new Date(order.createdAt), 'MMM dd, yyyy')}</Td>
+                            <Td>
+                              <VStack align="start" spacing={1}>
+                                <Text fontWeight="bold" fontSize="sm">{order.userName}</Text>
+                                <Text fontSize="xs" color="gray.600">{order.userEmail}</Text>
+                                <Text fontSize="sm">→ {order.recipientName}</Text>
+                              </VStack>
+                            </Td>
+                            <Td>
+                              <VStack align="start" spacing={1}>
+                                <Text fontWeight="medium" fontSize="sm">{order.giftTitle}</Text>
+                                {order.asin && (
+                                  <HStack spacing={2}>
+                                    <Badge colorScheme="orange" size="sm">ASIN: {order.asin}</Badge>
+                                    <Button
+                                      as="a"
+                                      href={`https://amazon.com/dp/${order.asin}`}
+                                      target="_blank"
+                                      size="xs"
+                                      colorScheme="orange"
+                                    >
+                                      View on Amazon
+                                    </Button>
+                                  </HStack>
+                                )}
+                              </VStack>
+                            </Td>
+                            <Td>${order.giftPrice.toFixed(2)}</Td>
+                            <Td>{order.occasion}</Td>
+                            <Td>
+                              <Badge colorScheme={getStatusColor(order.status)}>
+                                {order.status}
+                              </Badge>
+                            </Td>
+                            <Td>
+                              <HStack spacing={2}>
+                                <IconButton
+                                  aria-label="View details"
+                                  icon={<FaEye />}
+                                  size="sm"
+                                  onClick={() => openOrderModal(order)}
+                                />
+                                <Button
+                                  size="xs"
+                                  colorScheme="red"
+                                  onClick={() => deleteOrder(order.id)}
+                                >
+                                  Delete
+                                </Button>
+                              </HStack>
+                            </Td>
+                          </Tr>
+                        ))}
+                      </Tbody>
+                    </Table>
+                  </Box>
                 )}
               </CardBody>
             </Card>

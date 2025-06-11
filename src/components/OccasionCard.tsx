@@ -46,7 +46,8 @@ import {
   FaExternalLinkAlt,
   FaCheckCircle,
   FaUndo,
-  FaEdit
+  FaEdit,
+  FaLightbulb
 } from 'react-icons/fa';
 import { EditIcon, DeleteIcon } from '@chakra-ui/icons';
 import type { Occasion, Recipient, GiftSuggestion, Gift } from '../types';
@@ -272,69 +273,126 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
       _hover={{ bg: hoverBgColor, shadow: "lg" }}
       transition="all 0.2s"
     >
-      <CardHeader pb={2}>
-        <Flex justify="space-between" align="center">
-          <Flex align="center" gap={2}>
-            <Icon as={FaGift} color="purple.500" />
-            <Text fontWeight="bold" fontSize="lg">
+      <CardHeader p={{ base: 4, md: 4 }}>
+        {/* Mobile-First Header: Stack everything vertically */}
+        <VStack spacing={{ base: 3, md: 2 }} align="stretch">
+          
+          {/* Title Row */}
+          <HStack spacing={2}>
+            <Icon as={FaGift} color="purple.500" flexShrink={0} />
+            <Text fontWeight="bold" fontSize={{ base: "lg", md: "xl" }} flex={1}>
               {occasion.name}
-              {occasion.recurring && (
-                <Tooltip label="This occasion repeats every year" fontSize="sm">
-                  <Icon as={FaRedo} color="gray.500" ml={2} boxSize="3" />
-                </Tooltip>
-              )}
-              {occasion.giftWrap && (
-                <Tooltip label="Gift wrap included" fontSize="sm">
-                  <Icon as={FaGift} color="gray.500" ml={2} boxSize="3" />
-                </Tooltip>
-              )}
-              {occasion.personalizedNote && (
-                <Tooltip label="Personalized note included" fontSize="sm">
-                  <Icon as={FaEdit} color="gray.500" ml={2} boxSize="3" />
-                </Tooltip>
-              )}
-            </Text>
-          </Flex>
-          <HStack>
-            {getStatusBadge()}
-            <IconButton
-              aria-label="Edit occasion"
-              icon={<EditIcon />}
-              size="sm"
-              variant="ghost"
-              colorScheme="teal"
-              onClick={() => onEdit(occasion)}
-            />
-            <IconButton
-              aria-label="Delete occasion"
-              icon={<DeleteIcon />}
-              size="sm"
-              variant="ghost"
-              colorScheme="red"
-              isLoading={isDeleting}
-              onClick={() => onDelete(occasion.id)}
-            />
-          </HStack>
-        </Flex>
-      </CardHeader>
-
-      <CardBody py={2}>
-        <VStack align="start" spacing={2}>
-          <HStack>
-            <Icon as={FaCalendarAlt} color="blue.500" />
-            <Text fontSize="sm">
-              <strong>Occasion Date:</strong> {formatDate(occasion.date)}
             </Text>
           </HStack>
           
-          {occasion.deliveryDate && (
-            <HStack>
-              <Icon as={FaTruck} color="green.500" />
-              <Text fontSize="sm">
-                <strong>Delivery Date:</strong> {formatDate(occasion.deliveryDate)}
-              </Text>
+          {/* Status and Actions Row */}
+          <Flex 
+            direction={{ base: 'column', sm: 'row' }} 
+            gap={{ base: 3, md: 2 }} 
+            align={{ base: 'stretch', sm: 'center' }}
+            justify={{ base: 'stretch', sm: 'space-between' }}
+          >
+            {/* Status Badge */}
+            <Box>
+              {getStatusBadge()}
+            </Box>
+            
+            {/* Action Buttons */}
+            <HStack spacing={2} justify={{ base: 'stretch', sm: 'flex-end' }}>
+              <Button
+                size="sm"
+                variant="ghost"
+                colorScheme="teal"
+                leftIcon={<EditIcon />}
+                onClick={() => onEdit(occasion)}
+                flex={{ base: 1, sm: 'none' }}
+              >
+                Edit
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                colorScheme="red"
+                leftIcon={<DeleteIcon />}
+                isLoading={isDeleting}
+                onClick={() => onDelete(occasion.id)}
+                flex={{ base: 1, sm: 'none' }}
+              >
+                Delete
+              </Button>
+            </HStack>
+          </Flex>
+          
+          {/* Occasion Features */}
+          {(occasion.recurring || occasion.giftWrap || occasion.personalizedNote) && (
+            <HStack spacing={3} wrap="wrap">
+              {occasion.recurring && (
+                <HStack spacing={1}>
+                  <Icon as={FaRedo} color="gray.500" boxSize="3" />
+                  <Text fontSize="xs" color="gray.600">Recurring</Text>
+                </HStack>
+              )}
+              {occasion.giftWrap && (
+                <HStack spacing={1}>
+                  <Icon as={FaGift} color="gray.500" boxSize="3" />
+                  <Text fontSize="xs" color="gray.600">Gift Wrap</Text>
+                </HStack>
+              )}
+              {occasion.personalizedNote && (
+                <HStack spacing={1}>
+                  <Icon as={FaEdit} color="gray.500" boxSize="3" />
+                  <Text fontSize="xs" color="gray.600">Personal Note</Text>
+                </HStack>
+              )}
             </HStack>
           )}
+        </VStack>
+      </CardHeader>
+
+      <CardBody p={{ base: 4, md: 4 }} pt={0}>
+        <VStack align="stretch" spacing={{ base: 4, md: 3 }}>
+          
+          {/* Occasion Details */}
+          <VStack align="stretch" spacing={{ base: 3, md: 2 }}>
+            <HStack spacing={2}>
+              <Icon as={FaCalendarAlt} color="blue.500" flexShrink={0} />
+              <Text fontSize="sm" flex={1}>
+                <strong>Occasion Date:</strong> {formatDate(occasion.date)}
+              </Text>
+            </HStack>
+            
+            {occasion.deliveryDate && (
+              <HStack spacing={2}>
+                <Icon as={FaTruck} color="green.500" flexShrink={0} />
+                <Text fontSize="sm" flex={1}>
+                  <strong>Delivery Date:</strong> {formatDate(occasion.deliveryDate)}
+                </Text>
+              </HStack>
+            )}
+
+            <HStack spacing={2}>
+              <Icon as={FaDollarSign} color="green.500" flexShrink={0} />
+              <VStack align="start" spacing={1} flex={1}>
+                <Text fontSize="sm">
+                  <strong>Budget:</strong> ${occasion.budget}
+                </Text>
+                {occasion.giftWrap && (
+                  <Text fontSize="xs" color="gray.500">
+                    (includes $4.99 gift wrap + AI-optimized shipping)
+                  </Text>
+                )}
+              </VStack>
+            </HStack>
+
+            {occasion.notes && (
+              <VStack align="start" spacing={1}>
+                <Text fontSize="sm" fontWeight="bold">Notes:</Text>
+                <Text fontSize="sm" color="gray.600" pl={4}>
+                  {occasion.notes}
+                </Text>
+              </VStack>
+            )}
+          </VStack>
 
           {/* Delivery Date Warning */}
           {occasion.deliveryDate && (() => {
@@ -365,157 +423,150 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
             return null;
           })()}
 
-          <HStack>
-            <Icon as={FaDollarSign} color="green.500" />
-            <Text fontSize="sm">
-              <strong>Budget:</strong> ${occasion.budget}
-              {occasion.giftWrap && (
-                <Text as="span" fontSize="xs" color="gray.500" ml={2}>
-                  (includes $4.99 gift wrap + AI-optimized shipping)
-                </Text>
-              )}
-            </Text>
-          </HStack>
-
-          {occasion.notes && (
-            <Text fontSize="sm" color="gray.600">
-              <strong>Notes:</strong> {occasion.notes}
-            </Text>
-          )}
-        </VStack>
-
-        {/* Show existing selected gifts */}
-        {selectedGiftsForOccasion.length > 0 && (
-          <Box mt={4}>
-            <Divider mb={3} />
-            
-            <VStack spacing={3} align="stretch">
-              {selectedGiftsForOccasion.map((gift) => (
-                <Box
-                  key={gift.id}
-                  p={3}
-                  bg={useColorModeValue('green.50', 'green.900')}
-                  borderRadius="md"
-                  borderWidth="2px"
-                  borderColor={useColorModeValue('green.200', 'green.600')}
-                >
-                  <Flex justify="space-between" align="start" mb={2}>
-                    <VStack align="start" spacing={1} flex={1}>
-                      <HStack>
-                        <Icon as={FaCheckCircle} color="green.500" />
-                        <Text fontWeight="semibold" fontSize="sm" noOfLines={1}>
+          {/* Show existing selected gifts */}
+          {selectedGiftsForOccasion.length > 0 && (
+            <Box>
+              <Divider mb={{ base: 4, md: 3 }} />
+              
+              <VStack spacing={3} align="stretch">
+                {selectedGiftsForOccasion.map((gift) => (
+                  <Box
+                    key={gift.id}
+                    p={4}
+                    bg={useColorModeValue('green.50', 'green.900')}
+                    borderRadius="md"
+                    borderWidth="2px"
+                    borderColor={useColorModeValue('green.200', 'green.600')}
+                  >
+                    {/* Mobile-First Layout: Stack everything vertically */}
+                    <VStack spacing={3} align="stretch">
+                      
+                      {/* Header with icon and title */}
+                      <HStack spacing={2}>
+                        <Icon as={FaCheckCircle} color="green.500" flexShrink={0} />
+                        <Text fontWeight="semibold" fontSize="sm" flex={1}>
                           {gift.name}
                         </Text>
                       </HStack>
+                      
+                      {/* Description */}
                       {gift.description && (
-                        <Text fontSize="xs" color="gray.600" noOfLines={2}>
+                        <Text fontSize="xs" color="gray.600" pl={6}>
                           {gift.description}
                         </Text>
                       )}
-                      <HStack spacing={2}>
+                      
+                      {/* Price badge */}
+                      <HStack spacing={2} pl={6}>
                         <Badge colorScheme="green" size="sm">
                           ${gift.price.toFixed(2)}
                         </Badge>
                       </HStack>
-                    </VStack>
-                    <VStack spacing={1}>
-                      <Button
-                        size="xs"
-                        colorScheme="red"
-                        variant="outline"
-                        leftIcon={<FaUndo />}
-                        onClick={() => handleUndoSelection(gift)}
-                      >
-                        Undo
-                      </Button>
-                      {gift.purchaseUrl && (
+                      
+                      {/* Action buttons - full width on mobile */}
+                      <HStack spacing={2} w="100%">
                         <Button
-                          size="xs"
+                          size="sm"
+                          colorScheme="red"
                           variant="outline"
-                          leftIcon={<FaExternalLinkAlt />}
-                          onClick={() => window.open(gift.purchaseUrl, '_blank')}
+                          leftIcon={<FaUndo />}
+                          onClick={() => handleUndoSelection(gift)}
+                          flex={1}
                         >
-                          View
+                          Undo Selection
                         </Button>
+                        {gift.purchaseUrl && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            leftIcon={<FaExternalLinkAlt />}
+                            onClick={() => window.open(gift.purchaseUrl, '_blank')}
+                            flex={1}
+                          >
+                            View Product
+                          </Button>
+                        )}
+                      </HStack>
+                      
+                      {/* Notes at bottom */}
+                      {gift.notes && (
+                        <Text fontSize="xs" color="gray.500" fontStyle="italic" pl={6}>
+                          <Icon as={FaLightbulb} color="gray.400" boxSize="3" mr={2} />
+                          {gift.notes}
+                        </Text>
                       )}
                     </VStack>
-                  </Flex>
-                  {gift.notes && (
-                    <Text fontSize="xs" color="gray.500" fontStyle="italic">
-                      💡 {gift.notes}
-                    </Text>
-                  )}
-                </Box>
-              ))}
-            </VStack>
-          </Box>
-        )}
+                  </Box>
+                ))}
+              </VStack>
+            </Box>
+          )}
 
-        {/* AI Gift Suggestions Section - Only show if no gift is selected */}
-        {selectedGiftsForOccasion.length === 0 && (
-          <Collapse in={showSuggestions} animateOpacity>
-            <Box mt={4}>
-              <Divider mb={3} />
-              <Flex justify="space-between" align="center" mb={3}>
-                <Text fontWeight="bold" fontSize="md" color="purple.600">
-                  🤖 AI Gift Suggestions
-                </Text>
-                <Button
-                  size="xs"
-                  variant="ghost"
-                  leftIcon={<FaRedo />}
-                  onClick={handleGenerateSuggestions}
-                  isLoading={generating}
-                >
-                  Regenerate
-                </Button>
-              </Flex>
-              
-              {error && (
-                <Alert status="error" size="sm" mb={3}>
-                  <AlertIcon />
-                  <AlertDescription fontSize="sm">{error}</AlertDescription>
-                </Alert>
-              )}
+          {/* AI Gift Suggestions Section - Only show if no gift is selected */}
+          {selectedGiftsForOccasion.length === 0 && (
+            <Collapse in={showSuggestions} animateOpacity>
+              <Box>
+                <Divider mb={{ base: 4, md: 3 }} />
+                <Flex justify="space-between" align="center" mb={3}>
+                  <Text fontWeight="bold" fontSize="md" color="purple.600">
+                    🤖 AI Gift Suggestions
+                  </Text>
+                  <Button
+                    size="xs"
+                    variant="ghost"
+                    leftIcon={<FaRedo />}
+                    onClick={handleGenerateSuggestions}
+                    isLoading={generating}
+                  >
+                    Regenerate
+                  </Button>
+                </Flex>
+                
+                {error && (
+                  <Alert status="error" size="sm" mb={3}>
+                    <AlertIcon />
+                    <AlertDescription fontSize="sm">{error}</AlertDescription>
+                  </Alert>
+                )}
 
-              <VStack spacing={3} align="stretch">
-                {suggestions.map((gift, index) => {
-                  const selectedGift = isGiftSelected(gift);
-                  const isSelected = !!selectedGift;
-                  
-                  return (
-                    <Box
-                      key={gift.id || index}
-                      p={3}
-                      bg={isSelected 
-                        ? useColorModeValue('green.50', 'green.900') 
-                        : useColorModeValue('gray.50', 'gray.700')
-                      }
-                      borderRadius="md"
-                      borderWidth={isSelected ? "2px" : "1px"}
-                      borderColor={isSelected 
-                        ? useColorModeValue('green.200', 'green.600')
-                        : useColorModeValue('gray.200', 'gray.600')
-                      }
-                    >
-                      <Flex
-                        direction={{ base: 'column', md: 'row' }}
-                        justify="space-between"
-                        align={{ base: 'stretch', md: 'start' }}
-                        mb={2}
-                        gap={4}
+                <VStack spacing={3} align="stretch">
+                  {suggestions.map((gift, index) => {
+                    const selectedGift = isGiftSelected(gift);
+                    const isSelected = !!selectedGift;
+                    
+                    return (
+                      <Box
+                        key={gift.id || index}
+                        p={4}
+                        bg={isSelected 
+                          ? useColorModeValue('green.50', 'green.900') 
+                          : useColorModeValue('gray.50', 'gray.700')
+                        }
+                        borderRadius="md"
+                        borderWidth={isSelected ? "2px" : "1px"}
+                        borderColor={isSelected 
+                          ? useColorModeValue('green.200', 'green.600')
+                          : useColorModeValue('gray.200', 'gray.600')
+                        }
                       >
-                        <VStack align="start" spacing={1} flex={1} minW={0}>
-                          <HStack>
-                            {isSelected && <Icon as={FaCheckCircle} color="green.500" />}
-                            <Text fontWeight="semibold" fontSize="sm" noOfLines={1}>
+                        {/* Mobile-First Layout: Stack everything vertically */}
+                        <VStack spacing={3} align="stretch">
+                          
+                          {/* Header with selection status and title */}
+                          <HStack spacing={2}>
+                            {isSelected && <Icon as={FaCheckCircle} color="green.500" flexShrink={0} />}
+                            <Text fontWeight="semibold" fontSize="sm" flex={1}>
                               {gift.name}
                             </Text>
                           </HStack>
-                          <Text fontSize="xs" color="gray.600" noOfLines={2}>
+                          
+                          {/* Description */}
+                          <Text fontSize="xs" color="gray.600" pl={isSelected ? 6 : 0}>
                             {gift.description}
                           </Text>
-                          <HStack spacing={2}>
+                          
+                          {/* Price badges */}
+                          <HStack spacing={2} wrap="wrap" pl={isSelected ? 6 : 0}>
                             <Badge colorScheme="green" size="sm">
                               Gift: ${gift.price.toFixed(2)}
                             </Badge>
@@ -538,52 +589,59 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
                               </>
                             )}
                           </HStack>
-                        </VStack>
-                        <VStack spacing={1} minW="120px" maxW="140px" align="stretch">
-                          {isSelected ? (
-                            <Button
-                              size="xs"
-                              colorScheme="red"
-                              variant="outline"
-                              leftIcon={<FaUndo />}
-                              onClick={() => selectedGift && handleUndoSelection(selectedGift)}
-                              isLoading={giftLoading}
-                            >
-                              Undo
-                            </Button>
-                          ) : (
-                            <Button
-                              size="xs"
-                              colorScheme="purple"
-                              leftIcon={<FaHeart />}
-                              onClick={() => handleSelectGift(gift)}
-                              isLoading={giftLoading}
-                            >
-                              Select
-                            </Button>
+                          
+                          {/* Action button - full width */}
+                          <Box w="100%">
+                            {isSelected ? (
+                              <Button
+                                size="sm"
+                                colorScheme="red"
+                                variant="outline"
+                                leftIcon={<FaUndo />}
+                                onClick={() => selectedGift && handleUndoSelection(selectedGift)}
+                                isLoading={giftLoading}
+                                w="100%"
+                              >
+                                Undo Selection
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                colorScheme="purple"
+                                leftIcon={<FaHeart />}
+                                onClick={() => handleSelectGift(gift)}
+                                isLoading={giftLoading}
+                                w="100%"
+                              >
+                                Select This Gift
+                              </Button>
+                            )}
+                          </Box>
+                          
+                          {/* Reasoning at bottom */}
+                          {gift.reasoning && (
+                            <Text fontSize="xs" color="gray.500" fontStyle="italic" pl={isSelected ? 6 : 0}>
+                              <Icon as={FaLightbulb} color="gray.400" boxSize="3" mr={2} />
+                              {gift.reasoning}
+                            </Text>
                           )}
                         </VStack>
-                      </Flex>
-                      {gift.reasoning && (
-                        <Text fontSize="xs" color="gray.500" fontStyle="italic">
-                          💡 {gift.reasoning}
-                        </Text>
-                      )}
-                    </Box>
-                  );
-                })}
-              </VStack>
-            </Box>
-          </Collapse>
-        )}
+                      </Box>
+                    );
+                  })}
+                </VStack>
+              </Box>
+            </Collapse>
+          )}
+        </VStack>
       </CardBody>
 
-      <CardFooter pt={2}>
+      <CardFooter p={{ base: 4, md: 4 }} pt={0}>
         {/* Only show generate button if no gift is selected */}
         {selectedGiftsForOccasion.length === 0 && (
-          <VStack w="full" spacing={2}>
+          <VStack w="full" spacing={{ base: 3, md: 2 }}>
             <Button
-              size="sm"
+              size="md"
               colorScheme="purple"
               variant="outline"
               leftIcon={<FaMagic />}
@@ -591,13 +649,14 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
               isLoading={generating}
               loadingText="Generating..."
               w="full"
+              h="50px"
             >
               {suggestions.length > 0 ? 'Generate New Suggestions' : 'Generate Gift Suggestions'}
             </Button>
             
             {showSuggestions && suggestions.length > 0 && (
               <Button
-                size="xs"
+                size="sm"
                 variant="ghost"
                 leftIcon={showSuggestions ? <FaChevronUp /> : <FaChevronDown />}
                 onClick={() => setShowSuggestions(!showSuggestions)}

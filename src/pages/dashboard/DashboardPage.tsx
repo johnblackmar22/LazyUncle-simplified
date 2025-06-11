@@ -234,14 +234,14 @@ const DashboardPage: React.FC = () => {
   });
 
   return (
-    <Container maxW="container.xl" mt={{ base: 2, md: 4 }} px={{ base: 4, md: 6 }}>
+    <Container maxW="container.xl" mt={{ base: 2, md: 4 }} px={{ base: 2, md: 6 }}>
       <VStack spacing={{ base: 4, md: 6 }} align="stretch">
         {/* Header */}
         <Flex 
-          direction={{ base: "column", md: "row" }} 
+          direction={{ base: "column", sm: "row" }} 
           justify="space-between" 
-          align={{ base: "start", md: "center" }} 
-          gap={{ base: 4, md: 0 }}
+          align={{ base: "stretch", sm: "center" }} 
+          gap={{ base: 3, md: 0 }}
         >
           <Box>
             <Heading size={{ base: "lg", md: "xl" }} mb={2}>Gift Calendar</Heading>
@@ -255,16 +255,16 @@ const DashboardPage: React.FC = () => {
             colorScheme="blue"
             leftIcon={<AddIcon />}
             size={{ base: "md", md: "lg" }}
-            width={{ base: "full", md: "auto" }}
+            width={{ base: "full", sm: "auto" }}
           >
             Add Recipient
           </Button>
         </Flex>
 
         {/* Top Row: Mini Calendar + Upcoming Events + Quick Stats */}
-        <Grid templateColumns={{ base: "1fr", lg: "300px 1fr 250px" }} gap={6}>
+        <Grid templateColumns={{ base: "1fr", md: "1fr 1fr", lg: "300px 1fr 250px" }} gap={{ base: 4, md: 6 }}>
           {/* Mini Calendar */}
-          <Card bg={bgColor} shadow="md" borderRadius="lg">
+          <Card bg={bgColor} shadow="md" borderRadius="lg" order={{ base: 2, lg: 1 }}>
             <CardHeader pb={2}>
               <Flex justify="space-between" align="center">
                 <Text fontWeight="semibold" fontSize="sm">
@@ -308,6 +308,8 @@ const DashboardPage: React.FC = () => {
                         ''
                       }
                       isDisabled={dayOccasions.length === 0}
+                      placement="top"
+                      hasArrow
                     >
                       <Center
                         h="6"
@@ -339,7 +341,7 @@ const DashboardPage: React.FC = () => {
           </Card>
 
           {/* Upcoming Events */}
-          <Card bg={bgColor} shadow="md" borderRadius="lg">
+          <Card bg={bgColor} shadow="md" borderRadius="lg" order={{ base: 1, lg: 2 }}>
             <CardHeader>
               <Flex align="center" gap={2}>
                 <Icon as={FaCalendarAlt} color="purple.500" />
@@ -392,17 +394,17 @@ const DashboardPage: React.FC = () => {
                             <Text fontSize="xs" color="gray.500">
                               {occasion.name}
                               {occasion.recurring && (
-                                <Tooltip label="Recurring annually" fontSize="sm">
+                                <Tooltip label="Recurring annually" fontSize="sm" placement="top" hasArrow>
                                   <Icon as={FaRedo} color="gray.400" ml={1} boxSize="2.5" />
                                 </Tooltip>
                               )}
                               {occasion.giftWrap && (
-                                <Tooltip label="Gift wrap included" fontSize="sm">
+                                <Tooltip label="Gift wrap included" fontSize="sm" placement="top" hasArrow>
                                   <Icon as={FaGift} color="gray.400" ml={1} boxSize="2.5" />
                                 </Tooltip>
                               )}
                               {occasion.personalizedNote && (
-                                <Tooltip label="Personalized note included" fontSize="sm">
+                                <Tooltip label="Personalized note included" fontSize="sm" placement="top" hasArrow>
                                   <Icon as={FaEdit} color="gray.400" ml={1} boxSize="2.5" />
                                 </Tooltip>
                               )}
@@ -436,7 +438,7 @@ const DashboardPage: React.FC = () => {
           </Card>
 
           {/* Quick Stats */}
-          <Card bg={bgColor} shadow="md" borderRadius="lg">
+          <Card bg={bgColor} shadow="md" borderRadius="lg" order={{ base: 3, lg: 3 }}>
             <CardHeader>
               <Flex align="center" gap={2}>
                 <Icon as={FaGift} color="green.500" />
@@ -525,17 +527,17 @@ const DashboardPage: React.FC = () => {
                               <Text key={occasion.id} fontSize="xs" color="gray.600">
                                 {occasion.recipient?.name}: {occasion.name}
                                 {occasion.recurring && (
-                                  <Tooltip label="Recurring annually" fontSize="sm">
+                                  <Tooltip label="Recurring annually" fontSize="sm" placement="top" hasArrow>
                                     <Icon as={FaRedo} color="gray.400" ml={1} boxSize="2.5" />
                                   </Tooltip>
                                 )}
                                 {occasion.giftWrap && (
-                                  <Tooltip label="Gift wrap included" fontSize="sm">
+                                  <Tooltip label="Gift wrap included" fontSize="sm" placement="top" hasArrow>
                                     <Icon as={FaGift} color="gray.400" ml={1} boxSize="2.5" />
                                   </Tooltip>
                                 )}
                                 {occasion.personalizedNote && (
-                                  <Tooltip label="Personalized note included" fontSize="sm">
+                                  <Tooltip label="Personalized note included" fontSize="sm" placement="top" hasArrow>
                                     <Icon as={FaEdit} color="gray.400" ml={1} boxSize="2.5" />
                                   </Tooltip>
                                 )}
@@ -612,17 +614,17 @@ const DashboardPage: React.FC = () => {
                                 >
                                   {occasion.recipient?.name}: {occasion.name}
                                   {occasion.recurring && (
-                                    <Tooltip label="Recurring annually" fontSize="sm">
+                                    <Tooltip label="Recurring annually" fontSize="sm" placement="top" hasArrow>
                                       <Icon as={FaRedo} color="gray.400" ml={1} boxSize="2.5" />
                                     </Tooltip>
                                   )}
                                   {occasion.giftWrap && (
-                                    <Tooltip label="Gift wrap included" fontSize="sm">
+                                    <Tooltip label="Gift wrap included" fontSize="sm" placement="top" hasArrow>
                                       <Icon as={FaGift} color="gray.400" ml={1} boxSize="2.5" />
                                     </Tooltip>
                                   )}
                                   {occasion.personalizedNote && (
-                                    <Tooltip label="Personalized note included" fontSize="sm">
+                                    <Tooltip label="Personalized note included" fontSize="sm" placement="top" hasArrow>
                                       <Icon as={FaEdit} color="gray.400" ml={1} boxSize="2.5" />
                                     </Tooltip>
                                   )}
@@ -746,17 +748,17 @@ const DashboardPage: React.FC = () => {
                                   <Text fontSize="xs" fontWeight="medium">
                                     {occasion.name}
                                     {occasion.recurring && (
-                                      <Tooltip label="Recurring annually" fontSize="sm">
+                                      <Tooltip label="Recurring annually" fontSize="sm" placement="top" hasArrow>
                                         <Icon as={FaRedo} color="gray.400" ml={1} boxSize="2.5" />
                                       </Tooltip>
                                     )}
                                     {occasion.giftWrap && (
-                                      <Tooltip label="Gift wrap included" fontSize="sm">
+                                      <Tooltip label="Gift wrap included" fontSize="sm" placement="top" hasArrow>
                                         <Icon as={FaGift} color="gray.400" ml={1} boxSize="2.5" />
                                       </Tooltip>
                                     )}
                                     {occasion.personalizedNote && (
-                                      <Tooltip label="Personalized note included" fontSize="sm">
+                                      <Tooltip label="Personalized note included" fontSize="sm" placement="top" hasArrow>
                                         <Icon as={FaEdit} color="gray.400" ml={1} boxSize="2.5" />
                                       </Tooltip>
                                     )}
