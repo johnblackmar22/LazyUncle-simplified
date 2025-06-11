@@ -78,10 +78,21 @@ Respond in JSON format:
     let recommendations = [];
     try {
       const parsed = JSON.parse(aiResponse || '{}');
+      console.log('🔍 Parsed JSON from AI:', JSON.stringify(parsed, null, 2));
       recommendations = parsed.recommendations || [];
       console.log('✅ AI response parsed successfully');
       console.log('📊 Number of recommendations from AI:', recommendations.length);
       console.log('📝 Raw recommendations:', JSON.stringify(recommendations, null, 2));
+      
+      // Debug each recommendation
+      recommendations.forEach((rec, index) => {
+        console.log(`🎁 Recommendation ${index + 1}:`, {
+          name: rec.name,
+          price: rec.price,
+          category: rec.category
+        });
+      });
+      
     } catch (parseError) {
       console.log('⚠️ Failed to parse AI response, using fallback');
       console.log('💥 Parse error:', parseError.message);
@@ -134,6 +145,11 @@ Respond in JSON format:
       imageUrl: null, // Will be filled in manually
       needsManualReview: true // Flag for admin to review and add real product links
     }));
+
+    console.log('🚀 FINAL DEBUG - About to return:', {
+      recommendationsCount: finalRecommendations.length,
+      recommendations: finalRecommendations.map(r => ({ id: r.id, name: r.name, price: r.price }))
+    });
 
     console.log('🎉 Returning gift ideas for manual review');
     return {
