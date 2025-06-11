@@ -309,7 +309,12 @@ export function useGiftStorage() {
     // Also delete related admin order if type is 'selected'
     if (type === 'selected') {
       try {
-        await AdminService.deleteOrderByGiftId(giftId);
+        const { user } = useAuthStore.getState();
+        await AdminService.deleteOrderByGiftId(giftId, {
+          userId: user?.id,
+          giftTitle: storage.selectedGifts.find(g => g.id === giftId)?.name,
+          occasionId: storage.selectedGifts.find(g => g.id === giftId)?.occasionId
+        });
         toast({
           title: 'Order Removed',
           description: 'The related admin order has been deleted.',

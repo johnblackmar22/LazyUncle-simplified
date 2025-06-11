@@ -134,7 +134,7 @@ class AdminService {
           delete sanitizedOrder[key];
         }
       });
-      console.log('📝 Final sanitized admin order to save:', sanitizedOrder);
+      console.log('📝 Final sanitized admin order to save:', JSON.stringify(sanitizedOrder, null, 2));
       // Add to Firebase
       const ordersRef = collection(db, COLLECTIONS.ADMIN_ORDERS);
       const docRef = await addDoc(ordersRef, sanitizedOrder);
@@ -264,7 +264,7 @@ class AdminService {
   }
 
   // Delete order(s) by Gift ID (used when undoing a gift selection)
-  static async deleteOrderByGiftId(giftId: string): Promise<void> {
+  static async deleteOrderByGiftId(giftId: string, fallback?: { userId?: string, giftTitle?: string, occasionId?: string }) {
     const ordersRef = collection(db, COLLECTIONS.ADMIN_ORDERS);
     // Try to delete by giftId field (new orders)
     let q = query(ordersRef, where('giftId', '==', giftId));
@@ -279,6 +279,15 @@ class AdminService {
     for (const docSnap of querySnapshot.docs) {
       await deleteDoc(docSnap.ref);
       console.log(`🗑️ Deleted admin order for Gift ID in notes: ${giftId}`);
+    }
+    // Fallback: try deleting by giftTitle, userId, and occasionId if provided
+    if (fallback?.userId && fallback?.giftTitle && fallback?.occasionId) {
+      q = query(ordersRef, where('userId', '==', fallback.userId), where('giftTitle', '==', fallback.giftTitle), where('occasionId', '==', fallback.occasionId));
+      querySnapshot = await getDocs(q);
+      for (const docSnap of querySnapshot.docs) {
+        await deleteDoc(docSnap.ref);
+        console.log(`🗑️ Deleted admin order by fallback fields: userId=${fallback.userId}, giftTitle=${fallback.giftTitle}, occasionId=${fallback.occasionId}`);
+      }
     }
   }
 
