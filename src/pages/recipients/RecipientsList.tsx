@@ -124,85 +124,87 @@ const RecipientsList = () => {
           borderColor={borderColor}
           overflow="hidden"
         >
-          <Table variant="simple">
-            <Thead>
-              <Tr>
-                <Th>Name</Th>
-                <Th>Relationship</Th>
-                <Th>Interests</Th>
-                <Th>Occasions</Th>
-                <Th>Actions</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {filteredRecipients.map((recipient) => (
-                <Tr key={recipient.id}>
-                  <Td fontWeight="medium">{recipient.name}</Td>
-                  <Td>{recipient.relationship}</Td>
-                  <Td>
-                    <HStack spacing={2} flexWrap="wrap">
-                      {recipient.interests.slice(0, 3).map((interest, idx) => (
-                        <Tag key={idx} size="sm" colorScheme="blue">
-                          {interest}
-                        </Tag>
-                      ))}
-                      {recipient.interests.length > 3 && (
-                        <Tag size="sm" colorScheme="gray">
-                          +{recipient.interests.length - 3} more
-                        </Tag>
-                      )}
-                    </HStack>
-                  </Td>
-                  <Td>
-                    {occasions && occasions[recipient.id] && occasions[recipient.id].length > 0 ? (
-                      <HStack spacing={1} flexWrap="wrap">
-                        {occasions[recipient.id].slice(0, 2).map((occasion, idx) => (
-                          <Tag key={occasion.id} size="sm" colorScheme="purple">{occasion.name}</Tag>
+          <Box overflowX="auto">
+            <Table variant="simple" size={{ base: "sm", md: "md" }}>
+              <Thead>
+                <Tr>
+                  <Th minW="120px">Name</Th>
+                  <Th minW="120px">Relationship</Th>
+                  <Th minW="200px">Interests</Th>
+                  <Th minW="150px">Occasions</Th>
+                  <Th minW="200px">Actions</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {filteredRecipients.map((recipient) => (
+                  <Tr key={recipient.id}>
+                    <Td fontWeight="medium">{recipient.name}</Td>
+                    <Td>{recipient.relationship}</Td>
+                    <Td>
+                      <HStack spacing={2} flexWrap="wrap">
+                        {recipient.interests.slice(0, 3).map((interest, idx) => (
+                          <Tag key={idx} size="sm" colorScheme="blue">
+                            {interest}
+                          </Tag>
                         ))}
-                        {occasions[recipient.id].length > 2 && (
+                        {recipient.interests.length > 3 && (
                           <Tag size="sm" colorScheme="gray">
-                            +{occasions[recipient.id].length - 2} more
+                            +{recipient.interests.length - 3} more
                           </Tag>
                         )}
                       </HStack>
-                    ) : (
-                      <Text color="gray.400" fontSize="sm">None</Text>
-                    )}
-                  </Td>
-                  <Td>
-                    <HStack spacing={2}>
-                      <Button
-                        as={RouterLink}
-                        to={`/recipients/${recipient.id}`}
-                        size="sm"
-                        colorScheme="blue"
-                        variant="outline"
-                      >
-                        View
-                      </Button>
-                      <Button
-                        as={RouterLink}
-                        to={`/recipients/edit/${recipient.id}`}
-                        size="sm"
-                        colorScheme="teal"
-                        variant="outline"
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        colorScheme="red"
-                        variant="outline"
-                        onClick={() => handleDeleteClick(recipient.id)}
-                      >
-                        Delete
-                      </Button>
-                    </HStack>
-                  </Td>
-                </Tr>
-              ))}
-            </Tbody>
-          </Table>
+                    </Td>
+                    <Td>
+                      {occasions && occasions[recipient.id] && occasions[recipient.id].length > 0 ? (
+                        <HStack spacing={1} flexWrap="wrap">
+                          {occasions[recipient.id].slice(0, 2).map((occasion, idx) => (
+                            <Tag key={occasion.id} size="sm" colorScheme="purple">{occasion.name}</Tag>
+                          ))}
+                          {occasions[recipient.id].length > 2 && (
+                            <Tag size="sm" colorScheme="gray">
+                              +{occasions[recipient.id].length - 2} more
+                            </Tag>
+                          )}
+                        </HStack>
+                      ) : (
+                        <Text color="gray.400" fontSize="sm">None</Text>
+                      )}
+                    </Td>
+                    <Td>
+                      <HStack spacing={2} flexWrap={{ base: "wrap", md: "nowrap" }}>
+                        <Button
+                          as={RouterLink}
+                          to={`/recipients/${recipient.id}`}
+                          size="sm"
+                          colorScheme="blue"
+                          variant="outline"
+                        >
+                          View
+                        </Button>
+                        <Button
+                          as={RouterLink}
+                          to={`/recipients/edit/${recipient.id}`}
+                          size="sm"
+                          colorScheme="teal"
+                          variant="outline"
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          colorScheme="red"
+                          variant="outline"
+                          onClick={() => handleDeleteClick(recipient.id)}
+                        >
+                          Delete
+                        </Button>
+                      </HStack>
+                    </Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </Box>
         </Box>
       )}
       
