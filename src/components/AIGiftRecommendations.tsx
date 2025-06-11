@@ -52,6 +52,15 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
   const selectedGifts = getSelectedGiftsForOccasion(recipient.id, occasion.id);
   const selectedGiftIds = selectedGifts.map(g => g.id);
 
+  // Debug logging for button states
+  console.log('🔍 AIGiftRecommendations Debug:', {
+    recipientId: recipient.id,
+    occasionId: occasion.id,
+    selectedGifts: selectedGifts.length,
+    selectedGiftIds,
+    recommendationsCount: recommendations.length
+  });
+
   const generateRecommendations = async (excludeIds: string[] = []) => {
     setLoading(true);
     setError(null);
@@ -465,16 +474,27 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
                       {/* Action Buttons */}
                       <VStack spacing={2} minW="120px" maxW="140px" align="stretch">
                         <HStack spacing={2} mt={3}>
-                          <Button
-                            size="sm"
-                            colorScheme="green"
-                            variant="outline"
-                            leftIcon={<FaCheck />}
-                            onClick={() => handleSelectGift(gift)}
-                            isDisabled={selectedGiftIds.includes(gift.id)}
-                          >
-                            {selectedGiftIds.includes(gift.id) ? 'Selected' : 'Select Gift'}
-                          </Button>
+                          {(() => {
+                            const isDisabled = selectedGiftIds.includes(gift.id);
+                            console.log(`🔘 Button for "${gift.name}":`, {
+                              giftId: gift.id,
+                              isDisabled,
+                              selectedGiftIds,
+                              buttonText: isDisabled ? 'Selected' : 'Select Gift'
+                            });
+                            return (
+                              <Button
+                                size="sm"
+                                colorScheme="green"
+                                variant="outline"
+                                leftIcon={<FaCheck />}
+                                onClick={() => handleSelectGift(gift)}
+                                isDisabled={isDisabled}
+                              >
+                                {isDisabled ? 'Selected' : 'Select Gift'}
+                              </Button>
+                            );
+                          })()}
                           <Button
                             size="sm"
                             variant="outline"
