@@ -94,6 +94,7 @@ const DashboardPage: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
   const [calendarView, setCalendarView] = useState<'month' | 'year'>('month');
+  const [expandedRecipients, setExpandedRecipients] = useState<Set<string>>(new Set());
 
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
@@ -621,7 +622,43 @@ const DashboardPage: React.FC = () => {
               <SimpleGrid columns={{ base: 1, md: 2, lg: 3, xl: 4 }} spacing={4}>
                 {recipients.map((recipient) => {
                   const recipientOccasions = occasions[recipient.id] || [];
-                  const nextOccasion = upcomingOccasions.find(o => o.recipientId === recipient.id);
+                  const isExpanded = expandedRecipients.has(recipient.id);
+                  
+                  // Get upcoming occasions for this recipient with actual dates
+                  const upcomingRecipientOccasions = recipientOccasions
+                    .map(occasion => {
+                      let displayDate: Date;
+                      if (occasion.type === 'birthday' || occasion.type === 'christmas' || occasion.type === 'custom') {
+                        const [, month, day] = occasion.date.split('-').map(Number);
+                        const currentYear = new Date().getFullYear();
+                        const today = startOfDay(new Date());
+                        displayDate = new Date(currentYear, month - 1, day);
+                        if (displayDate < today) {
+                          displayDate = new Date(currentYear + 1, month - 1, day);
+                        }
+                      } else {
+                        const [year, month, day] = occasion.date.split('-').map(Number);
+                        displayDate = new Date(year, month - 1, day);
+                      }
+                      return { ...occasion, displayDate };
+                    })
+                    .sort((a, b) => a.displayDate.getTime() - b.displayDate.getTime());
+
+                  const displayOccasions = isExpanded ? upcomingRecipientOccasions : upcomingRecipientOccasions.slice(0, 3);
+                  const hasMoreOccasions = upcomingRecipientOccasions.length > 3;
+
+                  const toggleExpanded = (e: React.MouseEvent) => {
+                    e.stopPropagation();
+                    setExpandedRecipients(prev => {
+                      const newSet = new Set(prev);
+                      if (newSet.has(recipient.id)) {
+                        newSet.delete(recipient.id);
+                      } else {
+                        newSet.add(recipient.id);
+                      }
+                      return newSet;
+                    });
+                  };
 
                   return (
                     <Card
@@ -646,43 +683,48 @@ const DashboardPage: React.FC = () => {
                             </VStack>
                           </Flex>
 
-                          {/* Next occasion */}
-                          {nextOccasion && (
-                            <Flex justify="space-between" align="center" p={2} bg="purple.50" borderRadius="md">
-                              <Text fontSize="xs" fontWeight="medium">
-                                {nextOccasion.name}
-                              </Text>
-                              <Text fontSize="xs" color="purple.600">
-                                {(() => {
-                                  const getNextOccurrenceDate = (occasion: any) => {
-                                    if (occasion.type === 'birthday' || occasion.type === 'christmas' || occasion.type === 'custom') {
-                                      const [, month, day] = occasion.date.split('-').map(Number);
-                                      const currentYear = new Date().getFullYear();
-                                      const today = startOfDay(new Date());
-                                      
-                                      let nextOccurrence = new Date(currentYear, month - 1, day);
-                                      if (nextOccurrence < today) {
-                                        nextOccurrence = new Date(currentYear + 1, month - 1, day);
-                                      }
-                                      return nextOccurrence;
-                                    } else {
-                                      const [year, month, day] = occasion.date.split('-').map(Number);
-                                      return new Date(year, month - 1, day);
-                                    }
-                                  };
-
-                                  const displayDate = getNextOccurrenceDate(nextOccasion);
-                                  const daysUntil = differenceInDays(displayDate, startOfDay(new Date()));
-                                  return daysUntil === 0 ? 'Today' : daysUntil === 1 ? 'Tomorrow' : `${daysUntil} days`;
-                                })()}
-                              </Text>
-                            </Flex>
+                          {/* Occasions list */}
+                          {displayOccasions.length > 0 ? (
+                            <VStack spacing={2} align="stretch">
+                              {displayOccasions.map((occasion, index) => (
+                                <Flex 
+                                  key={occasion.id} 
+                                  justify="space-between" 
+                                  align="center" 
+                                  p={2} 
+                                  bg={index === 0 ? "purple.50" : "gray.50"} 
+                                  borderRadius="md"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <Text fontSize="xs" fontWeight="medium">
+                                    {occasion.name}
+                                  </Text>
+                                  <Text fontSize="xs" color={index === 0 ? "purple.600" : "gray.600"}>
+                                    {format(occasion.displayDate, 'MMM dd, yyyy')}
+                                  </Text>
+                                </Flex>
+                              ))}
+                              
+                              {/* Expand/Collapse button */}
+                              {hasMoreOccasions && (
+                                <Button
+                                  size="xs"
+                                  variant="ghost"
+                                  onClick={toggleExpanded}
+                                  color="blue.500"
+                                >
+                                  {isExpanded 
+                                    ? `Show Less` 
+                                    : `Show ${upcomingRecipientOccasions.length - 3} More`
+                                  }
+                                </Button>
+                              )}
+                            </VStack>
+                          ) : (
+                            <Text fontSize="xs" color="gray.500" textAlign="center">
+                              No occasions
+                            </Text>
                           )}
-
-                          {/* Occasions count */}
-                          <Text fontSize="xs" color="gray.500" textAlign="center">
-                            {recipientOccasions.length} occasion{recipientOccasions.length !== 1 ? 's' : ''}
-                          </Text>
                         </VStack>
                       </CardBody>
                     </Card>
