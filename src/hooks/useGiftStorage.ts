@@ -177,10 +177,10 @@ export function useGiftStorage() {
         personalNote: occasion?.noteText
       };
 
-      console.log('📋 Attempting to create AdminOrder for user gift selection...');
+      console.log('📋 Attempting to create AdminOrder for user gift selection...', adminOrder);
       try {
         const orderId = await AdminService.addOrder(adminOrder);
-        console.log('✅ AdminOrder created successfully with ID:', orderId);
+        console.log('✅ AdminOrder.addOrder returned orderId:', orderId);
         toast({
           title: 'Order Created',
           description: 'Your gift selection has been sent to the admin for processing.',
