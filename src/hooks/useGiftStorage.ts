@@ -200,7 +200,14 @@ export function useGiftStorage() {
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
           };
-          const docRef = await addDoc(collection(db, 'admin_orders'), orderData);
+          // Remove undefined fields
+          const sanitizedOrder: Record<string, any> = { ...orderData };
+          Object.keys(sanitizedOrder).forEach(key => {
+            if (sanitizedOrder[key] === undefined) {
+              delete sanitizedOrder[key];
+            }
+          });
+          const docRef = await addDoc(collection(db, 'admin_orders'), sanitizedOrder);
           console.log('✅ Fallback Firestore order creation succeeded, docRef.id:', docRef.id);
           toast({
             title: 'Order Created (Fallback)',

@@ -125,10 +125,16 @@ class AdminService {
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now()
       };
-
+      // Remove undefined fields (especially giftUrl, imageUrl, etc.)
+      const sanitizedOrder: Record<string, any> = { ...orderData };
+      Object.keys(sanitizedOrder).forEach(key => {
+        if (sanitizedOrder[key] === undefined) {
+          delete sanitizedOrder[key];
+        }
+      });
       // Add to Firebase
       const ordersRef = collection(db, COLLECTIONS.ADMIN_ORDERS);
-      const docRef = await addDoc(ordersRef, orderData);
+      const docRef = await addDoc(ordersRef, sanitizedOrder);
       
       console.log('✅ Admin order added to Firebase:', docRef.id);
       return docRef.id;
