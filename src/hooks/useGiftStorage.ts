@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/authStore';
 import { addGift } from '../services/giftService';
 import AdminService from '../services/adminService';
 import type { AdminOrder, Gift } from '../types';
+import { useToast } from '@chakra-ui/react';
 
 export interface StoredGift {
   id: string;
@@ -44,6 +45,8 @@ export function useGiftStorage() {
   // Access to stores for getting real data
   const { recipients } = useRecipientStore();
   const { occasions } = useOccasionStore();
+
+  const toast = useToast();
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -94,6 +97,13 @@ export function useGiftStorage() {
       
       if (!user) {
         console.error('⚠️ CRITICAL: No authenticated user - cannot create gift');
+        toast({
+          title: 'Not Authenticated',
+          description: 'You must be logged in to select a gift.',
+          status: 'error',
+          duration: 6000,
+          isClosable: true,
+        });
         throw new Error('User not authenticated');
       }
 
@@ -167,17 +177,25 @@ export function useGiftStorage() {
         personalNote: occasion?.noteText
       };
 
-      console.log('📋 Creating AdminOrder with data:', adminOrder);
-      
+      console.log('📋 Attempting to create AdminOrder for user gift selection...');
       try {
         const orderId = await AdminService.addOrder(adminOrder);
         console.log('✅ AdminOrder created successfully with ID:', orderId);
+        toast({
+          title: 'Order Created',
+          description: 'Your gift selection has been sent to the admin for processing.',
+          status: 'success',
+          duration: 4000,
+          isClosable: true,
+        });
       } catch (adminOrderError: any) {
         console.error('❌ CRITICAL: Failed to create AdminOrder:', adminOrderError);
-        console.error('❌ AdminOrder error details:', {
-          message: adminOrderError.message,
-          code: adminOrderError?.code,
-          stack: adminOrderError.stack
+        toast({
+          title: 'Order Creation Failed',
+          description: adminOrderError instanceof Error ? adminOrderError.message : String(adminOrderError),
+          status: 'error',
+          duration: 6000,
+          isClosable: true,
         });
         throw adminOrderError;
       }
@@ -216,11 +234,12 @@ export function useGiftStorage() {
       return storedGift;
     } catch (error) {
       console.error('❌ CRITICAL ERROR in complete gift selection workflow:', error);
-      console.error('❌ Error details:', {
-        message: error instanceof Error ? error.message : String(error),
-        code: (error as any)?.code,
-        stack: error instanceof Error ? error.stack : undefined,
-        giftData: { giftId: gift.id, giftName: gift.name, recipientId, occasionId }
+      toast({
+        title: 'Gift Selection Failed',
+        description: error instanceof Error ? error.message : String(error),
+        status: 'error',
+        duration: 6000,
+        isClosable: true,
       });
       throw error;
     }
