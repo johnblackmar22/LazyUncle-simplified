@@ -119,6 +119,7 @@ export const AIGiftRecommendations: React.FC<AIGiftRecommendationsProps> = ({
   };
 
   const handleSelectGift = async (gift: GiftRecommendation) => {
+    console.log('🔥 BUTTON CLICKED - handleSelectGift called!');
     try {
       console.log('🖱️ Select Gift button clicked for:', gift.name);
       const selectedGift = await selectGift(gift, recipient.id, occasion.id);
