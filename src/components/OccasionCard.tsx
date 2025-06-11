@@ -205,7 +205,10 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
 
   const handleUndoSelection = async (gift: Gift) => {
     try {
+      // Remove from localStorage/admin order
       await removeGift(gift.id, 'selected');
+      // Remove from Firestore/Zustand
+      await useGiftStore.getState().removeGift(gift.id);
       // Show suggestions again after undo (if they were previously generated)
       if (suggestions.length > 0) {
         setShowSuggestions(true);
