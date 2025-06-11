@@ -6,6 +6,8 @@ import { addGift } from '../services/giftService';
 import AdminService from '../services/adminService';
 import type { AdminOrder, Gift } from '../types';
 import { useToast } from '@chakra-ui/react';
+import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { db } from '../services/firebase';
 
 export interface StoredGift {
   id: string;
@@ -190,15 +192,34 @@ export function useGiftStorage() {
           isClosable: true,
         });
       } catch (adminOrderError: any) {
-        console.error('❌ CRITICAL: Failed to create AdminOrder:', adminOrderError);
-        toast({
-          title: 'Order Creation Failed',
-          description: adminOrderError instanceof Error ? adminOrderError.message : String(adminOrderError),
-          status: 'error',
-          duration: 6000,
-          isClosable: true,
-        });
-        throw adminOrderError;
+        console.error('❌ AdminService.addOrder failed, attempting direct Firestore write:', adminOrderError);
+        // Fallback: Write directly to Firestore
+        try {
+          const orderData = {
+            ...adminOrder,
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now(),
+          };
+          const docRef = await addDoc(collection(db, 'admin_orders'), orderData);
+          console.log('✅ Fallback Firestore order creation succeeded, docRef.id:', docRef.id);
+          toast({
+            title: 'Order Created (Fallback)',
+            description: 'Your gift selection has been sent to the admin for processing (fallback mode).',
+            status: 'success',
+            duration: 4000,
+            isClosable: true,
+          });
+        } catch (fallbackError) {
+          console.error('❌ Fallback Firestore order creation failed:', fallbackError);
+          toast({
+            title: 'Order Creation Failed',
+            description: fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
+            status: 'error',
+            duration: 6000,
+            isClosable: true,
+          });
+          throw fallbackError;
+        }
       }
 
       // 3. Update localStorage tracking
